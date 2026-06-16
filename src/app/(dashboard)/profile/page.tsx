@@ -90,6 +90,9 @@ export default function ProfilePage() {
             <Field label="Monthly fee (₹)">
               <Input type="number" value={profile.monthlyFee || ""} onChange={(e) => set("monthlyFee", Number(e.target.value) || 0)} placeholder="500" />
             </Field>
+            <Field label="Reactivation fee (₹)">
+              <Input type="number" value={profile.reactivationFee || ""} onChange={(e) => set("reactivationFee", Number(e.target.value) || 0)} placeholder="700" />
+            </Field>
             <Field label="GST number"><Input value={profile.gst} onChange={(e) => set("gst", e.target.value)} /></Field>
             <Field label="City"><Input value={profile.city} onChange={(e) => set("city", e.target.value)} /></Field>
             <Field label="Website" full><Input value={profile.website} onChange={(e) => set("website", e.target.value)} placeholder="https://" /></Field>

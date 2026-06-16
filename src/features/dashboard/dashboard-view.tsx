@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { DashboardAnalytics } from "@/features/dashboard/components/dashboard-analytics";
+import { FinancialReport } from "@/features/dashboard/financial-report";
 import { useDb, useHydrated, loadSamples } from "@/lib/store/local-db";
-import { demoCollectionTrend, demoEnrolmentTrend } from "@/lib/demo";
 import { formatCurrency } from "@/lib/utils";
 
 export function DashboardView() {
@@ -49,6 +49,24 @@ export function DashboardView() {
     { name: "Dropped", value: students.filter((s) => s.status === "dropped").length },
   ].filter((d) => d.value > 0);
 
+  // Real last-6-months series for the charts (from payments, fees & admission dates).
+  const months = [5, 4, 3, 2, 1, 0].map((i) => {
+    const d = new Date(`${ym}-01T00:00:00`);
+    d.setMonth(d.getMonth() - i);
+    return d.toISOString().slice(0, 7);
+  });
+  const mLabel = (m: string) => new Date(`${m}-01T00:00:00`).toLocaleString("en-IN", { month: "short" });
+  const trend = months.map((m) => ({
+    month: mLabel(m),
+    collected: payments.filter((p) => p.status === "success" && p.date.slice(0, 7) === m).reduce((s, p) => s + p.amount, 0),
+    pending: fees.filter((f) => f.status !== "paid" && (f.period || f.dueDate.slice(0, 7)) === m).reduce((s, f) => s + (f.amount - f.amountPaid), 0),
+  }));
+  const enrolment = months.map((m) => ({
+    month: mLabel(m),
+    joined: students.filter((s) => (s.admissionDate || "").slice(0, 7) === m).length,
+    dropped: students.filter((s) => s.status === "dropped" && (s.admissionDate || "").slice(0, 7) === m).length,
+  }));
+
   const isEmpty = students.length === 0 && fees.length === 0 && payments.length === 0;
 
   return (
@@ -87,11 +105,13 @@ export function DashboardView() {
             })}
           </div>
 
+          <FinancialReport />
+
           <DashboardAnalytics
             metrics={metrics}
-            trend={demoCollectionTrend}
+            trend={trend}
             statusData={statusData.length ? statusData : [{ name: "Active", value: metrics.activeStudents || 1 }]}
-            enrolment={demoEnrolmentTrend}
+            enrolment={enrolment}
           />
         </>
       )}

@@ -22,8 +22,8 @@ on conflict (code) do nothing;
 insert into public.institutes (id, name, slug, type, phone, email, city, state, gst_number)
 values (
   '11111111-1111-1111-1111-111111111111',
-  'Bright Minds Abacus Academy', 'bright-minds', 'abacus',
-  '+919800000000', 'admin@brightminds.test', 'Kolkata', 'West Bengal', '19ABCDE1234F1Z5'
+  'MMA-Barasat', 'mma-barasat', 'abacus',
+  '+919800000000', 'admin@mma-barasat.test', 'Kolkata', 'West Bengal', '19ABCDE1234F1Z5'
 ) on conflict (id) do nothing;
 
 -- ── Subscription for demo institute ─────────────────────────────────
@@ -67,10 +67,10 @@ on conflict (institute_id, student_code) do nothing;
 insert into public.message_templates (institute_id, name, reminder_type, channel, language, body, variables)
 values
   ('11111111-1111-1111-1111-111111111111','Fee Due Reminder','fee_due','whatsapp','en',
-   'Hi {{parent_name}}, the fee of ₹{{amount}} for {{student_name}} is due on {{due_date}}. Please pay to avoid late charges. — Bright Minds',
+   'Hi {{parent_name}}, the fee of ₹{{amount}} for {{student_name}} is due on {{due_date}}. Please pay to avoid late charges. — MMA-Barasat',
    array['parent_name','amount','student_name','due_date']),
   ('11111111-1111-1111-1111-111111111111','Birthday Wish','birthday','whatsapp','en',
-   'Happy Birthday {{student_name}}! 🎉 Wishing you a wonderful year ahead. — Bright Minds',
+   'Happy Birthday {{student_name}}! 🎉 Wishing you a wonderful year ahead. — MMA-Barasat',
    array['student_name'])
 on conflict do nothing;
 
@@ -79,4 +79,4 @@ on conflict do nothing;
 --   update public.profiles
 --   set institute_id = '11111111-1111-1111-1111-111111111111',
 --       role = 'institute_admin', full_name = 'Demo Admin'
---   where email = 'admin@brightminds.test';
+--   where email = 'admin@mma-barasat.test';

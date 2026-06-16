@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Pencil, Trash2, Users, Sparkles } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, Sparkles, Upload, Download } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -16,10 +16,13 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
 import {
-  useCollection, useHydrated, useProfile, removeItem, loadSamples, type StudentStatus,
+  useCollection, useHydrated, useProfile, addItem, removeItem, loadSamples, newId,
+  type StudentStatus, type Student,
 } from "@/lib/store/local-db";
 import { getLabels } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
+import { downloadFile } from "@/lib/csv";
+import { studentTemplateCsv, parseStudentsCsv } from "@/features/students/student-csv";
 
 const statusVariant: Record<StudentStatus, "success" | "secondary" | "warning" | "destructive"> = {
   active: "success", inactive: "secondary", graduated: "warning", dropped: "destructive",
@@ -37,6 +40,40 @@ export function StudentsView() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function onImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-importing the same file
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const records = parseStudentsCsv(String(reader.result));
+        if (!records.length) { toast.error("No rows found — check the template format"); return; }
+        // Skip blanks (junk) and duplicate student IDs (existing or repeated in-file).
+        const existing = new Set(students.map((s) => s.code.trim().toLowerCase()).filter(Boolean));
+        const seen = new Set<string>();
+        let imported = 0, skipped = 0;
+        records.forEach((r) => {
+          const code = r.code.trim().toLowerCase();
+          if (!r.firstName.trim() && !code) { skipped += 1; return; }
+          if (code && (existing.has(code) || seen.has(code))) { skipped += 1; return; }
+          if (code) seen.add(code);
+          addItem<Student>("students", { id: newId("student"), ...r });
+          imported += 1;
+        });
+        toast.success(
+          `Imported ${imported} ${members.toLowerCase()}`,
+          skipped ? { description: `Skipped ${skipped} duplicate/blank row${skipped > 1 ? "s" : ""}` } : undefined,
+        );
+        setPage(1);
+      } catch {
+        toast.error("Could not read the file. Use the CSV template.");
+      }
+    };
+    reader.readAsText(file);
+  }
 
   const filtered = students.filter((s) => {
     if (status !== "all" && s.status !== status) return false;
@@ -54,9 +91,18 @@ export function StudentsView() {
         title={members}
         description="Manage admissions, search and export."
         actions={
-          <Button asChild>
-            <Link href="/students/new"><Plus /> Add {member.toLowerCase()}</Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={onImport} />
+            <Button variant="outline" onClick={() => downloadFile("eduflow-students-template.csv", studentTemplateCsv())}>
+              <Download /> Template
+            </Button>
+            <Button variant="outline" onClick={() => fileRef.current?.click()}>
+              <Upload /> Import CSV
+            </Button>
+            <Button asChild>
+              <Link href="/students/new"><Plus /> Add {member.toLowerCase()}</Link>
+            </Button>
+          </div>
         }
       />
 

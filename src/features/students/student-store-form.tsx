@@ -21,7 +21,7 @@ const selectClass =
 
 const blank: Omit<Student, "id"> = {
   code: "", firstName: "", lastName: "", gender: "", dob: "", admissionDate: "",
-  courseId: "", batchId: "", centreName: "", hobbies: "", siblingAge: "",
+  courseId: "", batchId: "", monthlyFee: 0, centreName: "", hobbies: "", siblingAge: "",
   schoolName: "", schoolClass: "", address: "", city: "", pincode: "",
   fatherName: "", fatherContact: "", motherName: "", motherContact: "",
   parentName: "", parentMobile: "", parentEmail: "", photo: "", status: "active",
@@ -32,7 +32,9 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
   const students = useCollection("students");
   const courses = useCollection("courses");
   const batches = useCollection("batches");
-  const { member } = getLabels(useProfile().businessType);
+  const profile = useProfile();
+  const { member } = getLabels(profile.businessType);
+  const profileMonthlyFee = profile.monthlyFee || 0;
 
   const existing = studentId ? students.find((s) => s.id === studentId) : undefined;
   const [form, setForm] = useState<Omit<Student, "id">>(existing ? { ...existing } : blank);
@@ -125,6 +127,10 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
                 <option value="">Select batch…</option>
                 {batches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
+            </Field>
+            <Field label="Monthly fee (₹)">
+              <Input type="number" value={form.monthlyFee || ""} onChange={(e) => set("monthlyFee", Number(e.target.value) || 0)}
+                placeholder={`Center default (${profileMonthlyFee})`} />
             </Field>
             <Field label="Hobbies"><Input value={form.hobbies} onChange={(e) => set("hobbies", e.target.value)} /></Field>
             <Field label="Sibling age"><Input value={form.siblingAge} onChange={(e) => set("siblingAge", e.target.value)} /></Field>

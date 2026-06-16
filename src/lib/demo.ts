@@ -38,7 +38,7 @@ const audit = {
 
 export const DEMO_INSTITUTE = {
   id: "11111111-1111-1111-1111-111111111111",
-  name: "Bright Minds Abacus Academy",
+  name: "MMA-Barasat",
 };
 
 export const demoProfile: ProfileRow = {
@@ -166,10 +166,10 @@ export interface DemoTemplate {
 }
 
 export const demoTemplates: DemoTemplate[] = [
-  { id: "t1", name: "Fee Due Reminder", type: "fee_due", channel: "whatsapp", body: "Hi {{parent_name}}, the fee of ₹{{amount}} for {{student_name}} is due on {{due_date}}. — Bright Minds" },
-  { id: "t2", name: "Fee Overdue", type: "fee_overdue", channel: "whatsapp", body: "Reminder: ₹{{amount}} for {{student_name}} is overdue. Please pay at the earliest. — Bright Minds" },
-  { id: "t3", name: "Birthday Wish", type: "birthday", channel: "whatsapp", body: "Happy Birthday {{student_name}}! 🎉 — Bright Minds" },
-  { id: "t4", name: "Holiday Notice", type: "holiday_notice", channel: "whatsapp", body: "Dear parents, the center will remain closed on {{date}} for {{occasion}}. — Bright Minds" },
+  { id: "t1", name: "Fee Due Reminder", type: "fee_due", channel: "whatsapp", body: "Hi {{parent_name}}, the fee of ₹{{amount}} for {{student_name}} is due on {{due_date}}. — MMA-Barasat" },
+  { id: "t2", name: "Fee Overdue", type: "fee_overdue", channel: "whatsapp", body: "Reminder: ₹{{amount}} for {{student_name}} is overdue. Please pay at the earliest. — MMA-Barasat" },
+  { id: "t3", name: "Birthday Wish", type: "birthday", channel: "whatsapp", body: "Happy Birthday {{student_name}}! 🎉 — MMA-Barasat" },
+  { id: "t4", name: "Holiday Notice", type: "holiday_notice", channel: "whatsapp", body: "Dear parents, the center will remain closed on {{date}} for {{occasion}}. — MMA-Barasat" },
 ];
 
 export interface DemoMessageLog {
