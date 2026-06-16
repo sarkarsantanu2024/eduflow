@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquare, Plus, Pencil, Trash2, Send, CalendarClock, Sparkles } from "lucide-react";
+import { MessageSquare, Plus, Pencil, Trash2, Send, CalendarClock, Sparkles, Cake, Palmtree, DoorClosed } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,74 @@ function Schedule() {
   );
 }
 
+/** One-tap WhatsApp broadcasts: birthdays, holidays and same-day closures. */
+function Broadcasts() {
+  const students = useCollection("students");
+  const todayMd = new Date().toISOString().slice(5, 10); // MM-DD
+  const birthdays = students.filter((s) => s.dob && s.dob.slice(5) === todayMd);
+  const count = students.length;
+  const tile = "flex flex-col gap-2 rounded-xl border bg-card p-4";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Send className="size-5 text-primary" /> Quick broadcasts
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-4 sm:grid-cols-3">
+        {/* Birthdays */}
+        <div className={tile}>
+          <span className="flex size-9 items-center justify-center rounded-xl bg-accent text-accent-foreground"><Cake className="size-4" /></span>
+          <h4 className="font-semibold">Birthday wishes</h4>
+          <p className="flex-1 text-sm text-muted-foreground">
+            {birthdays.length
+              ? `${birthdays.map((s) => s.firstName).join(", ")} — birthday today 🎂`
+              : "No birthdays today."}
+          </p>
+          <Button size="sm" className="w-full" disabled={!birthdays.length}
+            onClick={() => toast.success(`Birthday wishes sent to ${birthdays.length} parent${birthdays.length > 1 ? "s" : ""}`, { description: "Demo — preview only" })}>
+            <Cake /> Send wishes
+          </Button>
+        </div>
+
+        {/* Holiday notice */}
+        <div className={tile}>
+          <span className="flex size-9 items-center justify-center rounded-xl bg-accent text-accent-foreground"><Palmtree className="size-4" /></span>
+          <h4 className="font-semibold">Holiday notice</h4>
+          <p className="flex-1 text-sm text-muted-foreground">Announce a holiday to all {count} parents.</p>
+          <FormDialog
+            title="Holiday notice" submitLabel="Send to all parents"
+            successMessage={`Holiday notice sent to ${count} parents on WhatsApp`}
+            description="Sent over WhatsApp to every parent."
+            trigger={<Button size="sm" variant="outline" className="w-full"><Palmtree /> New notice</Button>}
+            fields={[
+              { name: "date", label: "Date", type: "date", required: true },
+              { name: "occasion", label: "Occasion", required: true, placeholder: "Durga Puja" },
+            ]}
+            onSubmit={() => {}}
+          />
+        </div>
+
+        {/* Class closed today */}
+        <div className={tile}>
+          <span className="flex size-9 items-center justify-center rounded-xl bg-accent text-accent-foreground"><DoorClosed className="size-4" /></span>
+          <h4 className="font-semibold">Class closed today</h4>
+          <p className="flex-1 text-sm text-muted-foreground">Cancel today&apos;s class for all {count} parents.</p>
+          <FormDialog
+            title="Class closed today" submitLabel="Send to all parents"
+            successMessage={`Closure notice sent to ${count} parents on WhatsApp`}
+            description="Sent over WhatsApp to every parent."
+            trigger={<Button size="sm" variant="outline" className="w-full"><DoorClosed /> Announce closure</Button>}
+            fields={[{ name: "reason", label: "Reason", required: true, placeholder: "Heavy rain / teacher unavailable" }]}
+            onSubmit={() => {}}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function RemindersView() {
   const hydrated = useHydrated();
   const templates = useCollection("templates");
@@ -74,6 +142,7 @@ export function RemindersView() {
   return (
     <div className="space-y-6">
       <PageHeader title="WhatsApp Reminders" description="Automate fee reminders and notices over WhatsApp." actions={addBtn} />
+      <Broadcasts />
       <Schedule />
 
       {!hydrated ? null : templates.length === 0 ? (

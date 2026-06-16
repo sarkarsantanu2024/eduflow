@@ -1,12 +1,10 @@
 "use client";
 
-import { Download } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import type { DemoTrendPoint, DemoEnrolPoint } from "@/lib/demo";
 import type { DashboardMetrics } from "@/features/dashboard/queries";
 
@@ -43,43 +41,8 @@ export function DashboardAnalytics({
     { label: "Dropouts this month", value: String(droppedThisMonth) },
     { label: "Retention rate", value: `${retention}%` },
   ];
-  function downloadReport() {
-    const rows: string[][] = [
-      ["EduFlow — Dashboard Report"],
-      [],
-      ["Metric", "Value (₹ / count)"],
-      ["Today's Collection", String(metrics.todayCollection / 100)],
-      ["This Month", String(metrics.monthCollection / 100)],
-      ["Pending Fees", String(metrics.pendingAmount / 100)],
-      ["Fee Defaulters", String(metrics.defaultersCount)],
-      ["Total Students", String(metrics.totalStudents)],
-      ["Active Students", String(metrics.activeStudents)],
-      [],
-      ["Month", "Collected (₹)", "Pending (₹)"],
-      ...trend.map((t) => [t.month, String(t.collected), String(t.pending)]),
-    ];
-    const csv = rows
-      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `eduflow-report-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button variant="outline" onClick={downloadReport}>
-          <Download /> Download report
-        </Button>
-      </div>
-
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
           <Card key={s.label}>

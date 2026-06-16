@@ -20,7 +20,7 @@ export default function RegisterPage() {
       <form action={formAction} className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="instituteName">Institute name</Label>
-          <Input id="instituteName" name="instituteName" required placeholder="Bright Minds Academy" />
+          <Input id="instituteName" name="instituteName" required placeholder="MMA-Barasat" />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="fullName">Your name</Label>

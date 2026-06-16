@@ -34,7 +34,7 @@ export function AppShell({
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       {/* Mobile backdrop */}
       {mobileOpen && (
         <div
@@ -58,7 +58,9 @@ export function AppShell({
           planLabel={planLabel}
           onToggleSidebar={toggle}
         />
-        <main className="mx-auto w-full max-w-7xl flex-1 overflow-auto p-4 sm:p-6">{children}</main>
+        <main className="nice-scroll flex-1 overflow-auto">
+          <div className="mx-auto w-full max-w-7xl p-4 sm:p-6">{children}</div>
+        </main>
       </div>
     </div>
   );

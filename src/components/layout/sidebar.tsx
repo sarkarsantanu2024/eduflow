@@ -41,7 +41,7 @@ export function Sidebar({
         </Link>
       </div>
 
-      <nav className="space-y-1 p-3">
+      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
         {items.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;

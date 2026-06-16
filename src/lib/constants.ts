@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, BookOpen, CalendarClock, Receipt,
-  CreditCard, MessageSquare, LifeBuoy, Wallet, type LucideIcon,
+  MessageSquare, LifeBuoy, Wallet, Coins, type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/types/database.types";
 
@@ -22,7 +22,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Courses", href: "/courses", icon: BookOpen, roles: ["institute_admin"], labelKey: "courses" },
   { title: "Batches", href: "/batches", icon: CalendarClock, roles: ["institute_admin", "teacher"], labelKey: "batches" },
   { title: "Fees", href: "/fees", icon: Receipt, roles: ["institute_admin"] },
-  { title: "Payments", href: "/payments", icon: CreditCard, roles: ["institute_admin"] },
+  { title: "Expenses", href: "/expenses", icon: Coins, roles: ["institute_admin"] },
   { title: "WhatsApp Reminders", href: "/reminders", icon: MessageSquare, roles: ["institute_admin"] },
   { title: "Billing & Plans", href: "/billing", icon: Wallet, roles: ["institute_admin"] },
   { title: "Support", href: "/support", icon: LifeBuoy, roles: ["institute_admin", "teacher"] },
