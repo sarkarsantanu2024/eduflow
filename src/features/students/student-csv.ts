@@ -21,7 +21,7 @@ const blankStudent: Omit<Student, "id"> = {
 /** Downloadable template: header row + one example row. */
 export function studentTemplateCsv(): string {
   const example: Record<string, string> = {
-    code: "BM-0001", firstName: "Aarav", lastName: "Sharma", gender: "male",
+    code: "MMA-0001", firstName: "Aarav", lastName: "Sharma", gender: "male",
     dob: "2016-04-12", admissionDate: "2026-01-15", monthlyFee: "500",
     centreName: "Barasat", hobbies: "Drawing", siblingAge: "3",
     schoolName: "DPS", schoolClass: "3", address: "Barasat, Kolkata", city: "Kolkata", pincode: "700124",

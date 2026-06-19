@@ -98,7 +98,7 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Student ID *"><Input value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="BM-0001" /></Field>
+            <Field label="Student ID *"><Input value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="MMA-0001" /></Field>
             <Field label="Status">
               <select className={selectClass} value={form.status} onChange={(e) => set("status", e.target.value as Student["status"])}>
                 <option value="active">Active</option><option value="inactive">Inactive</option>

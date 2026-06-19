@@ -294,7 +294,7 @@ function buildSamples(): Db {
   ];
 
   const mkStudent = (n: number, first: string, last: string, father: string, mobile: string, status: StudentStatus = "active"): Student => ({
-    id: `student_${n}`, code: `BM-${String(n).padStart(4, "0")}`, firstName: first, lastName: last,
+    id: `student_${n}`, code: `MMA-${String(n).padStart(4, "0")}`, firstName: first, lastName: last,
     gender: n % 2 === 0 ? "female" : "male", dob: "2015-04-12", admissionDate: "2026-01-15",
     courseId: "course_1", batchId: "batch_1", monthlyFee: 0, centreName: "Dum Dum", hobbies: "", siblingAge: "",
     schoolName: "", schoolClass: "", address: "Kolkata", city: "Kolkata", pincode: "700030",

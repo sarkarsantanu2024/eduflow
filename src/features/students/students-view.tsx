@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Pencil, Trash2, Users, Sparkles, Upload, Download } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, Sparkles, Upload, Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import { getLabels } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import { downloadFile } from "@/lib/csv";
 import { studentTemplateCsv, parseStudentsCsv } from "@/features/students/student-csv";
+import { extractStudentFromPdf } from "@/features/students/student-pdf";
 
 const statusVariant: Record<StudentStatus, "success" | "secondary" | "warning" | "destructive"> = {
   active: "success", inactive: "secondary", graduated: "warning", dropped: "destructive",
@@ -41,6 +42,42 @@ export function StudentsView() {
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
   const fileRef = useRef<HTMLInputElement>(null);
+  const pdfRef = useRef<HTMLInputElement>(null);
+
+  // Extract a student (fields + photo) from a digital PDF form, then open the
+  // edit page pre-filled for review. (Scanned/flat PDFs need vision OCR.)
+  async function onImportPdf(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const tId = toast.loading("Extracting from PDF…");
+    try {
+      const { data, photo, rawText } = await extractStudentFromPdf(file);
+      if (!rawText.trim() && !photo) {
+        toast.error("Couldn't read this PDF — it may be a scanned image. Use a digital form or Import CSV.", { id: tId });
+        return;
+      }
+      const today = new Date().toISOString().slice(0, 10);
+      const draft: Student = {
+        id: newId("student"),
+        code: `MMA-${String(students.length + 1).padStart(4, "0")}`,
+        firstName: "", lastName: "", gender: "", dob: "", admissionDate: today,
+        courseId: "", batchId: "", monthlyFee: 0, centreName: "", hobbies: "", siblingAge: "",
+        schoolName: "", schoolClass: "", address: "", city: "", pincode: "",
+        fatherName: "", fatherContact: "", motherName: "", motherContact: "",
+        parentName: "", parentMobile: "", parentEmail: "", status: "active",
+        ...data,
+        photo: photo || "",
+      };
+      draft.parentName = draft.fatherName || draft.motherName || "";
+      draft.parentMobile = draft.fatherContact || draft.motherContact || "";
+      addItem<Student>("students", draft);
+      toast.success("Details extracted — review & save", { id: tId, description: file.name });
+      router.push(`/students/${draft.id}/edit`);
+    } catch {
+      toast.error("Could not process the PDF.", { id: tId });
+    }
+  }
 
   function onImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -93,11 +130,15 @@ export function StudentsView() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={onImport} />
+            <input ref={pdfRef} type="file" accept="application/pdf,.pdf" hidden onChange={onImportPdf} />
             <Button variant="outline" onClick={() => downloadFile("eduflow-students-template.csv", studentTemplateCsv())}>
               <Download /> Template
             </Button>
             <Button variant="outline" onClick={() => fileRef.current?.click()}>
               <Upload /> Import CSV
+            </Button>
+            <Button variant="outline" onClick={() => pdfRef.current?.click()}>
+              <FileText /> Import PDF
             </Button>
             <Button asChild>
               <Link href="/students/new"><Plus /> Add {member.toLowerCase()}</Link>

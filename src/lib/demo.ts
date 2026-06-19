@@ -93,7 +93,7 @@ function student(
   return {
     id: `s${i}`,
     institute_id: DEMO_INSTITUTE.id,
-    student_code: `BM-${String(i).padStart(4, "0")}`,
+    student_code: `MMA-${String(i).padStart(4, "0")}`,
     first_name: first,
     last_name: last,
     gender: i % 2 === 0 ? "female" : "male",
