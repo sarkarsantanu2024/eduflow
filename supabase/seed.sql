@@ -55,10 +55,10 @@ insert into public.students
   (institute_id, student_code, first_name, last_name, gender, date_of_birth,
    course_id, primary_batch_id, parent_name, parent_mobile, status)
 values
-  ('11111111-1111-1111-1111-111111111111','BM-0001','Aarav','Sharma','male','2015-04-12',
+  ('11111111-1111-1111-1111-111111111111','MMA-0001','Aarav','Sharma','male','2015-04-12',
    '22222222-0000-0000-0000-000000000001','33333333-0000-0000-0000-000000000001',
    'Rohit Sharma','+919811111111','active'),
-  ('11111111-1111-1111-1111-111111111111','BM-0002','Diya','Gupta','female','2014-09-30',
+  ('11111111-1111-1111-1111-111111111111','MMA-0002','Diya','Gupta','female','2014-09-30',
    '22222222-0000-0000-0000-000000000001','33333333-0000-0000-0000-000000000001',
    'Anil Gupta','+919822222222','active')
 on conflict (institute_id, student_code) do nothing;
