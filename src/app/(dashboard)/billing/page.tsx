@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Check, MessageSquare, Sparkles } from "lucide-react";
+import { Check, MessageSquare, Sparkles, Building2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { ActionButton } from "@/components/action-button";
-import { SUBSCRIPTION_PLANS, CURRENT_PLAN_CODE } from "@/lib/constants";
+import { SUBSCRIPTION_PLANS, CURRENT_PLAN_CODE, FRANCHISE_PLAN } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Billing & Plans" };
@@ -74,6 +74,32 @@ export default function BillingPage() {
           );
         })}
       </div>
+
+      {/* Franchise / multi-center tier */}
+      <Card className="border-primary/30">
+        <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+            <Building2 className="size-6" />
+          </span>
+          <div className="flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-bold">{FRANCHISE_PLAN.name}</h3>
+              <Badge variant="outline">{FRANCHISE_PLAN.priceLabel} pricing</Badge>
+            </div>
+            <p className="mt-0.5 text-sm text-muted-foreground">{FRANCHISE_PLAN.blurb}</p>
+            <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
+              {FRANCHISE_PLAN.features.map((f) => (
+                <li key={f} className="flex items-start gap-2 text-sm">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" /><span>{f}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <ActionButton toastMessage="Thanks!" toastDescription="We'll reach out about franchise pricing.">
+            Talk to us
+          </ActionButton>
+        </CardContent>
+      </Card>
 
       {/* Add-on */}
       <Card>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { getSector } from "@/lib/sectors";
 
 /**
  * Browser-persistent demo database (localStorage).
@@ -105,10 +106,140 @@ export interface Expense {
 
 export const EXPENSE_CATEGORIES = ["Rent", "Salary", "Utilities", "Marketing", "Supplies", "Maintenance", "Other"] as const;
 
+// ── sector-specific records (shown only when the module is enabled) ──
+/** One present/absent mark for a student on a date. */
+export interface Attendance {
+  id: string;
+  date: string; // YYYY-MM-DD
+  batchId: string;
+  studentId: string;
+  studentName: string;
+  parentMobile: string;
+  present: boolean;
+}
+
+/** A level/grade promotion event (abacus levels, dance grades, English modules…). */
+export interface Promotion {
+  id: string;
+  studentId: string;
+  studentName: string;
+  parentMobile: string;
+  fromLevel: string;
+  toLevel: string;
+  score: string; // assessment score / remark
+  date: string;
+  notified: boolean; // WhatsApp congrats sent
+}
+
+/** A student's score in a named test (rank is computed per test). */
+export interface TestScore {
+  id: string;
+  testName: string;
+  date: string;
+  batchId: string;
+  studentId: string;
+  studentName: string;
+  parentMobile: string;
+  score: number;
+  maxScore: number;
+}
+
+/** An issued certificate (computer/abacus/spoken-English completion). */
+export interface Certificate {
+  id: string;
+  serial: string; // verification id (printed + QR)
+  studentId: string;
+  studentName: string;
+  title: string; // e.g. "DCA — Completion" / "Level 5 Abacus"
+  course: string;
+  issueDate: string;
+}
+
+/** External exam-board registration (NIELIT / BSP / IGE / Elementary-Intermediate). */
+export interface ExamReg {
+  id: string;
+  studentId: string;
+  studentName: string;
+  parentMobile: string;
+  board: string;
+  tier: string; // grade / level being registered for
+  examDate: string;
+  fee: number;
+  status: "registered" | "admit_card" | "result_out";
+}
+
+/** A competition / recital / contest participation + result. */
+export interface Performance {
+  id: string;
+  studentId: string;
+  studentName: string;
+  parentMobile: string;
+  event: string;
+  level: string; // school/state/national…
+  result: string; // rank / medal / participated
+  date: string;
+}
+
+/** A kit / costume / material issued to a student. */
+export interface Material {
+  id: string;
+  studentId: string;
+  studentName: string;
+  item: string;
+  amount: number; // charge, 0 if free
+  issued: boolean;
+  date: string;
+}
+
+/** An annual function / exhibition / showcase. */
+export interface InstituteEvent {
+  id: string;
+  title: string;
+  date: string;
+  venue: string;
+  note: string;
+}
+
+/** A teacher / staff member the owner manages, rates and assigns to batches. */
+export interface Teacher {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  specialization: string; // subjects / dance form / software taught
+  batchIds: string[]; // assigned batches
+  rating: number; // 0–5 (owner rating)
+  joinDate: string;
+  salary: number; // monthly, rupees
+  note: string;
+}
+
 /** A student's effective monthly fee — their own override, else the center default. */
 export function effectiveFee(student: { monthlyFee?: number }, centerFee: number): number {
   return student.monthlyFee && student.monthlyFee > 0 ? student.monthlyFee : centerFee;
 }
+
+/** Position of one text field on the certificate (x/y as % of image, size in px). */
+export interface CertPos { x: number; y: number; size: number }
+
+/** Layout for the customer's branded certificate template. */
+export interface CertLayout {
+  name: CertPos;
+  course: CertPos;
+  date: CertPos;
+  serial: CertPos;
+  qr: { x: number; y: number; size: number; show: boolean };
+  color: string;
+}
+
+export const DEFAULT_CERT_LAYOUT: CertLayout = {
+  name: { x: 50, y: 46, size: 40 },
+  course: { x: 50, y: 60, size: 22 },
+  date: { x: 28, y: 86, size: 16 },
+  serial: { x: 72, y: 86, size: 14 },
+  qr: { x: 88, y: 78, size: 90, show: true },
+  color: "#1f2937",
+};
 
 export interface Profile {
   businessName: string;
@@ -129,6 +260,8 @@ export interface Profile {
   instagram: string;
   youtube: string;
   whatsapp: string;
+  certImage: string; // data URL of the customer's blank certificate template
+  certLayout: CertLayout; // where each field is printed on it
 }
 
 export interface Db {
@@ -139,19 +272,34 @@ export interface Db {
   fees: Fee[];
   payments: Payment[];
   expenses: Expense[];
+  attendance: Attendance[];
+  promotions: Promotion[];
+  testScores: TestScore[];
+  certificates: Certificate[];
+  examRegs: ExamReg[];
+  performances: Performance[];
+  materials: Material[];
+  events: InstituteEvent[];
+  teachers: Teacher[];
   profile: Profile;
 }
 
-export type CollectionName = "students" | "courses" | "batches" | "templates" | "fees" | "payments" | "expenses";
+export type CollectionName =
+  | "students" | "courses" | "batches" | "templates" | "fees" | "payments" | "expenses"
+  | "attendance" | "promotions" | "testScores" | "certificates" | "examRegs"
+  | "performances" | "materials" | "events" | "teachers";
 
 const EMPTY_PROFILE: Profile = {
   businessName: "", businessType: "abacus", ownerName: "", email: "", phone: "",
   gst: "", city: "", address: "", monthlyFee: 0, reactivationFee: 0, website: "", upiId: "", qrImage: "", avatar: "",
   facebook: "", instagram: "", youtube: "", whatsapp: "",
+  certImage: "", certLayout: DEFAULT_CERT_LAYOUT,
 };
 
 const EMPTY: Db = {
   students: [], courses: [], batches: [], templates: [], fees: [], payments: [], expenses: [],
+  attendance: [], promotions: [], testScores: [], certificates: [], examRegs: [],
+  performances: [], materials: [], events: [], teachers: [],
   profile: EMPTY_PROFILE,
 };
 
@@ -238,8 +386,10 @@ export function resetDb() {
   write({ ...EMPTY, profile: EMPTY_PROFILE });
 }
 
-export function loadSamples() {
-  write(buildSamples());
+/** Load sector-appropriate sample data. Defaults to the currently selected sector. */
+export function loadSamples(sector?: string) {
+  const resolved = sector ?? read().profile.businessType ?? "abacus";
+  write(buildSamples(resolved));
 }
 
 // ── hooks ───────────────────────────────────────────────────────────
@@ -269,28 +419,20 @@ export function useHydrated(): boolean {
 }
 
 // ── sample data ─────────────────────────────────────────────────────
-function buildSamples(): Db {
-  const levels: [string, string][] = [
-    ["Basic", "Single digit add/subtract chains"],
-    ["Kids 1", "Small numbers, short chains"],
-    ["Kids 2", "Bigger numbers, longer chains"],
-    ["Kids 3", "Two-digit chains with carry"],
-    ["Level 1", "Small Friend concept"],
-    ["Level 2", "Big Friend concept"],
-    ["Level 3", "Mix Friend"],
-    ["Level 4", "Two-digit advanced"],
-    ["Level 5", "Three-digit operations"],
-    ["Level 6", "Multiplication basics"],
-    ["Level 7", "Division basics"],
-    ["Level 8", "Advanced all operations"],
-  ];
-  const courses: Course[] = levels.map(([name, description], i) => ({
-    id: `course_${i + 1}`, name, description,
+function buildSamples(sector = "abacus"): Db {
+  const cfg = getSector(sector);
+
+  // Curriculum + WhatsApp templates come from the sector registry, so the
+  // sample data matches whatever business type is selected.
+  const courses: Course[] = cfg.seedCourses.map((c, i) => ({
+    id: `course_${i + 1}`, name: c.name, description: c.description,
   }));
+  const firstCourse = courses[0]?.id ?? "";
+  const secondCourse = courses[1]?.id ?? firstCourse;
 
   const batches: Batch[] = [
-    { id: "batch_1", name: "Evening Batch A", timing: "5:00 PM - 6:30 PM", days: "Mon, Wed, Fri", capacity: "20", courseId: "course_1" },
-    { id: "batch_2", name: "Morning Batch B", timing: "7:00 AM - 8:30 AM", days: "Tue, Thu, Sat", capacity: "15", courseId: "course_5" },
+    { id: "batch_1", name: "Evening Batch A", timing: "5:00 PM - 6:30 PM", days: "Mon, Wed, Fri", capacity: "20", courseId: firstCourse },
+    { id: "batch_2", name: "Morning Batch B", timing: "7:00 AM - 8:30 AM", days: "Tue, Thu, Sat", capacity: "15", courseId: secondCourse },
   ];
 
   const mkStudent = (n: number, first: string, last: string, father: string, mobile: string, status: StudentStatus = "active"): Student => ({
@@ -319,13 +461,9 @@ function buildSamples(): Db {
   students[4]!.admissionDate = "2026-04-08";
   students[4]!.status = "dropped"; // a dropout, for status/retention metrics
 
-  const templates: Template[] = [
-    { id: "tpl_1", name: "Fee Due Reminder", type: "fee_due", channel: "whatsapp", body: "Hi {{parent_name}}, the fee of ₹{{amount}} for {{student_name}} is due on {{due_date}}. Scan the QR to pay. — MMA-Barasat" },
-    { id: "tpl_2", name: "Fee Overdue", type: "fee_overdue", channel: "whatsapp", body: "Reminder: ₹{{amount}} for {{student_name}} is overdue. Please pay soon. — MMA-Barasat" },
-    { id: "tpl_3", name: "Birthday Wish", type: "birthday", channel: "whatsapp", body: "Happy Birthday {{student_name}}! 🎉 Wishing you a wonderful year ahead. — MMA-Barasat" },
-    { id: "tpl_4", name: "Holiday Notice", type: "holiday_notice", channel: "whatsapp", body: "Dear parents, the center will remain closed on {{date}} for {{occasion}}. — MMA-Barasat" },
-    { id: "tpl_5", name: "Class Closed Today", type: "closed_today", channel: "whatsapp", body: "Dear parents, today's class is cancelled ({{reason}}). Regular classes resume tomorrow. — MMA-Barasat" },
-  ];
+  const templates: Template[] = cfg.seedTemplates.map((t, i) => ({
+    id: `tpl_${i + 1}`, name: t.name, type: t.type, channel: "whatsapp", body: t.body,
+  }));
 
   const mFee = (sid: string, sname: string, period: string, label: string, paid: boolean, due: string, status: Fee["status"]): Fee => ({
     id: `monthly_${sid}_${period}`, studentId: sid, studentName: sname, parentMobile: MOBILE,
@@ -375,10 +513,58 @@ function buildSamples(): Db {
     { id: "exp_8", title: "Printing & stationery", category: "Supplies", amount: 1200, date: "2026-05-15", note: "" },
   ];
 
+  // ── sector-module sample data (only surfaced where the module is on) ──
+  const today = new Date().toISOString().slice(0, 10);
+  const firstLevel = courses[0]?.name ?? "Level 1";
+  const nextLevel = courses[1]?.name ?? "Level 2";
+
+  // Today's attendance for Evening Batch A — Diya absent (drives the alert demo).
+  const attendance: Attendance[] = [
+    { id: "att_1", date: today, batchId: "batch_1", studentId: "student_1", studentName: "Aarav Sharma", parentMobile: MOBILE, present: true },
+    { id: "att_2", date: today, batchId: "batch_1", studentId: "student_2", studentName: "Diya Gupta", parentMobile: MOBILE, present: false },
+    { id: "att_3", date: today, batchId: "batch_1", studentId: "student_3", studentName: "Vivaan Singh", parentMobile: MOBILE, present: true },
+  ];
+
+  const promotions: Promotion[] = [
+    { id: "promo_1", studentId: "student_1", studentName: "Aarav Sharma", parentMobile: MOBILE, fromLevel: firstLevel, toLevel: nextLevel, score: "92%", date: "2026-06-01", notified: true },
+  ];
+
+  const testScores: TestScore[] = [
+    { id: "ts_1", testName: "June Unit Test", date: "2026-06-15", batchId: "batch_1", studentId: "student_1", studentName: "Aarav Sharma", parentMobile: MOBILE, score: 88, maxScore: 100 },
+    { id: "ts_2", testName: "June Unit Test", date: "2026-06-15", batchId: "batch_1", studentId: "student_3", studentName: "Vivaan Singh", parentMobile: MOBILE, score: 76, maxScore: 100 },
+    { id: "ts_3", testName: "June Unit Test", date: "2026-06-15", batchId: "batch_1", studentId: "student_2", studentName: "Diya Gupta", parentMobile: MOBILE, score: 81, maxScore: 100 },
+  ];
+
+  const certificates: Certificate[] = [
+    { id: "cert_1", serial: "EF-2026-0001", studentId: "student_1", studentName: "Aarav Sharma", title: `${firstLevel} — Completion`, course: firstLevel, issueDate: "2026-06-01" },
+  ];
+
+  const examRegs: ExamReg[] = [
+    { id: "exr_1", studentId: "student_3", studentName: "Vivaan Singh", parentMobile: MOBILE, board: "Board Exam", tier: firstLevel, examDate: "2026-07-20", fee: 600, status: "registered" },
+  ];
+
+  const performances: Performance[] = [
+    { id: "perf_1", studentId: "student_1", studentName: "Aarav Sharma", parentMobile: MOBILE, event: "State Championship", level: "State", result: "Rank 2", date: "2026-05-18" },
+  ];
+
+  const materials: Material[] = [
+    { id: "mat_1", studentId: "student_4", studentName: "Ananya Roy", item: "Starter Kit", amount: 1200, issued: true, date: "2026-05-20" },
+  ];
+
+  const events: InstituteEvent[] = [
+    { id: "evt_1", title: "Annual Function 2026", date: "2026-12-15", venue: "Town Hall", note: "All batches perform" },
+  ];
+
+  const teachers: Teacher[] = [
+    { id: "tch_1", name: "Priya Sen", phone: MOBILE, email: "priya@example.com", specialization: cfg.seedCourses[0]?.name ?? "Senior Faculty", batchIds: ["batch_1"], rating: 5, joinDate: "2025-04-01", salary: 18000, note: "Lead teacher" },
+    { id: "tch_2", name: "Amit Ghosh", phone: MOBILE, email: "amit@example.com", specialization: cfg.seedCourses[1]?.name ?? "Faculty", batchIds: ["batch_2"], rating: 4, joinDate: "2025-09-15", salary: 14000, note: "" },
+  ];
+
   return {
     courses, batches, students, templates, fees, payments, expenses,
+    attendance, promotions, testScores, certificates, examRegs, performances, materials, events, teachers,
     profile: {
-      ...EMPTY_PROFILE, businessName: "MMA-Barasat", ownerName: "Santanu Sarkar",
+      ...EMPTY_PROFILE, businessType: sector, businessName: "MMA-Barasat", ownerName: "Santanu Sarkar",
       phone: MOBILE, whatsapp: MOBILE, city: "Kolkata", address: "Barasat, Kolkata",
       monthlyFee: 500, reactivationFee: 700, upiId: "santanusarkar69@ibl",
     },

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
-import { NAV_ITEMS, getLabels } from "@/lib/constants";
+import { NAV_ITEMS, getLabels, getSector } from "@/lib/constants";
 import { useProfile } from "@/lib/store/local-db";
 import type { UserRole } from "@/types/database.types";
 
@@ -22,7 +22,12 @@ export function Sidebar({
   const pathname = usePathname();
   const { businessType } = useProfile();
   const labels = getLabels(businessType);
-  const items = NAV_ITEMS.filter((i) => i.roles.includes(role) || role === "super_admin");
+  const enabledModules = getSector(businessType).modules;
+  const items = NAV_ITEMS.filter(
+    (i) =>
+      (i.roles.includes(role) || role === "super_admin") &&
+      (!i.module || enabledModules.includes(i.module)),
+  );
 
   return (
     <aside

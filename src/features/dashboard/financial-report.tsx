@@ -62,18 +62,19 @@ export function FinancialReport() {
     : profile.monthlyFee;
   const expenseRatio = income ? Math.round((spend / income) * 100) : 0;
 
+  // Deeper written analysis for the report/PDF. The headline profit/loss and the
+  // "collect pending fees" action live in the dashboard's Smart Suggestions, so
+  // they are intentionally not repeated here.
   const tips: string[] = [];
-  if (profit < 0) tips.push(`You are running at a loss of ${formatCurrency(Math.abs(profit) * 100)} this period. Focus on collecting the ${formatCurrency(outstanding * 100)} outstanding and trimming your biggest cost${topCat ? ` (${topCat[0]})` : ""}.`);
-  else tips.push(`Healthy surplus of ${formatCurrency(profit * 100)} this period — consider reinvesting part into marketing to grow admissions.`);
-  if (outstanding > 0) tips.push(`${formatCurrency(outstanding * 100)} is uncollected across ${defaulters} student${defaulters > 1 ? "s" : ""}. Send WhatsApp fee reminders to recover it quickly.`);
-  if (expenseRatio > 60) tips.push(`Expenses are ${expenseRatio}% of income — aim to keep this under 60%. Review ${topCat ? topCat[0].toLowerCase() : "recurring"} costs.`);
+  if (expenseRatio > 60 && income > 0) tips.push(`Expenses are ${expenseRatio}% of income — aim to keep this under 60%. Review ${topCat ? topCat[0].toLowerCase() : "recurring"} costs.`);
   if (topCat) tips.push(`Largest expense is ${topCat[0]} at ${formatCurrency(topCat[1] * 100)}. Negotiate or optimise this line first for the biggest impact.`);
-  if (avgFee > 0) {
-    const need = spend > 0 ? Math.ceil(spend / avgFee) : 0;
+  if (avgFee > 0 && spend > 0) {
+    const need = Math.ceil(spend / avgFee);
     tips.push(`At an average fee of ${formatCurrency(avgFee * 100)}, about ${need} active student${need > 1 ? "s" : ""} cover your expenses. Each new admission adds roughly ${formatCurrency(avgFee * 100)}/month in recurring income.`);
   }
   const mkt = byCat.find(([c]) => c === "Marketing");
   if (mkt) tips.push(`Marketing spend is ${formatCurrency(mkt[1] * 100)} — track how many admissions it produced to measure ROI, and double down on the channel that converts best.`);
+  if (profit >= 0 && tips.length === 0) tips.push(`Healthy finances this period — consider reinvesting part of your ${formatCurrency(profit * 100)} surplus into marketing to grow admissions.`);
 
   return (
     <div className="space-y-4">

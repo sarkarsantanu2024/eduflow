@@ -9,22 +9,35 @@ import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { FormDialog, type FormField } from "@/components/form-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
+import { renderTemplate } from "@/lib/wa-link";
+import { getSector } from "@/lib/sectors";
 import {
-  useCollection, useHydrated, addItem, updateItem, removeItem, loadSamples, newId, type Template,
+  useCollection, useHydrated, useProfile, addItem, updateItem, removeItem, loadSamples, newId, type Template,
 } from "@/lib/store/local-db";
 
-const TYPE_OPTIONS = [
+const BASE_TYPE_OPTIONS = [
   { value: "fee_due", label: "Fee due" },
   { value: "fee_overdue", label: "Fee overdue" },
+  { value: "absent", label: "Absent" },
   { value: "birthday", label: "Birthday" },
   { value: "holiday_notice", label: "Holiday notice" },
   { value: "custom", label: "Custom" },
 ];
 
-function fields(t?: Template): FormField[] {
+/** Merge the base reminder types with any sector-specific ones (promotion, result…). */
+function typeOptions(sectorTypes: string[]): FormField["options"] {
+  const seen = new Set(BASE_TYPE_OPTIONS.map((o) => o.value));
+  const extra = sectorTypes
+    .filter((t) => !seen.has(t))
+    .map((t) => ({ value: t, label: t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) }));
+  return [...BASE_TYPE_OPTIONS, ...extra];
+}
+
+function fields(options: FormField["options"], t?: Template): FormField[] {
   return [
     { name: "name", label: "Template name", required: true, defaultValue: t?.name },
-    { name: "type", label: "Type", type: "select", options: TYPE_OPTIONS, defaultValue: t?.type ?? "fee_due" },
+    { name: "type", label: "Type", type: "select", options, defaultValue: t?.type ?? "fee_due" },
     { name: "body", label: "Message", type: "textarea", required: true, defaultValue: t?.body,
       placeholder: "Hi {{parent_name}}, ₹{{amount}} for {{student_name}} is due on {{due_date}}." },
   ];
@@ -58,8 +71,16 @@ function Schedule() {
 /** One-tap WhatsApp broadcasts: birthdays, holidays and same-day closures. */
 function Broadcasts() {
   const students = useCollection("students");
+  const profile = useProfile();
+  const biz = profile.businessName || "our institute";
   const todayMd = new Date().toISOString().slice(5, 10); // MM-DD
   const birthdays = students.filter((s) => s.dob && s.dob.slice(5) === todayMd);
+  const firstBday = birthdays[0];
+  const bdayMessage = firstBday
+    ? renderTemplate("Happy Birthday {{student_name}}! 🎉 Wishing you a wonderful year ahead. — {{business}}", {
+        student_name: firstBday.firstName, business: biz,
+      })
+    : "";
   const count = students.length;
   const tile = "flex flex-col gap-2 rounded-xl border bg-card p-4";
 
@@ -80,10 +101,16 @@ function Broadcasts() {
               ? `${birthdays.map((s) => s.firstName).join(", ")} — birthday today 🎂`
               : "No birthdays today."}
           </p>
-          <Button size="sm" className="w-full" disabled={!birthdays.length}
-            onClick={() => toast.success(`Birthday wishes sent to ${birthdays.length} parent${birthdays.length > 1 ? "s" : ""}`, { description: "Demo — preview only" })}>
-            <Cake /> Send wishes
-          </Button>
+          {firstBday ? (
+            <SendOnWhatsApp
+              phone={firstBday.parentMobile || firstBday.fatherContact}
+              message={bdayMessage}
+              label="Send wishes"
+              className="w-full"
+            />
+          ) : (
+            <Button size="sm" className="w-full" disabled><Cake /> Send wishes</Button>
+          )}
         </div>
 
         {/* Holiday notice */}
@@ -126,13 +153,20 @@ function Broadcasts() {
 export function RemindersView() {
   const hydrated = useHydrated();
   const templates = useCollection("templates");
+  const profile = useProfile();
+  const sector = getSector(profile.businessType);
+  // Reminder types include this sector's specific ones (promotion, result, certificate…).
+  const options = typeOptions(sector.seedTemplates.map((t) => t.type));
+  // Preview a template by sending it to your own WhatsApp first.
+  const testPhone = profile.whatsapp || profile.phone;
+  const sample = { student_name: "Aarav", parent_name: "Mr. Sharma", amount: "500", due_date: "5 Jul", business: profile.businessName || "our institute", level: "Level 2", score: "92%", test: "June Unit", rank: "1", course: "DCA" };
 
   const addBtn = (
     <FormDialog
       title="New template" submitLabel="Save template" successMessage="Template saved"
       description="Use {{student_name}}, {{amount}}, {{due_date}} variables."
       trigger={<Button><Plus /> New template</Button>}
-      fields={fields()}
+      fields={fields(options)}
       onSubmit={(v) => addItem<Template>("templates", {
         id: newId("tpl"), name: v("name"), type: v("type"), channel: "whatsapp", body: v("body"),
       })}
@@ -141,7 +175,7 @@ export function RemindersView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="WhatsApp Reminders" description="Automate fee reminders and notices over WhatsApp." actions={addBtn} />
+      <PageHeader title="WhatsApp Reminders" description={`Templates tuned for your ${sector.label}. Tap any "Test" to preview on your own WhatsApp.`} actions={addBtn} />
       <Broadcasts />
       <Schedule />
 
@@ -177,7 +211,7 @@ export function RemindersView() {
                   <FormDialog
                     title="Edit template" submitLabel="Save changes" successMessage="Template updated"
                     trigger={<Button size="sm" variant="outline" className="flex-1"><Pencil /> Edit</Button>}
-                    fields={fields(t)}
+                    fields={fields(options, t)}
                     onSubmit={(v) => updateItem<Template>("templates", t.id, { name: v("name"), type: v("type"), body: v("body") })}
                   />
                   <ConfirmDialog
@@ -185,10 +219,13 @@ export function RemindersView() {
                     onConfirm={() => { removeItem("templates", t.id); toast.success("Template deleted"); }}
                     trigger={<Button size="sm" variant="outline" aria-label="Delete"><Trash2 className="text-destructive" /></Button>}
                   />
-                  <Button size="sm" variant="outline" aria-label="Send test"
-                    onClick={() => toast.success("Test message sent", { description: "Connect WhatsApp Cloud API to send for real." })}>
-                    <Send />
-                  </Button>
+                  <SendOnWhatsApp
+                    phone={testPhone}
+                    message={renderTemplate(t.body, sample)}
+                    label="Test"
+                    variant="outline"
+                    size="sm"
+                  />
                 </div>
               </CardContent>
             </Card>

@@ -1,0 +1,8 @@
+import type { Metadata } from "next";
+import { CertificatesView } from "@/features/certificates/certificates-view";
+
+export const metadata: Metadata = { title: "Certificates" };
+
+export default function CertificatesPage() {
+  return <CertificatesView />;
+}
