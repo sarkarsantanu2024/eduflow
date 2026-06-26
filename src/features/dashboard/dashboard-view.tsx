@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { DashboardAnalytics } from "@/features/dashboard/components/dashboard-analytics";
 import { FinancialReport } from "@/features/dashboard/financial-report";
+import { SmartSuggestions } from "@/features/dashboard/smart-suggestions";
 import { useDb, useHydrated, loadSamples } from "@/lib/store/local-db";
 import { formatCurrency } from "@/lib/utils";
 
@@ -104,6 +105,8 @@ export function DashboardView() {
               );
             })}
           </div>
+
+          <SmartSuggestions />
 
           <FinancialReport />
 

@@ -1,16 +1,21 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Camera, QrCode, Database } from "lucide-react";
+import { Camera, QrCode, Database, Check } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
+} from "@/components/ui/dialog";
 import { PageHeader } from "@/components/page-header";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { BUSINESS_TYPES } from "@/lib/constants";
+import { getSector, ALL_MODULES, MODULE_LABELS } from "@/lib/sectors";
 import {
   useProfile, useHydrated, setProfile, loadSamples, resetDb, type Profile,
 } from "@/lib/store/local-db";
@@ -24,8 +29,18 @@ export default function ProfilePage() {
   const avatarRef = useRef<HTMLInputElement>(null);
   const qrRef = useRef<HTMLInputElement>(null);
 
+  // When the owner changes business type we offer to load that sector's
+  // sample data so courses, templates and modules all match immediately.
+  const [pendingSector, setPendingSector] = useState<string | null>(null);
+  const pendingLabel = BUSINESS_TYPES.find((b) => b.value === pendingSector)?.label ?? "";
+
   function set<K extends keyof Profile>(key: K, value: Profile[K]) {
     setProfile({ [key]: value } as Partial<Profile>);
+  }
+
+  function changeBusinessType(value: string) {
+    set("businessType", value); // menus + labels switch instantly
+    setPendingSector(value); // ask whether to also load matching sample data
   }
 
   function upload(key: "avatar" | "qrImage") {
@@ -83,7 +98,7 @@ export default function ProfilePage() {
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <Field label="Business name"><Input value={profile.businessName} onChange={(e) => set("businessName", e.target.value)} /></Field>
             <Field label="Business type">
-              <select className={selectClass} value={profile.businessType} onChange={(e) => set("businessType", e.target.value)}>
+              <select className={selectClass} value={profile.businessType} onChange={(e) => changeBusinessType(e.target.value)}>
                 {BUSINESS_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </Field>
@@ -99,6 +114,26 @@ export default function ProfilePage() {
             <Field label="Address" full>
               <textarea className={`${selectClass} min-h-20 py-2`} value={profile.address} onChange={(e) => set("address", e.target.value)} />
             </Field>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Modules for your business</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">{getSector(profile.businessType).tagline}</p>
+            <div className="flex flex-wrap gap-2">
+              {ALL_MODULES.map((m) => {
+                const on = getSector(profile.businessType).modules.includes(m);
+                return (
+                  <Badge key={m} variant={on ? "success" : "outline"} className={on ? "gap-1" : "gap-1 opacity-50"}>
+                    {on && <Check className="size-3" />}{MODULE_LABELS[m]}
+                  </Badge>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Change the business type above to switch which menus appear. Then load matching sample data below.
+            </p>
           </CardContent>
         </Card>
 
@@ -161,6 +196,29 @@ export default function ProfilePage() {
       <div className="sticky bottom-0 z-10 -mx-4 flex justify-end border-t bg-background/85 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
         <Button onClick={() => toast.success("Profile saved")}>Save changes</Button>
       </div>
+
+      {/* Offer to load matching sample data after a business-type switch. */}
+      <Dialog open={!!pendingSector} onOpenChange={(o) => { if (!o) setPendingSector(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Load {pendingLabel} sample data?</DialogTitle>
+            <DialogDescription>
+              Your menus and labels already switched to {pendingLabel}. Load matching demo
+              data (courses, batches, students, WhatsApp templates) to see it end-to-end?
+              This replaces the current demo data.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Keep current data</Button></DialogClose>
+            <Button onClick={() => {
+              if (pendingSector) { loadSamples(pendingSector); toast.success(`${pendingLabel} sample data loaded`); }
+              setPendingSector(null);
+            }}>
+              Load {pendingLabel} data
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

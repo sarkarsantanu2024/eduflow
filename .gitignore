@@ -34,3 +34,9 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# sales collateral (decks/scripts generated locally, not committed)
+/sales/
+
+# local logs / scratch files
+*.log

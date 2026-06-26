@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
+import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
 import { formatCurrency } from "@/lib/utils";
 
 /** Real, scannable UPI intent QR (renders the amount + payee) via a free QR service. */
@@ -70,14 +71,20 @@ export function WaQrDialog({
         )}
 
         <p className="rounded-lg border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          Demo mode — previewed, not actually sent. Connect the WhatsApp Cloud API to deliver for real.
+          Tap <span className="font-medium text-foreground">Send on WhatsApp</span> — it opens WhatsApp
+          with this message ready, you just press send. Free, from your own number.
         </p>
 
-        <DialogFooter>
+        <DialogFooter className="flex-col gap-2 sm:flex-row">
           <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
-          <Button onClick={() => { onAction(); setOpen(false); }}>
+          <Button variant="outline" onClick={() => { onAction(); setOpen(false); }}>
             {actionIcon} {actionLabel}
           </Button>
+          <SendOnWhatsApp
+            phone={mobile}
+            message={message}
+            onSent={() => { onAction(); setOpen(false); }}
+          />
         </DialogFooter>
       </DialogContent>
     </Dialog>
