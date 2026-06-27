@@ -52,8 +52,8 @@ export function ImportColumnsDialog({
           {headers.map((h) => (
             <div key={h} className="grid grid-cols-[1fr_1.2fr] items-center gap-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{h}</p>
-                <p className="truncate text-xs text-muted-foreground">e.g. {sample(h)}</p>
+                <p className="truncate text-sm font-medium" title={h}>{h}</p>
+                <p className="truncate text-xs text-muted-foreground" title={sample(h)}>e.g. {sample(h)}</p>
               </div>
               <select
                 className={selectClass}

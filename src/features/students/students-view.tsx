@@ -51,6 +51,7 @@ export function StudentsView() {
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
   const [importData, setImportData] = useState<{ headers: string[]; rows: Record<string, unknown>[] } | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
   const pdfRef = useRef<HTMLInputElement>(null);
 
@@ -173,6 +174,25 @@ export function StudentsView() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const rows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  const allOnPageSelected = rows.length > 0 && rows.every((s) => selected.has(s.id));
+  function toggleRow(id: string) {
+    setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+  function toggleAllOnPage() {
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (allOnPageSelected) rows.forEach((s) => n.delete(s.id));
+      else rows.forEach((s) => n.add(s.id));
+      return n;
+    });
+  }
+  function deleteSelected() {
+    const count = selected.size;
+    selected.forEach((id) => removeItem("students", id));
+    setSelected(new Set());
+    toast.success(`Deleted ${count} ${members.toLowerCase()}`);
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -243,10 +263,29 @@ export function StudentsView() {
             </select>
           </div>
 
+          {selected.size > 0 && (
+            <div className="flex items-center justify-between rounded-lg border bg-accent/40 px-3 py-2 text-sm">
+              <span className="font-medium">{selected.size} selected</span>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
+                <ConfirmDialog
+                  title={`Delete ${selected.size} ${members.toLowerCase()}?`}
+                  description="This permanently removes the selected records. This cannot be undone."
+                  confirmLabel="Delete selected" destructive
+                  onConfirm={deleteSelected}
+                  trigger={<Button size="sm" variant="destructive"><Trash2 /> Delete selected</Button>}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <input type="checkbox" aria-label="Select all on page" checked={allOnPageSelected} onChange={toggleAllOnPage} className="size-4 cursor-pointer align-middle" />
+                  </TableHead>
                   <TableHead>Student ID</TableHead><TableHead>Name</TableHead>
                   <TableHead>Level</TableHead>
                   <TableHead>Parent</TableHead><TableHead>Mobile</TableHead>
@@ -257,10 +296,13 @@ export function StudentsView() {
               </TableHeader>
               <TableBody>
                 {rows.length === 0 && (
-                  <TableRow><TableCell colSpan={9} className="py-10 text-center text-muted-foreground">No matches.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="py-10 text-center text-muted-foreground">No matches.</TableCell></TableRow>
                 )}
                 {rows.map((s) => (
-                  <TableRow key={s.id}>
+                  <TableRow key={s.id} data-selected={selected.has(s.id) || undefined} className="data-[selected]:bg-accent/30">
+                    <TableCell>
+                      <input type="checkbox" aria-label={`Select ${s.firstName}`} checked={selected.has(s.id)} onChange={() => toggleRow(s.id)} className="size-4 cursor-pointer align-middle" />
+                    </TableCell>
                     <TableCell className="font-mono text-xs">{s.code}</TableCell>
                     <TableCell className="font-medium">
                       <Link href={`/students/${s.id}/edit`} className="hover:underline">
@@ -268,9 +310,9 @@ export function StudentsView() {
                       </Link>
                     </TableCell>
                     <TableCell>{courseName(s.courseId)}</TableCell>
-                    <TableCell>{s.parentName || s.fatherName || "—"}</TableCell>
+                    <TableCell className="max-w-[12rem] truncate" title={s.parentName || s.fatherName || ""}>{s.parentName || s.fatherName || "—"}</TableCell>
                     <TableCell>{s.parentMobile || s.fatherContact || "—"}</TableCell>
-                    <TableCell className="max-w-[16rem] truncate">{s.address || "—"}</TableCell>
+                    <TableCell className="max-w-[16rem] truncate" title={s.address || ""}>{s.address || "—"}</TableCell>
                     <TableCell>{s.admissionDate ? formatDate(s.admissionDate) : "—"}</TableCell>
                     <TableCell><Badge variant={statusVariant[s.status]}>{s.status}</Badge></TableCell>
                     <TableCell className="text-right">
