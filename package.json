@@ -10,13 +10,15 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
-    "db:types": "supabase gen types typescript --linked > src/types/database.types.ts",
-    "db:reset": "supabase db reset",
-    "db:push": "supabase db push",
-    "db:seed": "supabase db reset --no-confirm"
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx --env-file=.env.local src/lib/db/seed.ts"
   },
   "dependencies": {
+    "@auth/drizzle-adapter": "^1.11.2",
     "@hookform/resolvers": "^3.9.1",
+    "@neondatabase/serverless": "^1.1.0",
     "@radix-ui/react-avatar": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.4",
     "@radix-ui/react-dropdown-menu": "^2.1.4",
@@ -30,12 +32,16 @@
     "@tanstack/react-query": "^5.62.7",
     "@tanstack/react-query-devtools": "^5.62.7",
     "@types/qrcode": "^1.5.6",
+    "@vercel/blob": "^2.5.0",
+    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "drizzle-orm": "^0.45.2",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.468.0",
     "next": "^15.5.19",
+    "next-auth": "^5.0.0-beta.31",
     "pdfjs-dist": "^4.8.69",
     "qrcode": "^1.5.4",
     "razorpay": "^2.9.5",
@@ -49,10 +55,13 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "autoprefixer": "^10.5.0",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.5.19",
     "postcss": "^8.4.49",
@@ -61,6 +70,7 @@
     "prettier-plugin-tailwindcss": "^0.6.9",
     "supabase": "^2.2.1",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.22.4",
     "typescript": "^5.7.2"
   },
   "engines": {

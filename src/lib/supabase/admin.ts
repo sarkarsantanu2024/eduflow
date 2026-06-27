@@ -15,6 +15,9 @@ import type { Database } from "@/types/database.types";
  */
 export function createAdminClient() {
   const { SUPABASE_SERVICE_ROLE_KEY } = getServerEnv();
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Supabase is no longer configured — this code path is being migrated to Neon.");
+  }
   return createSupabaseClient<Database>(
     clientEnv.NEXT_PUBLIC_SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY,
