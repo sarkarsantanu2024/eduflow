@@ -25,7 +25,17 @@ export const clientEnv = clientSchema.parse({
 });
 
 const serverSchema = z.object({
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  // Neon Postgres connection string (pooled URL recommended for serverless).
+  DATABASE_URL: z.string().min(1, "DATABASE_URL (Neon connection string) is required"),
+  // Auth.js session secret — generate with `npx auth secret`.
+  AUTH_SECRET: z.string().min(1, "AUTH_SECRET is required"),
+  // Google OAuth (optional — login shows the Google button when both are set).
+  AUTH_GOOGLE_ID: z.string().optional(),
+  AUTH_GOOGLE_SECRET: z.string().optional(),
+  // Vercel Blob read/write token for file uploads.
+  BLOB_READ_WRITE_TOKEN: z.string().optional(),
+  // Legacy Supabase key — optional now that the backend runs on Neon.
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),

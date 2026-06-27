@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Camera, QrCode, Database, Check } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,30 +10,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
-} from "@/components/ui/dialog";
 import { PageHeader } from "@/components/page-header";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { BUSINESS_TYPES } from "@/lib/constants";
 import { getSector, ALL_MODULES, MODULE_LABELS } from "@/lib/sectors";
 import {
-  useProfile, useHydrated, setProfile, loadSamples, resetDb, type Profile,
+  useProfile, useHydrated, setProfile, resetDb, type Profile,
 } from "@/lib/store/local-db";
+import { saveProfile as persistProfile } from "@/features/data/actions";
+import { ChangePasswordCard } from "@/features/auth/change-password-card";
 
 const selectClass =
   "h-10 w-full rounded-lg border border-input bg-card px-3 text-sm shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
 
 export default function ProfilePage() {
+  const router = useRouter();
   const hydrated = useHydrated();
   const profile = useProfile();
   const avatarRef = useRef<HTMLInputElement>(null);
   const qrRef = useRef<HTMLInputElement>(null);
-
-  // When the owner changes business type we offer to load that sector's
-  // sample data so courses, templates and modules all match immediately.
-  const [pendingSector, setPendingSector] = useState<string | null>(null);
-  const pendingLabel = BUSINESS_TYPES.find((b) => b.value === pendingSector)?.label ?? "";
+  const [saving, setSaving] = useState(false);
 
   function set<K extends keyof Profile>(key: K, value: Profile[K]) {
     setProfile({ [key]: value } as Partial<Profile>);
@@ -40,7 +37,20 @@ export default function ProfilePage() {
 
   function changeBusinessType(value: string) {
     set("businessType", value); // menus + labels switch instantly
-    setPendingSector(value); // ask whether to also load matching sample data
+  }
+
+  // Persist the whole profile, then refresh so the onboarding gate clears.
+  async function save() {
+    setSaving(true);
+    try {
+      await persistProfile(profile);
+      toast.success("Profile saved");
+      router.refresh();
+    } catch {
+      toast.error("Could not save — please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function upload(key: "avatar" | "qrImage") {
@@ -59,7 +69,7 @@ export default function ProfilePage() {
     <div className="space-y-6">
       <PageHeader
         title="My Profile"
-        description="Your account, business, payment and contact details. Saved in your browser automatically."
+        description="Your account, business, payment and contact details — saved securely to your account."
       />
 
       {/* Identity */}
@@ -132,7 +142,7 @@ export default function ProfilePage() {
               })}
             </div>
             <p className="text-xs text-muted-foreground">
-              Change the business type above to switch which menus appear. Then load matching sample data below.
+              Change the business type above to switch which menus and terminology appear for your center.
             </p>
           </CardContent>
         </Card>
@@ -174,16 +184,16 @@ export default function ProfilePage() {
             <Database className="size-6" />
           </span>
           <div className="flex-1">
-            <h3 className="font-bold">Demo data</h3>
+            <h3 className="font-bold">Center data</h3>
             <p className="text-sm text-muted-foreground">
-              All data is saved in this browser. Load sample data to explore, or clear everything to start fresh.
+              All your records are saved securely to your account. Clearing removes every student, fee,
+              payment and other record for this center — your login and profile stay.
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => { loadSamples(); toast.success("Sample data loaded"); }}>Load sample data</Button>
             <ConfirmDialog
               title="Clear all data?"
-              description="This removes all students, courses, fees, payments and profile data from this browser."
+              description="This permanently removes all students, courses, fees, payments and other records for this center."
               confirmLabel="Clear everything" destructive
               onConfirm={() => { resetDb(); toast.success("All data cleared"); }}
               trigger={<Button variant="outline">Clear all data</Button>}
@@ -192,33 +202,13 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
+      {/* Account security */}
+      <ChangePasswordCard />
+
       {/* Sticky save bar — stays visible while scrolling the long form */}
       <div className="sticky bottom-0 z-10 -mx-4 flex justify-end border-t bg-background/85 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
-        <Button onClick={() => toast.success("Profile saved")}>Save changes</Button>
+        <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
       </div>
-
-      {/* Offer to load matching sample data after a business-type switch. */}
-      <Dialog open={!!pendingSector} onOpenChange={(o) => { if (!o) setPendingSector(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Load {pendingLabel} sample data?</DialogTitle>
-            <DialogDescription>
-              Your menus and labels already switched to {pendingLabel}. Load matching demo
-              data (courses, batches, students, WhatsApp templates) to see it end-to-end?
-              This replaces the current demo data.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Keep current data</Button></DialogClose>
-            <Button onClick={() => {
-              if (pendingSector) { loadSamples(pendingSector); toast.success(`${pendingLabel} sample data loaded`); }
-              setPendingSector(null);
-            }}>
-              Load {pendingLabel} data
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

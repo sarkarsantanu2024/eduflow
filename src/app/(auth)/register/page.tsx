@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BUSINESS_TYPES } from "@/lib/constants";
 import { signUp, type AuthState } from "@/features/auth/actions";
 
 export default function RegisterPage() {
@@ -19,8 +20,20 @@ export default function RegisterPage() {
 
       <form action={formAction} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="instituteName">Institute name</Label>
-          <Input id="instituteName" name="instituteName" required placeholder="MMA-Barasat" />
+          <Label htmlFor="instituteName">Center name</Label>
+          <Input id="instituteName" name="instituteName" required placeholder="e.g. Bright Abacus Academy" />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="type">Center type</Label>
+          <select
+            id="type" name="type" required defaultValue=""
+            className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+          >
+            <option value="" disabled>Select your center type…</option>
+            {BUSINESS_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="fullName">Your name</Label>

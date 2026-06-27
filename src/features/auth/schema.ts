@@ -5,9 +5,14 @@ export const loginSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+export const INSTITUTE_TYPES = [
+  "abacus", "coaching", "computer", "dance", "drawing", "spoken_english", "tuition", "other",
+] as const;
+
 export const registerSchema = z
   .object({
     instituteName: z.string().min(2, "Institute name is required"),
+    type: z.enum(INSTITUTE_TYPES, { errorMap: () => ({ message: "Pick your center type" }) }),
     fullName: z.string().min(2, "Your name is required"),
     email: z.string().email("Enter a valid email"),
     password: z.string().min(8, "Use at least 8 characters"),
