@@ -22,7 +22,7 @@ import {
 import { getLabels } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import { downloadFile } from "@/lib/csv";
-import { studentTemplateCsv, parseStudentsCsv } from "@/features/students/student-csv";
+import { studentTemplateCsv, parseStudentsFromSheet } from "@/features/students/student-csv";
 import { extractStudentFromPdf } from "@/features/students/student-pdf";
 
 const statusVariant: Record<StudentStatus, "success" | "secondary" | "warning" | "destructive"> = {
@@ -36,7 +36,8 @@ export function StudentsView() {
   const hydrated = useHydrated();
   const students = useCollection("students");
   const courses = useCollection("courses");
-  const { member, members } = getLabels(useProfile().businessType);
+  const profile = useProfile();
+  const { member, members } = getLabels(profile.businessType);
   const courseName = (id: string) => courses.find((c) => c.id === id)?.name ?? "—";
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
@@ -79,37 +80,39 @@ export function StudentsView() {
     }
   }
 
-  function onImport(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-importing the same file
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const records = parseStudentsCsv(String(reader.result));
-        if (!records.length) { toast.error("No rows found — check the template format"); return; }
-        // Skip blanks (junk) and duplicate student IDs (existing or repeated in-file).
-        const existing = new Set(students.map((s) => s.code.trim().toLowerCase()).filter(Boolean));
-        const seen = new Set<string>();
-        let imported = 0, skipped = 0;
-        records.forEach((r) => {
-          const code = r.code.trim().toLowerCase();
-          if (!r.firstName.trim() && !code) { skipped += 1; return; }
-          if (code && (existing.has(code) || seen.has(code))) { skipped += 1; return; }
-          if (code) seen.add(code);
-          addItem<Student>("students", { id: newId("student"), ...r });
-          imported += 1;
-        });
-        toast.success(
-          `Imported ${imported} ${members.toLowerCase()}`,
-          skipped ? { description: `Skipped ${skipped} duplicate/blank row${skipped > 1 ? "s" : ""}` } : undefined,
-        );
-        setPage(1);
-      } catch {
-        toast.error("Could not read the file. Use the CSV template.");
+    const tId = toast.loading("Reading file…");
+    try {
+      // Read CSV or Excel uniformly via SheetJS (lazy-loaded).
+      const XLSX = await import("xlsx");
+      const wb = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
+      const ws = wb.SheetNames[0] ? wb.Sheets[wb.SheetNames[0]] : undefined;
+      if (!ws) { toast.error("The file has no sheets.", { id: tId }); return; }
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "" });
+      const records = parseStudentsFromSheet(rows);
+      if (!records.length) {
+        toast.error("No student rows found. The file needs at least a Name or Phone column.", { id: tId });
+        return;
       }
-    };
-    reader.readAsText(file);
+      // Auto-generate a code per student (prefix from the center name), keep all rows.
+      const prefix = (profile.businessName || "STU").split(/\s+/).map((w) => w[0]).join("").replace(/[^A-Za-z]/g, "").slice(0, 4).toUpperCase() || "STU";
+      let n = students.length;
+      records.forEach((r) => {
+        n += 1;
+        const code = r.code || `${prefix}-${String(n).padStart(4, "0")}`;
+        addItem<Student>("students", { id: newId("student"), ...r, code });
+      });
+      toast.success(`Imported ${records.length} ${members.toLowerCase()}`, {
+        id: tId,
+        description: "Missing details (level, fees, photo…) can be filled in per student.",
+      });
+      setPage(1);
+    } catch {
+      toast.error("Could not read the file. Use a .csv or .xlsx file.", { id: tId });
+    }
   }
 
   const filtered = students.filter((s) => {
@@ -129,13 +132,13 @@ export function StudentsView() {
         description="Manage admissions, search and export."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={onImport} />
+            <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden onChange={onImport} />
             <input ref={pdfRef} type="file" accept="application/pdf,.pdf" hidden onChange={onImportPdf} />
             <Button variant="outline" onClick={() => downloadFile("eduflow-students-template.csv", studentTemplateCsv())}>
               <Download /> Template
             </Button>
             <Button variant="outline" onClick={() => fileRef.current?.click()}>
-              <Upload /> Import CSV
+              <Upload /> Import Excel/CSV
             </Button>
             <Button variant="outline" onClick={() => pdfRef.current?.click()}>
               <FileText /> Import PDF
