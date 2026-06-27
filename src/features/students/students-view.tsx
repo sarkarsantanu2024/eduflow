@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Pencil, Trash2, Users, Upload, Download, FileText } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, Upload, Download, FileText, CopyX } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import {
 import { getLabels } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import { downloadFile } from "@/lib/csv";
-import { studentTemplateCsv } from "@/features/students/student-csv";
+import { studentTemplateCsv, type ImportedStudent } from "@/features/students/student-csv";
 import { ImportColumnsDialog } from "@/features/students/import-dialog";
 import { extractStudentFromPdf } from "@/features/students/student-pdf";
 
@@ -31,6 +31,13 @@ const statusVariant: Record<StudentStatus, "success" | "secondary" | "warning" |
 };
 
 const PAGE_SIZE = 10;
+
+/** Dedupe key: same name + mobile = same student. */
+function studentKey(s: { firstName?: string; lastName?: string; parentMobile?: string; fatherContact?: string }): string {
+  const name = `${s.firstName ?? ""} ${s.lastName ?? ""}`.trim().toLowerCase().replace(/\s+/g, " ");
+  const phone = (s.parentMobile || s.fatherContact || "").replace(/\D/g, "");
+  return `${name}|${phone}`;
+}
 
 export function StudentsView() {
   const router = useRouter();
@@ -103,20 +110,57 @@ export function StudentsView() {
     }
   }
 
-  // Apply the confirmed mapping: auto-code each student and import all rows.
-  function importStudents(records: Omit<Student, "id">[]) {
+  // Apply the confirmed mapping: resolve Level→course, auto-code, skip duplicates.
+  function importStudents(records: ImportedStudent[]) {
     const prefix = (profile.businessName || "STU").split(/\s+/).map((w) => w[0]).join("").replace(/[^A-Za-z]/g, "").slice(0, 4).toUpperCase() || "STU";
+    const courseByName = new Map(courses.map((c) => [c.name.trim().toLowerCase(), c.id]));
+    // A student is a duplicate if the same name + mobile already exists.
+    const existingKeys = new Set(students.map(studentKey));
+    const seen = new Set<string>();
     let n = students.length;
+    let imported = 0, skipped = 0;
+
     records.forEach((r) => {
+      const { _course, ...rest } = r;
+      const key = studentKey(rest);
+      if (existingKeys.has(key) || seen.has(key)) { skipped += 1; return; }
+      seen.add(key);
+
+      let courseId = rest.courseId;
+      const levelName = (_course ?? "").trim();
+      if (levelName) {
+        const k = levelName.toLowerCase();
+        let cid = courseByName.get(k);
+        if (!cid) { cid = newId("course"); addItem("courses", { id: cid, name: levelName, description: "" }); courseByName.set(k, cid); }
+        courseId = cid;
+      }
       n += 1;
-      const code = r.code || `${prefix}-${String(n).padStart(4, "0")}`;
-      addItem<Student>("students", { id: newId("student"), ...r, code });
+      const code = rest.code || `${prefix}-${String(n).padStart(4, "0")}`;
+      addItem<Student>("students", { id: newId("student"), ...rest, courseId, code });
+      imported += 1;
     });
+
     setImportData(null);
     setPage(1);
-    toast.success(`Imported ${records.length} ${members.toLowerCase()}`, {
-      description: "Missing details (level, fees, photo…) can be filled in per student.",
+    if (imported === 0) {
+      toast.warning(`No new students added — all ${skipped} already exist.`);
+    } else {
+      toast.success(`Imported ${imported} ${members.toLowerCase()}`, {
+        description: skipped ? `Skipped ${skipped} duplicate${skipped > 1 ? "s" : ""} already in your list.` : "Levels added as courses; fill other details per student.",
+      });
+    }
+  }
+
+  // Remove duplicate students (same name + mobile), keeping the first of each.
+  function removeDuplicates() {
+    const seen = new Set<string>();
+    let removed = 0;
+    students.forEach((s) => {
+      const key = studentKey(s);
+      if (seen.has(key)) { removeItem("students", s.id); removed += 1; }
+      else seen.add(key);
     });
+    toast[removed ? "success" : "info"](removed ? `Removed ${removed} duplicate${removed > 1 ? "s" : ""}` : "No duplicates found");
   }
 
   const filtered = students.filter((s) => {
@@ -147,6 +191,13 @@ export function StudentsView() {
             <Button variant="outline" onClick={() => pdfRef.current?.click()}>
               <FileText /> Import PDF
             </Button>
+            <ConfirmDialog
+              title="Remove duplicate students?"
+              description="Removes students that share the same name and mobile number, keeping one of each. This cannot be undone."
+              confirmLabel="Remove duplicates" destructive
+              onConfirm={removeDuplicates}
+              trigger={<Button variant="outline"><CopyX /> Remove duplicates</Button>}
+            />
             <Button asChild>
               <Link href="/students/new"><Plus /> Add {member.toLowerCase()}</Link>
             </Button>
