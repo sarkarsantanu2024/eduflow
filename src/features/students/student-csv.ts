@@ -93,43 +93,83 @@ function toIsoDate(v: unknown): string {
   return "";
 }
 
+/** Target fields the user can map a spreadsheet column to (for the Map-columns UI). */
+export const STUDENT_IMPORT_FIELDS: { value: string; label: string }[] = [
+  { value: "ignore", label: "— Ignore —" },
+  { value: "name", label: "Full name (split into first/last)" },
+  { value: "firstName", label: "First name" },
+  { value: "lastName", label: "Last name" },
+  { value: "code", label: "Student ID / code" },
+  { value: "fatherName", label: "Father / guardian name" },
+  { value: "fatherContact", label: "Phone / mobile" },
+  { value: "motherName", label: "Mother name" },
+  { value: "motherContact", label: "Mother phone" },
+  { value: "parentEmail", label: "Email" },
+  { value: "address", label: "Address" },
+  { value: "city", label: "City" },
+  { value: "pincode", label: "Pincode" },
+  { value: "dob", label: "Date of birth" },
+  { value: "admissionDate", label: "Date of joining / admission" },
+  { value: "schoolClass", label: "Class / level / grade" },
+  { value: "schoolName", label: "School name" },
+  { value: "gender", label: "Gender" },
+  { value: "monthlyFee", label: "Monthly fee" },
+  { value: "status", label: "Status" },
+];
+
+/** Auto-detect a header → field mapping (used as the default in the Map-columns UI). */
+export function autoDetectMapping(headers: string[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const h of headers) map[h] = fieldForHeader(h) ?? "ignore";
+  return map;
+}
+
+/** Apply one mapped value onto a record. Returns true if it was the full-name column. */
+function applyField(rec: Omit<Student, "id">, field: string, value: unknown, raw: string): boolean {
+  if (field === "name") return true; // caller captures the full name
+  if (field === "monthlyFee") rec.monthlyFee = Number(raw.replace(/[^\d.]/g, "")) || 0;
+  else if (field === "gender") {
+    const g = norm(raw);
+    rec.gender = g.startsWith("m") ? "male" : g.startsWith("f") ? "female" : VALID_GENDER.has(raw as Student["gender"]) ? (raw as Student["gender"]) : "";
+  } else if (field === "status") rec.status = VALID_STATUS.has(raw as Student["status"]) ? (raw as Student["status"]) : "active";
+  else if (field === "dob" || field === "admissionDate") (rec as unknown as Record<string, string>)[field] = toIsoDate(value);
+  else (rec as unknown as Record<string, string>)[field] = raw;
+  return false;
+}
+
 /**
- * Flexible importer: takes rows-of-objects (header → value) from any CSV/Excel
- * file and maps whatever columns it recognises. Unknown columns are ignored;
- * missing fields are left blank for the owner to fill in later. No blocking.
+ * Build student records from rows-of-objects using an explicit header → field
+ * mapping. Unknown/ignored columns are skipped; missing fields stay blank. No
+ * blocking — any row with a name or phone is kept.
  */
-export function parseStudentsFromSheet(rows: Record<string, unknown>[]): Omit<Student, "id">[] {
+export function buildStudents(rows: Record<string, unknown>[], mapping: Record<string, string>): Omit<Student, "id">[] {
   return rows
     .map((row) => {
       const rec: Omit<Student, "id"> = { ...blankStudent };
       let fullName = "";
       for (const [header, value] of Object.entries(row)) {
-        const field = fieldForHeader(header);
-        if (!field) continue;
+        const field = mapping[header];
+        if (!field || field === "ignore") continue;
         const raw = value == null ? "" : String(value).trim();
         if (!raw) continue;
-        if (field === "name") fullName = raw;
-        else if (field === "monthlyFee") rec.monthlyFee = Number(raw.replace(/[^\d.]/g, "")) || 0;
-        else if (field === "gender") {
-          const g = norm(raw);
-          rec.gender = g.startsWith("m") ? "male" : g.startsWith("f") ? "female" : VALID_GENDER.has(raw as Student["gender"]) ? (raw as Student["gender"]) : "";
-        } else if (field === "status") rec.status = VALID_STATUS.has(raw as Student["status"]) ? (raw as Student["status"]) : "active";
-        else if (field === "dob" || field === "admissionDate") (rec as unknown as Record<string, string>)[field] = toIsoDate(value);
-        else (rec as unknown as Record<string, string>)[field] = raw;
+        if (applyField(rec, field, value, raw)) fullName = raw;
       }
-      // Split a single "Name" column into first/last.
       if (fullName && !rec.firstName) {
         const parts = fullName.split(/\s+/);
         rec.firstName = parts.shift() ?? "";
         rec.lastName = parts.join(" ");
       }
-      // Keep parent fields in sync (used by fees + WhatsApp).
       rec.parentName = rec.parentName || rec.fatherName || rec.motherName;
       rec.parentMobile = rec.parentMobile || rec.fatherContact || rec.motherContact;
       return rec;
     })
-    // Keep any row with at least a name or a phone — fill the rest later.
     .filter((r) => r.firstName || r.fatherName || r.parentMobile);
+}
+
+/** Flexible importer with auto-detected mapping (used when the user skips manual mapping). */
+export function parseStudentsFromSheet(rows: Record<string, unknown>[]): Omit<Student, "id">[] {
+  const headers = rows.length ? Object.keys(rows[0]!) : [];
+  return buildStudents(rows, autoDetectMapping(headers));
 }
 
 /** Parse a CSV file's text into student records (without ids). */
