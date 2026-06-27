@@ -13,14 +13,17 @@ import * as schema from "./schema";
  * The whole app talks to the database through this `db` export. To move to
  * Supabase (or any Postgres) later, only DATABASE_URL changes.
  */
+// Fall back to a syntactically-valid placeholder when DATABASE_URL is absent,
+// so `next build` (which imports this module) never crashes on missing env.
+// The Neon HTTP driver is lazy — it only connects on the first query, by which
+// point the real DATABASE_URL is present at runtime. A missing var only fails
+// an actual query, with a clear message, not the build.
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
-  throw new Error(
-    "DATABASE_URL is not set. Add your Neon connection string to .env.local",
-  );
+  console.warn("[db] DATABASE_URL is not set — database queries will fail until it is configured.");
 }
 
-const sql = neon(connectionString);
+const sql = neon(connectionString || "postgresql://placeholder:placeholder@localhost/placeholder");
 
 export const db = drizzle(sql, { schema, casing: "snake_case" });
 

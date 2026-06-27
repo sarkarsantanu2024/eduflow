@@ -42,13 +42,13 @@ function PasswordForm() {
   const [show, setShow] = useState(false);
 
   return (
-    <form action={formAction} className="space-y-4" autoComplete="off">
+    <form action={formAction} className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="email">Email</Label>
         <div className="relative">
           <Mail className="input-icon" />
           <Input
-            id="email" name="email" type="email" autoComplete="off" required
+            id="email" name="email" type="email" autoComplete="username" required
             placeholder="you@institute.com" className="pl-9"
           />
         </div>
@@ -65,7 +65,7 @@ function PasswordForm() {
           <Lock className="input-icon" />
           <Input
             id="password" name="password" type={show ? "text" : "password"}
-            autoComplete="off" required placeholder="••••••••" className="px-9"
+            autoComplete="current-password" required placeholder="••••••••" className="px-9"
           />
           <button
             type="button" onClick={() => setShow((v) => !v)}
