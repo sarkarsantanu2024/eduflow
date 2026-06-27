@@ -18,6 +18,7 @@ import {
   useProfile, useHydrated, setProfile, resetDb, type Profile,
 } from "@/lib/store/local-db";
 import { saveProfile as persistProfile } from "@/features/data/actions";
+import { uploadImageFile } from "@/features/uploads/upload-client";
 import { ChangePasswordCard } from "@/features/auth/change-password-card";
 
 const selectClass =
@@ -54,12 +55,18 @@ export default function ProfilePage() {
   }
 
   function upload(key: "avatar" | "qrImage") {
-    return (e: React.ChangeEvent<HTMLInputElement>) => {
+    return async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
+      e.target.value = "";
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => set(key, String(reader.result));
-      reader.readAsDataURL(file);
+      const tId = toast.loading("Uploading…");
+      try {
+        const url = await uploadImageFile(file);
+        set(key, url);
+        toast.success("Image uploaded", { id: tId });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Upload failed", { id: tId });
+      }
     };
   }
 

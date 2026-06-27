@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useProfile, setProfile, DEFAULT_CERT_LAYOUT, type CertLayout, type Certificate } from "@/lib/store/local-db";
+import { uploadImageFile } from "@/features/uploads/upload-client";
 import { renderCertCanvas } from "@/features/certificates/cert-pdf";
 
 const PREVIEW_CERT: Certificate = {
@@ -38,12 +39,18 @@ export function CertDesigner() {
     return () => { alive = false; };
   }, [profile]);
 
-  function upload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function upload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => { setProfile({ certImage: String(reader.result) }); toast.success("Certificate template uploaded"); };
-    reader.readAsDataURL(file);
+    const tId = toast.loading("Uploading template…");
+    try {
+      const url = await uploadImageFile(file);
+      setProfile({ certImage: url });
+      toast.success("Certificate template uploaded", { id: tId });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed", { id: tId });
+    }
   }
 
   function patch(next: Partial<CertLayout>) {
