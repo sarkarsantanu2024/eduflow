@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ClipboardCheck, Check, X, Sparkles, Save, MessageCircle } from "lucide-react";
+import { ClipboardCheck, Check, X, Save, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { EmptyState } from "@/components/empty-state";
 import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
 import { renderTemplate } from "@/lib/wa-link";
 import {
-  useCollection, useHydrated, useProfile, addItem, updateItem, loadSamples, newId,
+  useCollection, useHydrated, useProfile, addItem, updateItem, newId,
   type Attendance, type Student,
 } from "@/lib/store/local-db";
 
@@ -103,12 +103,7 @@ export function AttendanceView() {
         <PageHeader title="Attendance" description="Mark present/absent and alert parents on WhatsApp." />
         <EmptyState
           icon={ClipboardCheck} title="No students yet"
-          description="Load sample data to try the attendance roster and WhatsApp absent-alerts."
-          action={
-            <Button variant="outline" onClick={() => { loadSamples(); toast.success("Sample data loaded"); }}>
-              <Sparkles /> Load sample data
-            </Button>
-          }
+          description="Add students first, then mark attendance and send WhatsApp absent-alerts."
         />
       </div>
     );

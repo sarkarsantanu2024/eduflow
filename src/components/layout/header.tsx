@@ -8,8 +8,8 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { signOut } from "@/features/auth/actions";
-import { DEMO_MODE, demoNotifications } from "@/lib/demo";
 import { useProfile } from "@/lib/store/local-db";
+import { useNotifications } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 import type { ProfileRow } from "@/types/database.types";
 
@@ -33,7 +33,7 @@ export function Header({
     ? displayName.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()
     : "U";
 
-  const notifications = DEMO_MODE ? demoNotifications : [];
+  const notifications = useNotifications();
   const unread = notifications.filter((n) => n.unread).length;
 
   return (

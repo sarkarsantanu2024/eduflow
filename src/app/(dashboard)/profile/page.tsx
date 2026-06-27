@@ -193,8 +193,8 @@ export default function ProfilePage() {
           <div className="flex gap-2">
             <ConfirmDialog
               title="Clear all data?"
-              description="This permanently removes all students, courses, fees, payments and other records for this center."
-              confirmLabel="Clear everything" destructive
+              description="This permanently removes ALL students, courses, fees, payments and other records for this center. This cannot be undone. Your login and profile stay."
+              confirmLabel="Clear everything" destructive confirmText="DELETE"
               onConfirm={() => { resetDb(); toast.success("All data cleared"); }}
               trigger={<Button variant="outline">Clear all data</Button>}
             />

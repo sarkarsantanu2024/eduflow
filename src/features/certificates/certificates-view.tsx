@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Award, Sparkles, Printer, QrCode, Download, Settings2 } from "lucide-react";
+import { Award, Printer, QrCode, Download, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { FormDialog } from "@/components/form-dialog";
 import { CertDesigner } from "@/features/certificates/cert-designer";
 import { downloadCertPdf, downloadAllCertsPdf } from "@/features/certificates/cert-pdf";
 import {
-  useCollection, useHydrated, useProfile, addItem, loadSamples, newId, type Certificate,
+  useCollection, useHydrated, useProfile, addItem, newId, type Certificate,
 } from "@/lib/store/local-db";
 import { formatDate } from "@/lib/utils";
 
@@ -141,9 +141,6 @@ export function CertificatesView() {
           action={
             <div className="flex gap-2">
               {addBtn}
-              <Button variant="outline" onClick={() => { loadSamples(); toast.success("Sample data loaded"); }}>
-                <Sparkles /> Load sample data
-              </Button>
             </div>
           }
         />

@@ -1,6 +1,6 @@
 "use client";
 
-import { PartyPopper, Sparkles, MapPin, CalendarDays } from "lucide-react";
+import { PartyPopper, MapPin, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
 import { renderTemplate } from "@/lib/wa-link";
 import {
-  useCollection, useHydrated, useProfile, addItem, removeItem, loadSamples, newId, type InstituteEvent,
+  useCollection, useHydrated, useProfile, addItem, removeItem, newId, type InstituteEvent,
 } from "@/lib/store/local-db";
 import { formatDate } from "@/lib/utils";
 
@@ -52,9 +52,6 @@ export function EventsView() {
           action={
             <div className="flex gap-2">
               {addBtn}
-              <Button variant="outline" onClick={() => { loadSamples(); toast.success("Sample data loaded"); }}>
-                <Sparkles /> Load sample data
-              </Button>
             </div>
           }
         />

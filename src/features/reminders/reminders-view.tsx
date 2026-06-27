@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquare, Plus, Pencil, Trash2, Send, CalendarClock, Sparkles, Cake, Palmtree, DoorClosed } from "lucide-react";
+import { MessageSquare, Plus, Pencil, Trash2, Send, CalendarClock, Cake, Palmtree, DoorClosed } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
 import { renderTemplate } from "@/lib/wa-link";
 import { getSector } from "@/lib/sectors";
 import {
-  useCollection, useHydrated, useProfile, addItem, updateItem, removeItem, loadSamples, newId, type Template,
+  useCollection, useHydrated, useProfile, addItem, updateItem, removeItem, newId, type Template,
 } from "@/lib/store/local-db";
 
 const BASE_TYPE_OPTIONS = [
@@ -173,6 +173,18 @@ export function RemindersView() {
     />
   );
 
+  // Load this sector's ready-made WhatsApp templates (real, not sample data).
+  function addStarterTemplates() {
+    const existing = new Set(templates.map((t) => t.name.toLowerCase()));
+    let added = 0;
+    sector.seedTemplates.forEach((t) => {
+      if (existing.has(t.name.toLowerCase())) return;
+      addItem<Template>("templates", { id: newId("tpl"), name: t.name, type: t.type, channel: "whatsapp", body: t.body });
+      added += 1;
+    });
+    toast.success(added ? `Added ${added} ${sector.label} templates` : "All starter templates already added");
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title="WhatsApp Reminders" description={`Templates tuned for your ${sector.label}. Tap any "Test" to preview on your own WhatsApp.`} actions={addBtn} />
@@ -182,13 +194,13 @@ export function RemindersView() {
       {!hydrated ? null : templates.length === 0 ? (
         <EmptyState
           icon={MessageSquare} title="No templates yet"
-          description="Create reusable WhatsApp templates, or load sample data."
+          description={`Add ready-made WhatsApp templates for your ${sector.label}, or create your own.`}
           action={
             <div className="flex gap-2">
-              {addBtn}
-              <Button variant="outline" onClick={() => { loadSamples(); toast.success("Sample data loaded"); }}>
-                <Sparkles /> Load sample data
+              <Button variant="outline" onClick={addStarterTemplates}>
+                <MessageSquare /> Add {sector.label} templates
               </Button>
+              {addBtn}
             </div>
           }
         />

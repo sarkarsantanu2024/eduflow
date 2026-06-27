@@ -1,6 +1,6 @@
 "use client";
 
-import { TrendingUp, Sparkles } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
 import { renderTemplate } from "@/lib/wa-link";
 import { getLabels } from "@/lib/constants";
 import {
-  useCollection, useHydrated, useProfile, addItem, updateItem, loadSamples, newId, type Promotion,
+  useCollection, useHydrated, useProfile, addItem, updateItem, newId, type Promotion,
 } from "@/lib/store/local-db";
 import { formatDate } from "@/lib/utils";
 
@@ -65,9 +65,6 @@ export function PromotionsView() {
           action={
             <div className="flex gap-2">
               {addBtn}
-              <Button variant="outline" onClick={() => { loadSamples(); toast.success("Sample data loaded"); }}>
-                <Sparkles /> Load sample data
-              </Button>
             </div>
           }
         />

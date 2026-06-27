@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Trophy, Sparkles, Medal } from "lucide-react";
+import { Trophy, Medal } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { renderTemplate } from "@/lib/wa-link";
 import {
-  useCollection, useHydrated, useProfile, addItem, loadSamples, newId, type TestScore,
+  useCollection, useHydrated, useProfile, addItem, newId, type TestScore,
 } from "@/lib/store/local-db";
 
 const BODY = "{{student_name}} scored {{score}}/{{max}} in the {{test}} test — Rank {{rank}} in the batch. — {{business}}";
@@ -77,9 +77,6 @@ export function TestsView() {
           action={
             <div className="flex gap-2">
               {addBtn}
-              <Button variant="outline" onClick={() => { loadSamples(); toast.success("Sample data loaded"); }}>
-                <Sparkles /> Load sample data
-              </Button>
             </div>
           }
         />

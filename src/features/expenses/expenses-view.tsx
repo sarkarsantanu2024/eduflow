@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Coins, Plus, Trash2, Sparkles } from "lucide-react";
+import { Coins, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
 import {
-  useCollection, useHydrated, addItem, removeItem, loadSamples, newId,
+  useCollection, useHydrated, addItem, removeItem, newId,
   EXPENSE_CATEGORIES, type Expense,
 } from "@/lib/store/local-db";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -78,9 +78,6 @@ export function ExpensesView() {
           action={
             <div className="flex gap-2">
               {addBtn}
-              <Button variant="outline" onClick={() => { loadSamples(); toast.success("Sample data loaded"); }}>
-                <Sparkles /> Load sample data
-              </Button>
             </div>
           }
         />
