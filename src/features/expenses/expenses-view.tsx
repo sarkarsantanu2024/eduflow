@@ -145,7 +145,7 @@ export function ExpensesView() {
                 <TableCell>{formatDate(e.date)}</TableCell>
                 <TableCell className="font-medium">{e.title}</TableCell>
                 <TableCell><Badge variant="outline">{e.category}</Badge></TableCell>
-                <TableCell className="max-w-[14rem] truncate text-muted-foreground">{e.note || "—"}</TableCell>
+                <TableCell className="max-w-[14rem] truncate text-muted-foreground" title={e.note || ""}>{e.note || "—"}</TableCell>
                 <TableCell className="font-semibold">{formatCurrency(e.amount * 100)}</TableCell>
                 <TableCell className="text-right">
                   <ConfirmDialog
