@@ -1,6 +1,6 @@
 "use client";
 
-import { Trophy, Sparkles } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { FormDialog } from "@/components/form-dialog";
 import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
 import { renderTemplate } from "@/lib/wa-link";
 import {
-  useCollection, useHydrated, useProfile, addItem, loadSamples, newId, type Performance,
+  useCollection, useHydrated, useProfile, addItem, newId, type Performance,
 } from "@/lib/store/local-db";
 import { formatDate } from "@/lib/utils";
 
@@ -61,9 +61,6 @@ export function PerformanceView() {
           action={
             <div className="flex gap-2">
               {addBtn}
-              <Button variant="outline" onClick={() => { loadSamples(); toast.success("Sample data loaded"); }}>
-                <Sparkles /> Load sample data
-              </Button>
             </div>
           }
         />

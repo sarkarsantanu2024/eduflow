@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  Receipt, Sparkles, CalendarPlus, MessageCircle, IndianRupee, BadgeCheck, FileText, CheckCircle2, CalendarClock, History, ListTree, RotateCcw,
+  Receipt, CalendarPlus, MessageCircle, IndianRupee, BadgeCheck, FileText, CheckCircle2, CalendarClock, History, ListTree, RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +21,7 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
 import {
-  useCollection, useHydrated, useProfile, addItem, updateItem, loadSamples, newId, effectiveFee,
+  useCollection, useHydrated, useProfile, addItem, updateItem, newId, effectiveFee,
   type Fee, type Payment, type Student,
 } from "@/lib/store/local-db";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -149,12 +149,7 @@ export function FeesView() {
         <PageHeader title="Fees" description="Collect monthly fees, raise other charges, and track payments." />
         <EmptyState
           icon={Receipt} title="No data yet"
-          description="Load sample data to explore the full fee, WhatsApp QR and payment flow."
-          action={
-            <Button variant="outline" onClick={() => { loadSamples(); toast.success("Sample data loaded"); }}>
-              <Sparkles /> Load sample data
-            </Button>
-          }
+          description="Add students and they'll appear here for monthly fees and charges."
         />
       </div>
     );

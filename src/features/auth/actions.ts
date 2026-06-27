@@ -7,9 +7,10 @@ import { eq } from "drizzle-orm";
 import { signIn as nextSignIn, signOut as nextSignOut } from "@/auth";
 // (Google OAuth removed — email/password only.)
 import { db } from "@/lib/db";
-import { institutes, users, subscriptions, subscriptionPlans } from "@/lib/db/schema";
+import { institutes, users, subscriptions, subscriptionPlans, templates } from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { getCurrentProfile } from "@/lib/auth";
+import { getSector } from "@/lib/sectors";
 import { loginSchema, registerSchema, forgotPasswordSchema } from "./schema";
 
 export type AuthState = { error?: string } | undefined;
@@ -70,6 +71,12 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
       trialEndsAt: periodEnd,
     });
   }
+
+  // Seed ready-to-use WhatsApp templates tuned to this sector.
+  const sectorTemplates = getSector(type).seedTemplates.map((t) => ({
+    instituteId: institute.id, name: t.name, type: t.type, channel: "whatsapp", body: t.body,
+  }));
+  if (sectorTemplates.length) await db.insert(templates).values(sectorTemplates);
 
   await db.insert(users).values({
     email: lowerEmail,

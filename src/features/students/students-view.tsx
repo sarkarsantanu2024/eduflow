@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Pencil, Trash2, Users, Sparkles, Upload, Download, FileText } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, Upload, Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
 import {
-  useCollection, useHydrated, useProfile, addItem, removeItem, loadSamples, newId,
+  useCollection, useHydrated, useProfile, addItem, removeItem, newId,
   type StudentStatus, type Student,
 } from "@/lib/store/local-db";
 import { getLabels } from "@/lib/constants";
@@ -153,13 +153,10 @@ export function StudentsView() {
         <EmptyState
           icon={Users}
           title={`No ${members.toLowerCase()} yet`}
-          description={`Add your first ${member.toLowerCase()}, or load sample data to explore the app.`}
+          description={`Add your first ${member.toLowerCase()}.`}
           action={
             <div className="flex gap-2">
               <Button asChild><Link href="/students/new"><Plus /> Add {member.toLowerCase()}</Link></Button>
-              <Button variant="outline" onClick={() => { loadSamples(); toast.success("Sample data loaded"); }}>
-                <Sparkles /> Load sample data
-              </Button>
             </div>
           }
         />

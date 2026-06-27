@@ -1,6 +1,6 @@
 "use client";
 
-import { GraduationCap, Plus, Pencil, Trash2, Sparkles, Star, Phone } from "lucide-react";
+import { GraduationCap, Plus, Pencil, Trash2, Star, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/empty-state";
 import { FormDialog, type FormField } from "@/components/form-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
-  useCollection, useHydrated, addItem, updateItem, removeItem, loadSamples, newId, type Teacher,
+  useCollection, useHydrated, addItem, updateItem, removeItem, newId, type Teacher,
 } from "@/lib/store/local-db";
 import { formatCurrency } from "@/lib/utils";
 
@@ -62,9 +62,6 @@ export function TeachersView() {
           action={
             <div className="flex gap-2">
               {addBtn}
-              <Button variant="outline" onClick={() => { loadSamples(); toast.success("Sample data loaded"); }}>
-                <Sparkles /> Load sample data
-              </Button>
             </div>
           }
         />

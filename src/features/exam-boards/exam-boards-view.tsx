@@ -1,6 +1,6 @@
 "use client";
 
-import { ScrollText, Sparkles } from "lucide-react";
+import { ScrollText } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import {
 import { renderTemplate } from "@/lib/wa-link";
 import { getSector } from "@/lib/constants";
 import {
-  useCollection, useHydrated, useProfile, addItem, updateItem, loadSamples, newId, type ExamReg,
+  useCollection, useHydrated, useProfile, addItem, updateItem, newId, type ExamReg,
 } from "@/lib/store/local-db";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
@@ -85,9 +85,6 @@ export function ExamBoardsView() {
           action={
             <div className="flex gap-2">
               {addBtn}
-              <Button variant="outline" onClick={() => { loadSamples(); toast.success("Sample data loaded"); }}>
-                <Sparkles /> Load sample data
-              </Button>
             </div>
           }
         />

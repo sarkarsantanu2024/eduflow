@@ -1,7 +1,6 @@
 "use client";
 
-import { Users, UserCheck, IndianRupee, AlertTriangle, TrendingUp, Clock, Sparkles } from "lucide-react";
-import { toast } from "sonner";
+import { Users, UserCheck, IndianRupee, AlertTriangle, TrendingUp, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
@@ -9,7 +8,7 @@ import { EmptyState } from "@/components/empty-state";
 import { DashboardAnalytics } from "@/features/dashboard/components/dashboard-analytics";
 import { FinancialReport } from "@/features/dashboard/financial-report";
 import { SmartSuggestions } from "@/features/dashboard/smart-suggestions";
-import { useDb, useHydrated, loadSamples } from "@/lib/store/local-db";
+import { useDb, useHydrated } from "@/lib/store/local-db";
 import { formatCurrency } from "@/lib/utils";
 
 export function DashboardView() {
@@ -76,14 +75,9 @@ export function DashboardView() {
 
       {isEmpty ? (
         <EmptyState
-          icon={Sparkles}
+          icon={Users}
           title="Your dashboard is empty"
-          description="Add students and fees to see live metrics, or load sample data to explore."
-          action={
-            <Button variant="outline" onClick={() => { loadSamples(); toast.success("Sample data loaded"); }}>
-              <Sparkles /> Load sample data
-            </Button>
-          }
+          description="Add your first students and fees to start seeing live metrics."
         />
       ) : (
         <>
