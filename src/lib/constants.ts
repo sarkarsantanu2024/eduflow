@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, BookOpen, CalendarClock, Receipt,
   MessageSquare, LifeBuoy, Wallet, Coins, ClipboardCheck, TrendingUp,
-  Trophy, Award, ScrollText, Package, PartyPopper, GraduationCap, type LucideIcon,
+  Trophy, Award, ScrollText, Package, PartyPopper, GraduationCap, KeyRound, type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/types/database.types";
 import type { ModuleKey } from "@/lib/sectors";
@@ -40,6 +40,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Courses", href: "/courses", icon: BookOpen, roles: ["institute_admin"], labelKey: "courses" },
   { title: "Batches", href: "/batches", icon: CalendarClock, roles: ["institute_admin", "teacher"], labelKey: "batches" },
   { title: "Teachers", href: "/teachers", icon: GraduationCap, roles: ["institute_admin"] },
+  { title: "Staff Logins", href: "/staff", icon: KeyRound, roles: ["institute_admin"] },
   { title: "Attendance", href: "/attendance", icon: ClipboardCheck, roles: ["institute_admin", "teacher"], module: "attendance" },
   { title: "Promotions", href: "/promotions", icon: TrendingUp, roles: ["institute_admin", "teacher"], module: "promotions" },
   { title: "Tests & Ranks", href: "/tests", icon: Trophy, roles: ["institute_admin", "teacher"], module: "tests" },

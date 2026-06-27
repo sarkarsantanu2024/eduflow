@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/page-header";
 import {
   useCollection, useProfile, addItem, updateItem, newId, type Student,
 } from "@/lib/store/local-db";
+import { uploadImageFile } from "@/features/uploads/upload-client";
 import { getLabels } from "@/lib/constants";
 
 const selectClass =
@@ -43,12 +44,18 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => set("photo", String(reader.result));
-    reader.readAsDataURL(file);
+    const tId = toast.loading("Uploading photo…");
+    try {
+      const url = await uploadImageFile(file);
+      set("photo", url);
+      toast.success("Photo uploaded", { id: tId });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed", { id: tId });
+    }
   }
 
   function submit(e: React.FormEvent) {
