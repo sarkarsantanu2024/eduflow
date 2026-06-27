@@ -24,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </form>
       </header>
       <main className="nice-scroll flex-1 overflow-auto">
-        <div className="mx-auto w-full max-w-7xl p-4 sm:p-6">{children}</div>
+        <div className="w-full px-3 py-4 sm:px-5 sm:py-5">{children}</div>
       </main>
     </div>
   );
