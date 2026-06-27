@@ -22,7 +22,8 @@ import {
 import { getLabels } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import { downloadFile } from "@/lib/csv";
-import { studentTemplateCsv, parseStudentsFromSheet } from "@/features/students/student-csv";
+import { studentTemplateCsv } from "@/features/students/student-csv";
+import { ImportColumnsDialog } from "@/features/students/import-dialog";
 import { extractStudentFromPdf } from "@/features/students/student-pdf";
 
 const statusVariant: Record<StudentStatus, "success" | "secondary" | "warning" | "destructive"> = {
@@ -42,6 +43,7 @@ export function StudentsView() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
+  const [importData, setImportData] = useState<{ headers: string[]; rows: Record<string, unknown>[] } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const pdfRef = useRef<HTMLInputElement>(null);
 
@@ -80,39 +82,41 @@ export function StudentsView() {
     }
   }
 
+  // Read the file, then open the column-mapping step.
   async function onImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-importing the same file
     if (!file) return;
     const tId = toast.loading("Reading file…");
     try {
-      // Read CSV or Excel uniformly via SheetJS (lazy-loaded).
       const XLSX = await import("xlsx");
       const wb = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
       const ws = wb.SheetNames[0] ? wb.Sheets[wb.SheetNames[0]] : undefined;
       if (!ws) { toast.error("The file has no sheets.", { id: tId }); return; }
       const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "" });
-      const records = parseStudentsFromSheet(rows);
-      if (!records.length) {
-        toast.error("No student rows found. The file needs at least a Name or Phone column.", { id: tId });
-        return;
-      }
-      // Auto-generate a code per student (prefix from the center name), keep all rows.
-      const prefix = (profile.businessName || "STU").split(/\s+/).map((w) => w[0]).join("").replace(/[^A-Za-z]/g, "").slice(0, 4).toUpperCase() || "STU";
-      let n = students.length;
-      records.forEach((r) => {
-        n += 1;
-        const code = r.code || `${prefix}-${String(n).padStart(4, "0")}`;
-        addItem<Student>("students", { id: newId("student"), ...r, code });
-      });
-      toast.success(`Imported ${records.length} ${members.toLowerCase()}`, {
-        id: tId,
-        description: "Missing details (level, fees, photo…) can be filled in per student.",
-      });
-      setPage(1);
+      const headers = rows.length ? Object.keys(rows[0]!) : [];
+      if (!headers.length) { toast.error("The file looks empty.", { id: tId }); return; }
+      toast.dismiss(tId);
+      setImportData({ headers, rows });
     } catch {
       toast.error("Could not read the file. Use a .csv or .xlsx file.", { id: tId });
     }
+  }
+
+  // Apply the confirmed mapping: auto-code each student and import all rows.
+  function importStudents(records: Omit<Student, "id">[]) {
+    const prefix = (profile.businessName || "STU").split(/\s+/).map((w) => w[0]).join("").replace(/[^A-Za-z]/g, "").slice(0, 4).toUpperCase() || "STU";
+    let n = students.length;
+    records.forEach((r) => {
+      n += 1;
+      const code = r.code || `${prefix}-${String(n).padStart(4, "0")}`;
+      addItem<Student>("students", { id: newId("student"), ...r, code });
+    });
+    setImportData(null);
+    setPage(1);
+    toast.success(`Imported ${records.length} ${members.toLowerCase()}`, {
+      description: "Missing details (level, fees, photo…) can be filled in per student.",
+    });
   }
 
   const filtered = students.filter((s) => {
@@ -149,6 +153,15 @@ export function StudentsView() {
           </div>
         }
       />
+
+      {importData && (
+        <ImportColumnsDialog
+          headers={importData.headers}
+          rows={importData.rows}
+          onCancel={() => setImportData(null)}
+          onConfirm={importStudents}
+        />
+      )}
 
       {!hydrated ? (
         <p className="py-10 text-center text-sm text-muted-foreground">Loading…</p>
