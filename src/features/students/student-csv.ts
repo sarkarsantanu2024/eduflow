@@ -56,7 +56,8 @@ const HEADER_SYNONYMS: Record<string, string[]> = {
   pincode: ["pincode", "pin", "zip", "postalcode", "zipcode"],
   dob: ["dob", "dateofbirth", "birthdate", "birthday"],
   admissionDate: ["dateofjoining", "admissiondate", "doj", "joiningdate", "joindate", "admission", "enroldate", "enrollmentdate", "dateofadmission"],
-  schoolClass: ["schoolclass", "class", "standard", "grade", "level", "course", "batch"],
+  course: ["level", "course", "batch", "program", "stage", "module"],
+  schoolClass: ["schoolclass", "class", "standard", "grade"],
   schoolName: ["schoolname", "school"],
   gender: ["gender", "sex"],
   monthlyFee: ["monthlyfee", "fee", "fees", "monthlyfees"],
@@ -110,7 +111,8 @@ export const STUDENT_IMPORT_FIELDS: { value: string; label: string }[] = [
   { value: "pincode", label: "Pincode" },
   { value: "dob", label: "Date of birth" },
   { value: "admissionDate", label: "Date of joining / admission" },
-  { value: "schoolClass", label: "Class / level / grade" },
+  { value: "course", label: "Course / Level (auto-created)" },
+  { value: "schoolClass", label: "School class / grade" },
   { value: "schoolName", label: "School name" },
   { value: "gender", label: "Gender" },
   { value: "monthlyFee", label: "Monthly fee" },
@@ -124,10 +126,14 @@ export function autoDetectMapping(headers: string[]): Record<string, string> {
   return map;
 }
 
+/** A parsed student plus the raw course/level text (resolved to a courseId on import). */
+export type ImportedStudent = Omit<Student, "id"> & { _course?: string };
+
 /** Apply one mapped value onto a record. Returns true if it was the full-name column. */
-function applyField(rec: Omit<Student, "id">, field: string, value: unknown, raw: string): boolean {
+function applyField(rec: ImportedStudent, field: string, value: unknown, raw: string): boolean {
   if (field === "name") return true; // caller captures the full name
-  if (field === "monthlyFee") rec.monthlyFee = Number(raw.replace(/[^\d.]/g, "")) || 0;
+  if (field === "course") rec._course = raw; // resolved to a courseId at import time
+  else if (field === "monthlyFee") rec.monthlyFee = Number(raw.replace(/[^\d.]/g, "")) || 0;
   else if (field === "gender") {
     const g = norm(raw);
     rec.gender = g.startsWith("m") ? "male" : g.startsWith("f") ? "female" : VALID_GENDER.has(raw as Student["gender"]) ? (raw as Student["gender"]) : "";
@@ -142,10 +148,10 @@ function applyField(rec: Omit<Student, "id">, field: string, value: unknown, raw
  * mapping. Unknown/ignored columns are skipped; missing fields stay blank. No
  * blocking — any row with a name or phone is kept.
  */
-export function buildStudents(rows: Record<string, unknown>[], mapping: Record<string, string>): Omit<Student, "id">[] {
+export function buildStudents(rows: Record<string, unknown>[], mapping: Record<string, string>): ImportedStudent[] {
   return rows
     .map((row) => {
-      const rec: Omit<Student, "id"> = { ...blankStudent };
+      const rec: ImportedStudent = { ...blankStudent };
       let fullName = "";
       for (const [header, value] of Object.entries(row)) {
         const field = mapping[header];

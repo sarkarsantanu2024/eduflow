@@ -5,8 +5,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { STUDENT_IMPORT_FIELDS, autoDetectMapping, buildStudents } from "@/features/students/student-csv";
-import type { Student } from "@/lib/store/local-db";
+import { STUDENT_IMPORT_FIELDS, autoDetectMapping, buildStudents, type ImportedStudent } from "@/features/students/student-csv";
 
 const selectClass =
   "h-9 w-full rounded-lg border border-input bg-card px-2 text-sm shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
@@ -24,7 +23,7 @@ export function ImportColumnsDialog({
   headers: string[];
   rows: Record<string, unknown>[];
   onCancel: () => void;
-  onConfirm: (records: Omit<Student, "id">[]) => void;
+  onConfirm: (records: ImportedStudent[]) => void;
 }) {
   const [mapping, setMapping] = useState<Record<string, string>>(() => autoDetectMapping(headers));
 
