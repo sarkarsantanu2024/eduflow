@@ -100,6 +100,24 @@ export async function setCenterActive(formData: FormData) {
   revalidatePath("/admin");
 }
 
+/** Permanently delete a center and ALL its data (super-admin only).
+ *  Every tenant-owned table cascades on institute_id, so removing the
+ *  institute row wipes students, fees, payments, users, etc. Irreversible. */
+export async function deleteCenter(formData: FormData): Promise<{ error?: string }> {
+  await requireSuperAdmin();
+  const instituteId = String(formData.get("instituteId") ?? "");
+  const confirmName = String(formData.get("confirmName") ?? "").trim();
+  if (!instituteId) return { error: "Missing center" };
+
+  const [inst] = await db.select({ name: institutes.name }).from(institutes).where(eq(institutes.id, instituteId)).limit(1);
+  if (!inst) return { error: "Center not found" };
+  if (confirmName !== inst.name) return { error: "Type the center name exactly to confirm" };
+
+  await db.delete(institutes).where(eq(institutes.id, instituteId));
+  revalidatePath("/admin");
+  return {};
+}
+
 /** Reset any center owner's password (super-admin only). */
 export async function resetOwnerPassword(formData: FormData): Promise<{ error?: string; ok?: boolean }> {
   await requireSuperAdmin();

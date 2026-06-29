@@ -45,7 +45,10 @@ export function AppShell({
   }, [needsOnboarding, pathname, router]);
 
   function toggle() {
-    if (typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches) {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 768px)").matches
+    ) {
       setCollapsed((c) => !c);
     } else {
       setMobileOpen((o) => !o);
@@ -80,17 +83,21 @@ export function AppShell({
         {impersonating && (
           <div className="flex items-center justify-between gap-3 border-b bg-amber-100 px-4 py-2 text-sm text-amber-900 sm:px-6">
             <span>
-              You are managing <strong>{instituteName ?? "this center"}</strong> as platform admin. Changes affect the customer&apos;s live data.
+              You are managing <strong>{instituteName ?? "this center"}</strong>{" "}
+              as platform admin. Changes affect the customer&apos;s live data.
             </span>
             <form action={exitCenter}>
-              <button type="submit" className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-medium hover:bg-amber-200">
+              <button
+                type="submit"
+                className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-medium hover:bg-amber-200"
+              >
                 <LogOut className="size-3.5" /> Exit to admin
               </button>
             </form>
           </div>
         )}
         <main className="nice-scroll flex-1 overflow-auto">
-          <div className="w-full px-3 py-4 sm:px-5 sm:py-5">{children}</div>
+          <div className="w-full px-3 py-4 sm:px-8 sm:py-5">{children}</div>
         </main>
       </div>
     </div>

@@ -4,7 +4,11 @@ import { signOut } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
 
 /** Platform console shell — super-admin only, no tenant sidebar. */
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const profile = await requireSuperAdmin();
 
   return (
@@ -20,11 +24,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
         </div>
         <form action={signOut}>
-          <Button variant="outline" size="sm" type="submit">Sign out</Button>
+          <Button variant="outline" size="sm" type="submit">
+            Sign out
+          </Button>
         </form>
       </header>
       <main className="nice-scroll flex-1 overflow-auto">
-        <div className="w-full px-3 py-4 sm:px-5 sm:py-5">{children}</div>
+        <div className="w-full px-3 py-4 sm:px-8 sm:py-5">{children}</div>
       </main>
     </div>
   );
