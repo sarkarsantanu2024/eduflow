@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Building2, Users, IndianRupee, AlertCircle, LogIn, KeyRound, Ban, CheckCircle2 } from "lucide-react";
+import { Building2, Users, IndianRupee, AlertCircle, LogIn, KeyRound, Ban, CheckCircle2, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { BUSINESS_TYPES } from "@/lib/constants";
-import { openCenter, resetOwnerPassword, setCenterActive, type CustomerRow } from "@/features/admin/actions";
+import { openCenter, resetOwnerPassword, setCenterActive, deleteCenter, type CustomerRow } from "@/features/admin/actions";
 
 const rupees = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 const typeLabel = (t: string) => BUSINESS_TYPES.find((b) => b.value === t)?.label ?? t;
@@ -85,6 +85,7 @@ export function AdminConsole({ customers }: { customers: CustomerRow[] }) {
                           <Button size="sm" variant="ghost" type="submit" className="text-emerald-600"><CheckCircle2 className="size-3.5" /> Activate</Button>
                         )}
                       </form>
+                      <DeleteCenterDialog instituteId={c.id} name={c.name} />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -138,6 +139,55 @@ function ResetPasswordDialog({ ownerId, email }: { ownerId: string; email: strin
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Close</Button>
               <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Set password"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function DeleteCenterDialog({ instituteId, name }: { instituteId: string; name: string }) {
+  const [open, setOpen] = useState(false);
+  const [confirm, setConfirm] = useState("");
+  const [state, action, pending] = useActionState(
+    async (_prev: { error?: string } | undefined, formData: FormData) => deleteCenter(formData),
+    undefined,
+  );
+
+  return (
+    <>
+      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setOpen(true)}>
+        <Trash2 className="size-3.5" /> Delete
+      </Button>
+      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setConfirm(""); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete center</DialogTitle>
+            <DialogDescription>
+              This permanently removes <strong>{name}</strong> and all its data — students, fees,
+              payments, staff and owner accounts. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <form action={action} className="space-y-3">
+            <input type="hidden" name="instituteId" value={instituteId} />
+            <div className="space-y-1.5">
+              <Label htmlFor={`confirm-${instituteId}`}>Type <strong>{name}</strong> to confirm</Label>
+              <Input
+                id={`confirm-${instituteId}`}
+                name="confirmName"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                placeholder={name}
+                autoComplete="off"
+              />
+            </div>
+            {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit" variant="destructive" disabled={pending || confirm.trim() !== name}>
+                {pending ? "Deleting…" : "Delete center"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
