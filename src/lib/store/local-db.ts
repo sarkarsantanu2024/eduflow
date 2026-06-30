@@ -26,6 +26,12 @@ type Status = "idle" | "loading" | "ready";
 
 let mem: Db = EMPTY_DB;
 let status: Status = "idle";
+// The active institute id `mem` was hydrated for. `undefined` means "not yet
+// bound to any tenant this page load"; a string/null is the bound tenant.
+// Used to detect when the signed-in tenant changes (e.g. logging in as a
+// different center, or a super-admin entering/exiting one) so we can drop the
+// previous tenant's cache instead of showing it to the new user.
+let hydratedFor: string | null | undefined = undefined;
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -39,6 +45,7 @@ function setDb(next: Db) {
 
 /** Fetch the active institute's data once (or again on reload). */
 async function hydrate() {
+  if (status === "loading") return; // a fetch is already in flight
   status = "loading";
   emit();
   try {
@@ -120,6 +127,37 @@ export function useCollection<K extends CollectionName>(name: K): Db[K] {
 
 export function useProfile(): Profile {
   return useDb().profile;
+}
+
+/**
+ * Bind the in-memory cache to the active institute. Call once from the app
+ * shell with the server-resolved active institute id. If the tenant changes
+ * within the same browser session (a different login, or a super-admin
+ * entering/exiting a center), the cache is dropped and re-fetched so one
+ * user's data never leaks into another's view.
+ */
+export function useActiveTenant(instituteId: string | null): void {
+  useEffect(() => {
+    // First bind of this page load — let the normal hydrate (kicked off by
+    // useDb/useHydrated) run; just record which tenant it's for.
+    if (hydratedFor === undefined) {
+      hydratedFor = instituteId;
+      return;
+    }
+    if (hydratedFor === instituteId) return;
+
+    // Tenant actually changed → reset and reload for the new one.
+    hydratedFor = instituteId;
+    mem = EMPTY_DB;
+    if (instituteId) {
+      status = "idle";
+      emit();
+      void hydrate();
+    } else {
+      status = "ready"; // no active tenant (bare super-admin) → empty cache
+      emit();
+    }
+  }, [instituteId]);
 }
 
 /** True once the active institute's data has finished loading from the server. */

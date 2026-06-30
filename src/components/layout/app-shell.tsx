@@ -7,6 +7,7 @@ import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { cn } from "@/lib/utils";
 import { exitCenter } from "@/features/admin/actions";
+import { useActiveTenant } from "@/lib/store/local-db";
 import type { ProfileRow, UserRole } from "@/types/database.types";
 
 /**
@@ -18,6 +19,7 @@ export function AppShell({
   profile,
   effectiveRole,
   instituteName,
+  activeInstituteId = null,
   planLabel,
   needsOnboarding = false,
   impersonating = false,
@@ -26,6 +28,7 @@ export function AppShell({
   profile: ProfileRow;
   effectiveRole?: UserRole;
   instituteName?: string;
+  activeInstituteId?: string | null;
   planLabel?: string;
   needsOnboarding?: boolean;
   impersonating?: boolean;
@@ -36,6 +39,10 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
   const navRole = effectiveRole ?? profile.role;
+
+  // Bind the client data cache to the active tenant; resets + reloads when the
+  // signed-in center changes so the previous user's data never carries over.
+  useActiveTenant(activeInstituteId);
 
   // New center owners must finish their profile before using the app.
   useEffect(() => {
