@@ -51,6 +51,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       profile={profile}
       effectiveRole={effectiveRole}
       instituteName={instituteName}
+      activeInstituteId={activeId ?? null}
       planLabel={planLabel}
       needsOnboarding={needsOnboarding}
       impersonating={impersonating}
