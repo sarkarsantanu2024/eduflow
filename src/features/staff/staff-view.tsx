@@ -30,7 +30,7 @@ export function StaffView({ data }: { data: StaffData }) {
     <div className="space-y-6">
       <PageHeader
         title="Staff Logins"
-        description="Create login accounts for your teachers/staff. They sign in with their own email and password."
+        description="Create login accounts for your teachers/staff. They sign in with their own username and password."
         actions={<AddStaffDialog atLimit={atLimit} planName={data.planName} limit={data.limit} onDone={() => router.refresh()} />}
       />
 
@@ -53,7 +53,8 @@ export function StaffView({ data }: { data: StaffData }) {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Email (login)</TableHead>
+                <TableHead>Username (login)</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -62,6 +63,7 @@ export function StaffView({ data }: { data: StaffData }) {
               {data.staff.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">{s.fullName || "—"}</TableCell>
+                  <TableCell className="text-sm font-medium">{s.username}</TableCell>
                   <TableCell className="text-sm">{s.email}</TableCell>
                   <TableCell>
                     <Badge variant={s.isActive ? "success" : "secondary"}>{s.isActive ? "Active" : "Suspended"}</Badge>
@@ -125,7 +127,7 @@ function AddStaffDialog({ atLimit, planName, limit, onDone }: { atLimit: boolean
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>New staff login</DialogTitle>
-            <DialogDescription>They&apos;ll sign in at the login page with this email + password.</DialogDescription>
+            <DialogDescription>They&apos;ll sign in at the login page with this username + password.</DialogDescription>
           </DialogHeader>
           <form action={action} className="space-y-3" autoComplete="off">
             <div className="space-y-1.5">
@@ -133,7 +135,11 @@ function AddStaffDialog({ atLimit, planName, limit, onDone }: { atLimit: boolean
               <Input id="fullName" name="fullName" required autoComplete="off" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email (login)</Label>
+              <Label htmlFor="username">Username (login)</Label>
+              <Input id="username" name="username" required autoComplete="off" placeholder="teacher-username" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" required autoComplete="off" />
             </div>
             <div className="space-y-1.5">

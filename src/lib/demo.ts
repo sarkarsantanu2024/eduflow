@@ -25,6 +25,7 @@ export const DEMO_COOKIE = "eduflow_demo";
 
 /** Credentials shown on the login screen in demo mode. */
 export const DEMO_CREDENTIALS = {
+  username: "demo",
   email: "demo@eduflow.app",
   password: "demo1234",
 };
@@ -46,6 +47,7 @@ export const demoProfile: ProfileRow = {
   institute_id: DEMO_INSTITUTE.id,
   role: "institute_admin",
   full_name: "Demo Admin",
+  username: "demo",
   email: DEMO_CREDENTIALS.email,
   phone: "+919800000000",
   avatar_url: null,

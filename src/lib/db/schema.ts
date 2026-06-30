@@ -106,7 +106,9 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   instituteId: uuid("institute_id").references(() => institutes.id, { onDelete: "cascade" }),
   role: userRole("role").notNull().default("institute_admin"),
-  email: text("email").notNull().unique(),
+  // Login identity — what the user types on the sign-in screen.
+  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(), // contact email (no longer the login)
   passwordHash: text("password_hash"), // null for Google-only (OAuth) accounts
   fullName: text("full_name").notNull().default(""),
   phone: text("phone"),

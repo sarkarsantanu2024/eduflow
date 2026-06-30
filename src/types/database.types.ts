@@ -37,6 +37,7 @@ export type ProfileRow = Audit & {
   institute_id: string | null;
   role: UserRole;
   full_name: string;
+  username: string;
   email: string | null;
   phone: string | null;
   avatar_url: string | null;

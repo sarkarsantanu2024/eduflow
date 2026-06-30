@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { GraduationCap, User, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,12 +44,12 @@ function PasswordForm() {
   return (
     <form action={formAction} className="space-y-4">
       <div className="space-y-1.5">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="username">Username</Label>
         <div className="relative">
-          <Mail className="input-icon" />
+          <User className="input-icon" />
           <Input
-            id="email" name="email" type="email" autoComplete="username" required
-            placeholder="you@institute.com" className="pl-9"
+            id="username" name="username" type="text" autoComplete="username" required
+            placeholder="your-username" className="pl-9"
           />
         </div>
       </div>
