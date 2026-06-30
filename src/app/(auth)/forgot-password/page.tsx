@@ -7,7 +7,7 @@ import { SUPPORT } from "@/lib/constants";
  */
 export default function ForgotPasswordPage() {
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-sm space-y-6">
       <div className="space-y-1">
         <h2 className="text-2xl font-bold">Forgot your password?</h2>
         <p className="text-sm text-muted-foreground">Here&apos;s how to get back in.</p>

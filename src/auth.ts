@@ -7,7 +7,7 @@ import { users } from "@/lib/db/schema";
 import { verifyPassword } from "@/lib/auth/password";
 
 /**
- * Full Auth.js setup (Node runtime). Email/password only.
+ * Full Auth.js setup (Node runtime). Username/password only.
  * The account must already exist in our `users` table (created via signup
  * or by a center owner for staff).
  */
@@ -16,15 +16,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: {
-        email: { label: "Email", type: "email" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
-        const email = String(credentials?.email ?? "").trim().toLowerCase();
+        const username = String(credentials?.username ?? "").trim().toLowerCase();
         const password = String(credentials?.password ?? "");
-        if (!email || !password) return null;
+        if (!username || !password) return null;
 
-        const user = await db.query.users.findFirst({ where: eq(users.email, email) });
+        const user = await db.query.users.findFirst({ where: eq(users.username, username) });
         if (!user || !user.isActive || !user.passwordHash) return null;
 
         const ok = await verifyPassword(password, user.passwordHash);
@@ -38,8 +38,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig.callbacks,
     /** Load role + tenant from the DB onto the token at sign-in. */
     async jwt({ token, user }) {
-      if (user?.email) {
-        const dbUser = await db.query.users.findFirst({ where: eq(users.email, user.email.toLowerCase()) });
+      if (user?.id) {
+        const dbUser = await db.query.users.findFirst({ where: eq(users.id, user.id) });
         if (dbUser) {
           token.sub = dbUser.id;
           token.role = dbUser.role;

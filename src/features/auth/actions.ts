@@ -20,7 +20,7 @@ function slugify(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50);
 }
 
-/** Email + password sign-in via Auth.js credentials. */
+/** Username + password sign-in via Auth.js credentials. */
 export async function signIn(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
@@ -28,7 +28,7 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
   try {
     await nextSignIn("credentials", { ...parsed.data, redirect: false });
   } catch (error) {
-    if (error instanceof AuthError) return { error: "Invalid email or password" };
+    if (error instanceof AuthError) return { error: "Invalid username or password" };
     throw error;
   }
 
@@ -43,8 +43,12 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
 export async function signUp(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const parsed = registerSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
-  const { instituteName, type, fullName, email, password } = parsed.data;
+  const { instituteName, type, fullName, username, email, phone, address, password } = parsed.data;
   const lowerEmail = email.toLowerCase();
+  const lowerUsername = username.toLowerCase();
+
+  const existingUsername = await db.query.users.findFirst({ where: eq(users.username, lowerUsername) });
+  if (existingUsername) return { error: "That username is already taken" };
 
   const existing = await db.query.users.findFirst({ where: eq(users.email, lowerEmail) });
   if (existing) return { error: "An account with this email already exists" };
@@ -52,7 +56,7 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   const slug = `${slugify(instituteName)}-${Math.random().toString(36).slice(2, 6)}`;
   const [institute] = await db
     .insert(institutes)
-    .values({ name: instituteName, slug, type, ownerName: fullName })
+    .values({ name: instituteName, slug, type, ownerName: fullName, email: lowerEmail, phone, address: address || null })
     .returning();
   if (!institute) return { error: "Could not create institute" };
 
@@ -79,7 +83,9 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   if (sectorTemplates.length) await db.insert(templates).values(sectorTemplates);
 
   await db.insert(users).values({
+    username: lowerUsername,
     email: lowerEmail,
+    phone,
     passwordHash: await hashPassword(password),
     fullName,
     role: "institute_admin",
@@ -87,7 +93,7 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   });
 
   try {
-    await nextSignIn("credentials", { email: lowerEmail, password, redirect: false });
+    await nextSignIn("credentials", { username: lowerUsername, password, redirect: false });
   } catch {
     redirect("/login");
   }

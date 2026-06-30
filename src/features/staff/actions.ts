@@ -11,6 +11,7 @@ import { hashPassword } from "@/lib/auth/password";
 export type StaffRow = {
   id: string;
   fullName: string;
+  username: string;
   email: string;
   isActive: boolean;
   lastLoginAt: string | null;
@@ -36,7 +37,7 @@ export async function listStaff(): Promise<StaffData> {
   const instituteId = await requireOwner();
 
   const staff = await db
-    .select({ id: users.id, fullName: users.fullName, email: users.email, isActive: users.isActive, lastLoginAt: users.lastLoginAt })
+    .select({ id: users.id, fullName: users.fullName, username: users.username, email: users.email, isActive: users.isActive, lastLoginAt: users.lastLoginAt })
     .from(users)
     .where(and(eq(users.instituteId, instituteId), eq(users.role, "teacher")));
 
@@ -58,9 +59,11 @@ export async function listStaff(): Promise<StaffData> {
 export async function createStaff(formData: FormData): Promise<{ error?: string; ok?: boolean }> {
   const instituteId = await requireOwner();
   const fullName = String(formData.get("fullName") ?? "").trim();
+  const username = String(formData.get("username") ?? "").trim().toLowerCase();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   if (!fullName) return { error: "Name is required" };
+  if (!/^[a-z0-9._-]{3,40}$/.test(username)) return { error: "Username must be 3–40 chars (letters, numbers, . _ -)" };
   if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "Enter a valid email" };
   if (password.length < 8) return { error: "Password must be at least 8 characters" };
 
@@ -70,11 +73,14 @@ export async function createStaff(formData: FormData): Promise<{ error?: string;
     return { error: `Your ${data.planName} plan allows ${data.limit} staff login${data.limit === 1 ? "" : "s"}. Upgrade your plan to add more.` };
   }
 
-  // Email must be globally unique (it's the login).
+  // Username is the login — must be globally unique.
+  const existingUsername = await db.query.users.findFirst({ where: eq(users.username, username) });
+  if (existingUsername) return { error: "That username is already taken" };
   const existing = await db.query.users.findFirst({ where: eq(users.email, email) });
   if (existing) return { error: "An account with this email already exists" };
 
   await db.insert(users).values({
+    username,
     email,
     passwordHash: await hashPassword(password),
     fullName,

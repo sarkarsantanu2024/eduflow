@@ -13,6 +13,7 @@ function toProfile(u: typeof users.$inferSelect): ProfileRow {
     institute_id: u.instituteId,
     role: u.role,
     full_name: u.fullName,
+    username: u.username,
     email: u.email,
     phone: u.phone,
     avatar_url: u.avatarUrl,

@@ -40,17 +40,19 @@ async function main() {
 
   // ── 2) Platform super-admin ────────────────────────────────────────
   const saEmail = (process.env.SUPERADMIN_EMAIL ?? "sarkarsantanu69@gmail.com").toLowerCase();
+  const saUsername = (process.env.SUPERADMIN_USERNAME ?? "superadmin").toLowerCase();
   const saPassword = process.env.SUPERADMIN_PASSWORD ?? "changeme-super-admin";
   const existingSa = await db.query.users.findFirst({ where: eq(users.email, saEmail) });
   if (!existingSa) {
     await db.insert(users).values({
+      username: saUsername,
       email: saEmail,
       passwordHash: await bcrypt.hash(saPassword, 10),
       fullName: "Platform Admin",
       role: "super_admin",
       instituteId: null,
     });
-    console.log(`✓ super-admin created: ${saEmail} / ${saPassword}`);
+    console.log(`✓ super-admin created: ${saUsername} (${saEmail}) / ${saPassword}`);
   } else {
     // Re-sync the password (and role) so re-running the seed resets it.
     await db.update(users)

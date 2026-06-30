@@ -66,7 +66,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       {/* ── Form panel ──────────────────────────────────────────── */}
       <main className="flex items-center justify-center p-6 sm:p-10">
-        <div className="w-full max-w-sm">{children}</div>
+        {/* Each page controls its own max width (register is wider). */}
+        <div className="w-full">{children}</div>
       </main>
     </div>
   );
