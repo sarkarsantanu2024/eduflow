@@ -1,25 +1,15 @@
 /**
- * Zero-config DEMO MODE.
+ * DEMO MODE — off by default. The live app runs on Neon.
  *
- * Active when NEXT_PUBLIC_DEMO_MODE=true, OR when no real Supabase URL is
- * configured (so a fresh `npm run dev` "just works" for client demos).
- * When you add real Supabase keys to .env.local, the app switches to the
- * live backend automatically — no code changes.
- *
- * In demo mode: a hardcoded login sets a cookie, and all reads return the
- * seeded fixtures below. No database or network calls are made.
+ * Set NEXT_PUBLIC_DEMO_MODE=true to run against the seeded fixtures below
+ * (handy for client demos / screenshots). When off, the fixtures are unused.
  */
 import type {
   ProfileRow, StudentRow, CourseRow, BatchRow,
 } from "@/types/database.types";
 import type { DashboardMetrics } from "@/features/dashboard/queries";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-export const DEMO_MODE =
-  process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
-  url === "" ||
-  url.includes("placeholder") ||
-  url.includes("YOUR-PROJECT");
+export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 export const DEMO_COOKIE = "eduflow_demo";
 

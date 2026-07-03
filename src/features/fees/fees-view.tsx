@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  Receipt, CalendarPlus, MessageCircle, IndianRupee, BadgeCheck, FileText, CheckCircle2, CalendarClock, History, ListTree, RotateCcw,
+  Receipt, MessageCircle, IndianRupee, BadgeCheck, FileText, CheckCircle2, CalendarClock, History, ListTree, RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,10 +19,11 @@ import {
 import { WaQrDialog, upiQrUrl } from "@/features/fees/wa-qr-dialog";
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+  stickyActionsHead, stickyActionsCell,
 } from "@/components/ui/table";
 import {
-  useCollection, useHydrated, useProfile, addItem, updateItem, newId, effectiveFee,
-  type Fee, type Payment, type Student,
+  useCollection, useHydrated, useProfile, addItem, updateItem, setProfile, newId, effectiveFee,
+  type Fee, type Payment, type Student, type Expense, type RecurringCharge,
 } from "@/lib/store/local-db";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -45,6 +46,8 @@ export function FeesView() {
   const fees = useCollection("fees");
   const students = useCollection("students");
   const payments = useCollection("payments");
+  const expenses = useCollection("expenses");
+  const teachers = useCollection("teachers");
   const profile = useProfile();
   const [tab, setTab] = useState<Tab>("monthly");
 
@@ -54,13 +57,11 @@ export function FeesView() {
 
   const biz = profile.businessName || "Your institute";
   const upiId = profile.upiId;
+  const qrImage = profile.qrImage;
   const reactivationFee = profile.reactivationFee || DEFAULT_REACTIVATION_FEE;
 
   const monthlyFees = fees.filter((f) => f.kind === "monthly");
   const otherFees = fees.filter((f) => f.kind === "other");
-  const activeStudents = students.filter((s) => s.status === "active");
-  // Show the Generate button only if some active student still lacks this month's fee.
-  const pendingGen = activeStudents.some((s) => !fees.some((f) => f.id === `monthly_${s.id}_${ym}`));
 
   // ── totals ──────────────────────────────────────────────────
   const billed = fees.reduce((s, f) => s + f.amount, 0);
@@ -112,36 +113,96 @@ export function FeesView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, fees]);
 
-  // ── monthly: generate this month for all active students ────
-  // `auto` runs silently on load and stamps a (simulated) WhatsApp send;
-  // the manual button is the explicit fallback.
-  function generate(auto: boolean) {
-    const active = students.filter((s) => s.status === "active");
-    let made = 0;
-    active.forEach((s) => {
-      const id = `monthly_${s.id}_${ym}`;
-      if (fees.some((f) => f.id === id)) return;
+  // ── monthly: auto-generate this month's fee for every active student ──
+  // Runs silently and self-heals: each active student without a fee for the
+  // current period gets one. No button, no manual step — like rent that's simply
+  // "due" each month. When the month rolls over, the new month is added on next visit.
+  // A per-session guard means a student+period is attempted at most once, so a
+  // failed insert can never turn into a retry storm.
+  const attempted = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!hydrated) return;
+    const missing = students.filter(
+      (s) =>
+        s.status === "active" &&
+        !attempted.current.has(`${s.id}_${ym}`) &&
+        !fees.some((f) => f.kind === "monthly" && f.studentId === s.id && f.period === ym),
+    );
+    if (missing.length === 0) return;
+    missing.forEach((s) => {
+      attempted.current.add(`${s.id}_${ym}`);
       addItem<Fee>("fees", {
-        id, studentId: s.id, studentName: `${s.firstName} ${s.lastName}`.trim(),
+        id: newId(), studentId: s.id, studentName: `${s.firstName} ${s.lastName}`.trim(),
         parentMobile: s.parentMobile || s.fatherContact, kind: "monthly", period: ym,
         title: `${monthLabel} Monthly Fee`, type: "monthly", amount: effectiveFee(s, profile.monthlyFee || 0),
         amountPaid: 0, status: "pending", dueDate: `${ym}-05`,
-        reminderSentAt: auto ? today : "", approved: false, voucherSentAt: "",
+        reminderSentAt: "", approved: false, voucherSentAt: "",
       });
-      made += 1;
     });
-    if (auto) {
-      if (made) toast.success(`Auto-generated ${monthLabel} fees`, { description: `${made} student${made > 1 ? "s" : ""} · WhatsApp sent (demo)` });
-    } else if (made) toast.success(`Generated ${made} fee${made > 1 ? "s" : ""} for ${monthLabel}`);
-    else toast.info(`${monthLabel} fees already generated`);
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, students, fees, ym]);
 
-  // Auto-generate the current month's fees once when the page loads.
-  const autoRan = useRef(false);
+  // One-time: fold the legacy royalty % into the generic recurring charges.
+  const royaltyMigrated = useRef(false);
   useEffect(() => {
-    if (hydrated && !autoRan.current) { autoRan.current = true; generate(true); }
+    if (!hydrated || royaltyMigrated.current) return;
+    royaltyMigrated.current = true;
+    const pct = profile.hoRoyaltyPercent || 0;
+    const charges = profile.recurringCharges || [];
+    if (pct > 0 && !charges.some((c) => c.name === "Head Office royalty")) {
+      const royalty: RecurringCharge = { id: newId(), name: "Head Office royalty", basis: "percent", amount: pct, category: "Head Office" };
+      setProfile({ hoRoyaltyPercent: 0, recurringCharges: [...charges, royalty] });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
+
+  // ── auto-post each recurring monthly charge as an expense ──
+  // basis: fixed ₹, per active student ₹, or % of the month's fees. Posted once
+  // per month so the dashboard's Net Profit is the center's real margin.
+  const chargesPosted = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!hydrated) return;
+    const charges = profile.recurringCharges || [];
+    if (charges.length === 0) return;
+    const active = students.filter((s) => s.status === "active");
+    const feeBase = active.reduce((sum, s) => sum + effectiveFee(s, profile.monthlyFee || 0), 0);
+    charges.forEach((c) => {
+      const key = `${c.id}_${ym}`;
+      if (chargesPosted.current.has(key)) return;
+      const amount =
+        c.basis === "fixed" ? c.amount
+        : c.basis === "per_student" ? c.amount * active.length
+        : Math.round((c.amount / 100) * feeBase);
+      const title = `${c.name || "Charge"} — ${monthLabel}`;
+      if (amount <= 0 || expenses.some((e) => e.title === title)) { chargesPosted.current.add(key); return; }
+      chargesPosted.current.add(key);
+      const note =
+        c.basis === "per_student" ? `₹${c.amount} × ${active.length} active students`
+        : c.basis === "percent" ? `${c.amount}% of ₹${feeBase} monthly fees`
+        : "fixed monthly charge";
+      addItem<Expense>("expenses", { id: newId(), title, category: c.category || "Miscellaneous", amount, date: today, note });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, students, expenses, ym, profile.recurringCharges]);
+
+  // ── post this month's total teacher salary as an expense ──
+  // Sum of each teacher's monthly salary (set on the Teachers page). Posted once
+  // per month, editable on Expenses — so a mid-month change is easy to adjust.
+  const salaryDone = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!hydrated || salaryDone.current.has(ym)) return;
+    const total = teachers.reduce((s, t) => s + (t.salary || 0), 0);
+    if (total <= 0) return;
+    const title = `Teacher salary — ${monthLabel}`;
+    if (expenses.some((e) => e.title === title)) { salaryDone.current.add(ym); return; }
+    const paidCount = teachers.filter((t) => (t.salary || 0) > 0).length;
+    salaryDone.current.add(ym);
+    addItem<Expense>("expenses", {
+      id: newId(), title, category: "Teacher Salary", amount: total, date: today,
+      note: `${paidCount} teacher${paidCount > 1 ? "s" : ""}`,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, teachers, expenses, ym]);
 
   if (hydrated && fees.length === 0 && students.length === 0) {
     return (
@@ -180,16 +241,15 @@ export function FeesView() {
 
       {tab === "monthly" && (
         <MonthlyTab
-          students={students} monthlyFees={monthlyFees} ym={ym} monthLabel={monthLabel}
-          biz={biz} upiId={upiId} showGenerate={pendingGen} reactivationFee={reactivationFee}
-          onGenerate={() => generate(false)} onReminder={markReminder}
-          onCollect={applyPayment} onReactivate={reactivate}
+          students={students} monthlyFees={monthlyFees} ym={ym}
+          biz={biz} upiId={upiId} qrImage={qrImage} reactivationFee={reactivationFee}
+          onReminder={markReminder} onCollect={applyPayment} onReactivate={reactivate}
         />
       )}
 
       {tab === "other" && (
         <OtherTab
-          students={students} otherFees={otherFees} today={today} biz={biz} upiId={upiId}
+          students={students} otherFees={otherFees} today={today} biz={biz} upiId={upiId} qrImage={qrImage}
           onReminder={markReminder} onCollect={applyPayment}
         />
       )}
@@ -201,51 +261,76 @@ export function FeesView() {
 
 /* ── Monthly tab — per-student outstanding, arrears, partial pay & reactivation ── */
 function MonthlyTab({
-  students, monthlyFees, ym, monthLabel, biz, upiId, showGenerate, reactivationFee,
-  onGenerate, onReminder, onCollect, onReactivate,
+  students, monthlyFees, ym, biz, upiId, qrImage, reactivationFee,
+  onReminder, onCollect, onReactivate,
 }: {
   students: Student[];
   monthlyFees: Fee[];
-  ym: string; monthLabel: string; biz: string; upiId: string; showGenerate: boolean; reactivationFee: number;
-  onGenerate: () => void;
+  ym: string; biz: string; upiId: string; qrImage: string; reactivationFee: number;
   onReminder: (list: Fee[]) => void;
   onCollect: (list: Fee[], amount: number, studentId: string, studentName: string) => void;
   onReactivate: (s: Student) => void;
 }) {
+  // Month filter: "all" shows total dues across every month; a specific period
+  // narrows every row to just that month's fee.
+  const [period, setPeriod] = useState<string>("all");
+  const availablePeriods = Array.from(new Set([ym, ...monthlyFees.map((f) => f.period)]))
+    .filter(Boolean)
+    .sort()
+    .reverse();
+
   const rows = students
     .filter((s) => s.status === "active" || monthlyFees.some((f) => f.studentId === s.id))
     .map((s) => {
       const name = `${s.firstName} ${s.lastName}`.trim();
       const mine = monthlyFees.filter((f) => f.studentId === s.id);
-      const thisMonth = mine.find((f) => f.period === ym);
-      const unpaid = mine.filter((f) => f.status !== "paid");
+      // Which fees this row acts on, based on the filter.
+      const scope = period === "all" ? mine : mine.filter((f) => f.period === period);
+      const shownFee = period === "all" ? mine.find((f) => f.period === ym) : scope[0];
+      const unpaid = scope.filter((f) => f.status !== "paid");
       const outstanding = unpaid.reduce((a, f) => a + (f.amount - f.amountPaid), 0);
-      return { s, name, mine, mobile: s.parentMobile || s.fatherContact, thisMonth, unpaid, monthsPending: unpaid.length, outstanding, inactive: s.status === "inactive" };
-    });
+      return {
+        s, name, mine, mobile: s.parentMobile || s.fatherContact,
+        shownFee, unpaid, monthsPending: unpaid.length, outstanding, inactive: s.status === "inactive",
+      };
+    })
+    // In a specific month, hide students who have no fee for that month at all.
+    .filter((r) => period === "all" || r.shownFee || r.inactive);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Fixed monthly fee per student. After {DEACTIVATE_AFTER} unpaid months service pauses; ₹{reactivationFee} resumes it.
+          This month&apos;s fee is added automatically for every active student. After {DEACTIVATE_AFTER} unpaid months service pauses; ₹{reactivationFee} resumes it.
         </p>
-        {showGenerate && <Button onClick={onGenerate}><CalendarPlus /> Generate {monthLabel} fees</Button>}
+        <select
+          aria-label="Filter by month"
+          className="h-10 rounded-lg border border-input bg-card px-3 text-sm shadow-sm"
+          value={period}
+          onChange={(e) => setPeriod(e.target.value)}
+        >
+          <option value="all">All months (total dues)</option>
+          {availablePeriods.map((p) => (
+            <option key={p} value={p}>{periodLabel(p)}</option>
+          ))}
+        </select>
       </div>
 
       <Card className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Student</TableHead><TableHead>This month</TableHead>
+              <TableHead>Student</TableHead>
+              <TableHead>{period === "all" ? "This month" : "Status"}</TableHead>
               <TableHead>Months pending</TableHead><TableHead>Outstanding</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead className={`text-right ${stickyActionsHead}`}>Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.length === 0 && (
               <TableRow><TableCell colSpan={5} className="py-10 text-center text-muted-foreground">No students.</TableCell></TableRow>
             )}
-            {rows.map(({ s, name, mine, mobile, thisMonth, unpaid, monthsPending, outstanding, inactive }) => (
+            {rows.map(({ s, name, mine, mobile, shownFee, unpaid, monthsPending, outstanding, inactive }) => (
               <TableRow key={s.id}>
                 <TableCell className="font-medium">
                   <MonthsDialog
@@ -260,8 +345,8 @@ function MonthlyTab({
                 <TableCell>
                   {inactive
                     ? <Badge variant="destructive">inactive</Badge>
-                    : thisMonth
-                      ? <Badge variant={statusVariant[thisMonth.status]}>{thisMonth.status}</Badge>
+                    : shownFee
+                      ? <Badge variant={statusVariant[shownFee.status]}>{shownFee.status}</Badge>
                       : <span className="text-xs text-muted-foreground">Not generated</span>}
                 </TableCell>
                 <TableCell>{monthsPending > 0 ? `${monthsPending} month${monthsPending > 1 ? "s" : ""}` : "—"}</TableCell>
@@ -272,20 +357,19 @@ function MonthlyTab({
                       ? <span className="text-xs font-normal text-muted-foreground">₹{reactivationFee} to resume</span>
                       : "—"}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className={`text-right ${stickyActionsCell}`}>
                   {outstanding > 0 ? (
                     // Dues pending (active or paused) — collect them first.
                     <div className="flex justify-end gap-1.5">
                       <WaQrDialog
                         title="Send fee reminder" recipientName={name} mobile={mobile}
-                        amount={outstanding} upiId={upiId} payeeName={biz} note={`${name} monthly fee`}
-                        message={`Hi, this is ${biz}. ₹${outstanding} (${monthsPending} month${monthsPending > 1 ? "s" : ""}) fee for ${name} is pending. Please scan the QR below to pay via UPI. Thank you. 🙏`}
-                        actionLabel="Mark as sent" actionIcon={<MessageCircle />}
-                        onAction={() => onReminder(unpaid)}
+                        amount={outstanding} upiId={upiId} qrImage={qrImage} payeeName={biz} note={`${name} monthly fee`}
+                        message={`Dear Parent, greetings from ${biz}. This is a gentle reminder that ${name}'s fee of ₹${outstanding} for ${unpaid.map((f) => periodLabel(f.period)).join(", ")} is currently pending. Kindly pay at your convenience ${upiId ? `via UPI to ${upiId}` : "using the payment QR shared with you"}. Thank you very much — please ignore this message if you have already paid.`}
+                        onSent={() => onReminder(unpaid)}
                         trigger={<Button size="sm" variant="outline"><MessageCircle /> Reminder</Button>}
                       />
                       <MonthlyCollectDialog
-                        name={name} mobile={mobile} outstanding={outstanding} biz={biz} upiId={upiId}
+                        name={name} mobile={mobile} outstanding={outstanding} biz={biz} upiId={upiId} qrImage={qrImage}
                         onPay={(amount) => onCollect(unpaid, amount, s.id, name)}
                         trigger={<Button size="sm"><IndianRupee /> Collect</Button>}
                       />
@@ -295,18 +379,16 @@ function MonthlyTab({
                     <div className="flex justify-end gap-1.5">
                       <WaQrDialog
                         title="Reactivation reminder" recipientName={name} mobile={mobile}
-                        amount={reactivationFee} upiId={upiId} payeeName={biz} note={`${name} reactivation`}
-                        message={`Hi, ${name}'s classes are paused. Please pay the ₹${reactivationFee} reactivation fee to resume service. Scan the QR to pay. — ${biz}`}
-                        actionLabel="Mark as sent" actionIcon={<MessageCircle />}
-                        onAction={() => toast.success("Reactivation reminder sent on WhatsApp", { description: "Demo — preview only" })}
+                        amount={reactivationFee} upiId={upiId} qrImage={qrImage} payeeName={biz} note={`${name} reactivation`}
+                        message={`Dear Parent, greetings from ${biz}. ${name}'s classes are currently paused due to pending dues. Kindly pay the reactivation fee of ₹${reactivationFee} ${upiId ? `via UPI to ${upiId}` : "using the payment QR shared with you"} to resume classes. Thank you for your understanding.`}
+                        onSent={() => toast.success("Reactivation reminder sent on WhatsApp", { description: "Demo — preview only" })}
                         trigger={<Button size="sm" variant="outline"><MessageCircle /> Reminder</Button>}
                       />
                       <WaQrDialog
                         title="Collect reactivation fee" recipientName={name} mobile={mobile}
-                        amount={reactivationFee} upiId={upiId} payeeName={biz} note={`${name} reactivation`}
-                        message={`Reactivation fee ₹${reactivationFee} for ${name}. Pay to resume classes. Scan the QR. — ${biz}`}
-                        actionLabel={`Collect ₹${reactivationFee} & reactivate`} actionIcon={<RotateCcw />}
-                        onAction={() => onReactivate(s)}
+                        amount={reactivationFee} upiId={upiId} qrImage={qrImage} payeeName={biz} note={`${name} reactivation`}
+                        message={`Dear Parent, kindly pay the reactivation fee of ₹${reactivationFee} for ${name} ${upiId ? `via UPI to ${upiId}` : "using the QR shared with you"} to resume classes. Thank you. — ${biz}`}
+                        action={{ label: `Collect ₹${reactivationFee} & reactivate`, icon: <RotateCcw />, onClick: () => onReactivate(s) }}
                         trigger={<Button size="sm"><RotateCcw /> Reactivate ₹{reactivationFee}</Button>}
                       />
                     </div>
@@ -327,14 +409,16 @@ function MonthlyTab({
 
 /* ── Collect monthly fee — supports partial payment (oldest months first) ── */
 function MonthlyCollectDialog({
-  name, mobile, outstanding, biz, upiId, onPay, trigger,
+  name, mobile, outstanding, biz, upiId, qrImage, onPay, trigger,
 }: {
-  name: string; mobile: string; outstanding: number; biz: string; upiId: string;
+  name: string; mobile: string; outstanding: number; biz: string; upiId: string; qrImage: string;
   onPay: (amount: number) => void; trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(outstanding);
   const amt = Math.max(0, Math.min(amount, outstanding));
+  // Prefer the center's uploaded QR; otherwise build a UPI QR for this exact amount.
+  const qrSrc = qrImage || (upiId ? upiQrUrl(upiId, biz, amt, `${name} monthly fee`) : "");
 
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) setAmount(outstanding); }}>
@@ -356,11 +440,11 @@ function MonthlyCollectDialog({
               onChange={(e) => setAmount(Number(e.target.value) || 0)} />
             <p className="text-xs text-muted-foreground">Partial payments allowed (up to {DEACTIVATE_AFTER} months). Applied to the oldest unpaid months first.</p>
           </div>
-          {amt > 0 && upiId && (
+          {amt > 0 && qrSrc && (
             // eslint-disable-next-line @next/next/no-img-element
             <div className="flex flex-col items-center gap-2">
-              <img src={upiQrUrl(upiId, biz, amt, `${name} monthly fee`)} alt="UPI QR" className="size-40 rounded-lg border bg-white object-contain" />
-              <p className="text-xs text-muted-foreground">Scan to pay {formatCurrency(amt * 100)} · {upiId}</p>
+              <img src={qrSrc} alt="Payment QR" className="size-40 rounded-lg border bg-white object-contain" />
+              <p className="text-xs text-muted-foreground">Scan to pay {formatCurrency(amt * 100)}{upiId && ` · ${upiId}`}</p>
             </div>
           )}
         </div>
@@ -376,11 +460,11 @@ function MonthlyCollectDialog({
 
 /* ── Other fees / expenses — create → QR → collect → approve → voucher ── */
 function OtherTab({
-  students, otherFees, today, biz, upiId, onReminder, onCollect,
+  students, otherFees, today, biz, upiId, qrImage, onReminder, onCollect,
 }: {
   students: Student[];
   otherFees: Fee[];
-  today: string; biz: string; upiId: string;
+  today: string; biz: string; upiId: string; qrImage: string;
   onReminder: (list: Fee[]) => void;
   onCollect: (list: Fee[], amount: number, studentId: string, studentName: string) => void;
 }) {
@@ -425,7 +509,7 @@ function OtherTab({
             <TableHeader>
               <TableRow>
                 <TableHead>Student</TableHead><TableHead>Title</TableHead><TableHead>Amount</TableHead>
-                <TableHead>Progress</TableHead><TableHead className="text-right">Action</TableHead>
+                <TableHead>Progress</TableHead><TableHead className={`text-right ${stickyActionsHead}`}>Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -445,24 +529,22 @@ function OtherTab({
                         {!f.reminderSentAt && f.status !== "paid" && <Badge variant={statusVariant[f.status]}>{f.status}</Badge>}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className={`text-right ${stickyActionsCell}`}>
                       <div className="flex justify-end gap-1.5">
                         {f.status !== "paid" && (
                           <>
                             <WaQrDialog
                               title="Send fee QR" recipientName={f.studentName} mobile={f.parentMobile}
-                              amount={due} upiId={upiId} payeeName={biz} note={f.title}
-                              message={`Hi, ${f.title} charge of ₹${due} for ${f.studentName}${f.dueDate ? ` (due ${f.dueDate})` : ""}. Scan the QR below to pay. — ${biz}`}
-                              actionLabel="Mark as sent" actionIcon={<MessageCircle />}
-                              onAction={() => onReminder([f])}
+                              amount={due} upiId={upiId} qrImage={qrImage} payeeName={biz} note={f.title}
+                              message={`Dear Parent, greetings from ${biz}. A ${f.title} charge of ₹${due} for ${f.studentName}${f.dueDate ? ` (due ${f.dueDate})` : ""} is pending. Kindly pay ${upiId ? `via UPI to ${upiId}` : "using the payment QR shared with you"} at your convenience. Thank you.`}
+                              onSent={() => onReminder([f])}
                               trigger={<Button size="sm" variant="outline"><MessageCircle /> QR</Button>}
                             />
                             <WaQrDialog
                               title="Collect fee" recipientName={f.studentName} mobile={f.parentMobile}
-                              amount={due} upiId={upiId} payeeName={biz} note={f.title}
-                              message={`Payment request: ₹${due} for ${f.title} (${f.studentName}). Scan the QR to pay.`}
-                              actionLabel="Mark as paid" actionIcon={<IndianRupee />}
-                              onAction={() => onCollect([f], due, f.studentId, f.studentName)}
+                              amount={due} upiId={upiId} qrImage={qrImage} payeeName={biz} note={f.title}
+                              message={`Dear Parent, a payment of ₹${due} for ${f.title} (${f.studentName}) is requested. Kindly pay ${upiId ? `via UPI to ${upiId}` : "using the QR shared with you"}. Thank you.`}
+                              action={{ label: "Mark as paid", icon: <IndianRupee />, onClick: () => onCollect([f], due, f.studentId, f.studentName) }}
                               trigger={<Button size="sm"><IndianRupee /> Collect</Button>}
                             />
                           </>
@@ -476,9 +558,8 @@ function OtherTab({
                         {f.status === "paid" && f.approved && !f.voucherSentAt && (
                           <WaQrDialog
                             title="Send expense voucher" recipientName={f.studentName} mobile={f.parentMobile}
-                            message={`✅ Payment received — ₹${f.amount} for ${f.title} (${f.studentName}) on ${formatDate(today)}. This message is your official receipt/voucher. Thank you! — ${biz}`}
-                            actionLabel="Mark as sent" actionIcon={<FileText />}
-                            onAction={() => { updateItem<Fee>("fees", f.id, { voucherSentAt: today }); toast.success("Voucher sent on WhatsApp"); }}
+                            message={`Payment received — ₹${f.amount} for ${f.title} (${f.studentName}) on ${formatDate(today)}. This message is your official receipt/voucher. Thank you! — ${biz}`}
+                            onSent={() => { updateItem<Fee>("fees", f.id, { voucherSentAt: today }); toast.success("Voucher sent on WhatsApp"); }}
                             trigger={<Button size="sm" variant="outline"><FileText /> Send voucher</Button>}
                           />
                         )}

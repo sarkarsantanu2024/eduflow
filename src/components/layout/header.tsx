@@ -33,7 +33,7 @@ export function Header({
     ? displayName.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()
     : "U";
 
-  const notifications = useNotifications();
+  const notifications = useNotifications(profile.role);
   const unread = notifications.filter((n) => n.unread).length;
 
   return (
@@ -90,7 +90,7 @@ export function Header({
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/dashboard" className="justify-center text-sm font-semibold text-primary">
+              <Link href="/notifications" className="justify-center text-sm font-semibold text-primary">
                 View all
               </Link>
             </DropdownMenuItem>
@@ -123,9 +123,11 @@ export function Header({
             <DropdownMenuItem asChild>
               <Link href="/profile"><User /> My Profile</Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard"><LayoutDashboard /> Dashboard</Link>
-            </DropdownMenuItem>
+            {profile.role !== "teacher" && (
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard"><LayoutDashboard /> Dashboard</Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem asChild>
               <Link href="/support"><LifeBuoy /> Help &amp; Support</Link>
             </DropdownMenuItem>

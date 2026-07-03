@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Pencil, Trash2, Users, Upload, Download, FileText, CopyX } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, Upload, Download, FileText, CopyX, Cake } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,10 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+  stickyActionsHead, stickyActionsCell,
 } from "@/components/ui/table";
 import {
   useCollection, useHydrated, useProfile, addItem, removeItem, newId,
@@ -37,6 +39,26 @@ function studentKey(s: { firstName?: string; lastName?: string; parentMobile?: s
   const name = `${s.firstName ?? ""} ${s.lastName ?? ""}`.trim().toLowerCase().replace(/\s+/g, " ");
   const phone = (s.parentMobile || s.fatherContact || "").replace(/\D/g, "");
   return `${name}|${phone}`;
+}
+
+/** Warm birthday wish for the parent's WhatsApp (free click-to-send). */
+function birthdayWish(studentName: string, biz: string): string {
+  return `Dear Parent, wishing ${studentName} a very Happy Birthday! 🎂 On behalf of everyone at ${biz}, we hope the day is full of joy and the year ahead brings great health, happiness and success in studies. With warm regards, ${biz}.`;
+}
+
+/** Days until the student's next birthday (0 = today), or null if no DOB. */
+function birthdayCountdown(dob?: string): { days: number; today: boolean; soon: boolean } | null {
+  if (!dob) return null;
+  const parts = dob.split("-").map(Number);
+  const m = parts[1];
+  const d = parts[2];
+  if (!m || !d) return null;
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let next = new Date(now.getFullYear(), m - 1, d);
+  if (next.getTime() < startToday.getTime()) next = new Date(now.getFullYear() + 1, m - 1, d);
+  const days = Math.round((next.getTime() - startToday.getTime()) / 86_400_000);
+  return { days, today: days === 0, soon: days > 0 && days <= 7 };
 }
 
 export function StudentsView() {
@@ -279,6 +301,37 @@ export function StudentsView() {
             </div>
           )}
 
+          {/* Today's birthdays — one-tap wish (free WhatsApp click-to-send). */}
+          {(() => {
+            const biz = profile.businessName || "your institute";
+            const todays = students.filter((s) => birthdayCountdown(s.dob)?.today);
+            if (todays.length === 0) return null;
+            return (
+              <div className="rounded-xl border border-pink-200 bg-pink-50 p-4">
+                <div className="mb-3 flex items-center gap-2 text-pink-700">
+                  <Cake className="size-5 animate-bounce" />
+                  <p className="font-semibold">{todays.length} birthday{todays.length > 1 ? "s" : ""} today — send a wish</p>
+                </div>
+                <div className="space-y-2">
+                  {todays.map((s) => {
+                    const name = `${s.firstName} ${s.lastName}`.trim();
+                    const mobile = s.parentMobile || s.fatherContact;
+                    return (
+                      <div key={s.id} className="flex items-center justify-between gap-3 rounded-lg bg-card px-3 py-2">
+                        <span className="font-medium">{name}</span>
+                        {mobile ? (
+                          <SendOnWhatsApp size="sm" variant="outline" phone={mobile} message={birthdayWish(name, biz)} label="Wish on WhatsApp" />
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No parent number</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
             <Table>
               <TableHeader>
@@ -290,15 +343,17 @@ export function StudentsView() {
                   <TableHead>Level</TableHead>
                   <TableHead>Parent</TableHead><TableHead>Mobile</TableHead>
                   <TableHead>Address</TableHead>
-                  <TableHead>Admission</TableHead><TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Birthday</TableHead><TableHead>Status</TableHead>
+                  <TableHead className={`text-right ${stickyActionsHead}`}>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.length === 0 && (
                   <TableRow><TableCell colSpan={10} className="py-10 text-center text-muted-foreground">No matches.</TableCell></TableRow>
                 )}
-                {rows.map((s) => (
+                {rows.map((s) => {
+                  const bday = birthdayCountdown(s.dob);
+                  return (
                   <TableRow key={s.id} data-selected={selected.has(s.id) || undefined} className="data-[selected]:bg-accent/30">
                     <TableCell>
                       <input type="checkbox" aria-label={`Select ${s.firstName}`} checked={selected.has(s.id)} onChange={() => toggleRow(s.id)} className="size-4 cursor-pointer align-middle" />
@@ -313,9 +368,25 @@ export function StudentsView() {
                     <TableCell className="max-w-[12rem] truncate" title={s.parentName || s.fatherName || ""}>{s.parentName || s.fatherName || "—"}</TableCell>
                     <TableCell>{s.parentMobile || s.fatherContact || "—"}</TableCell>
                     <TableCell className="max-w-[16rem] truncate" title={s.address || ""}>{s.address || "—"}</TableCell>
-                    <TableCell>{s.admissionDate ? formatDate(s.admissionDate) : "—"}</TableCell>
+                    <TableCell>
+                      {s.dob ? (
+                        <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                          {formatDate(s.dob)}
+                          {bday?.today && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-1.5 py-0.5 text-[11px] font-semibold text-pink-600">
+                              <Cake className="size-3.5 animate-bounce" /> Today
+                            </span>
+                          )}
+                          {bday?.soon && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-pink-500" title={`Birthday in ${bday.days} day${bday.days > 1 ? "s" : ""}`}>
+                              <Cake className="size-3.5 animate-pulse" /> in {bday.days}d
+                            </span>
+                          )}
+                        </span>
+                      ) : "—"}
+                    </TableCell>
                     <TableCell><Badge variant={statusVariant[s.status]}>{s.status}</Badge></TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className={`text-right ${stickyActionsCell}`}>
                       <div className="flex justify-end gap-1">
                         <Button size="icon" variant="ghost" aria-label="Edit" onClick={() => router.push(`/students/${s.id}/edit`)}>
                           <Pencil />
@@ -330,7 +401,8 @@ export function StudentsView() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

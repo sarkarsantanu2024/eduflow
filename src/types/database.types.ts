@@ -1,8 +1,7 @@
 /**
- * Hand-authored Supabase types covering the Phase-1 tables the app uses.
- * In a real project regenerate from the live DB:
- *   npm run db:types   (supabase gen types typescript --linked)
- * Keeping this file in sync is the source of truth for end-to-end typing.
+ * Shared application row/enum types used across the UI layer.
+ * The database schema itself is defined with Drizzle in src/lib/db/schema.ts
+ * (Neon Postgres); these hand-authored types mirror the shapes the client uses.
  */
 
 export type UserRole = "super_admin" | "institute_admin" | "teacher" | "parent";
@@ -27,10 +26,6 @@ type Audit = {
   created_by: string | null;
   updated_by: string | null;
 };
-
-type Row<T> = T;
-type Insert<T> = Partial<T>;
-type Update<T> = Partial<T>;
 
 export type ProfileRow = Audit & {
   id: string;
@@ -206,49 +201,3 @@ export type NotificationRow = {
   created_at: string;
 };
 
-type TableShape<R> = {
-  Row: Row<R>;
-  Insert: Insert<R>;
-  Update: Update<R>;
-  Relationships: [];
-};
-
-export interface Database {
-  public: {
-    Tables: {
-      profiles: TableShape<ProfileRow>;
-      institutes: TableShape<InstituteRow>;
-      courses: TableShape<CourseRow>;
-      batches: TableShape<BatchRow>;
-      students: TableShape<StudentRow>;
-      fees: TableShape<FeeRow>;
-      payments: TableShape<PaymentRow>;
-      message_templates: TableShape<MessageTemplateRow>;
-      reminders: TableShape<ReminderRow>;
-      receipts: TableShape<ReceiptRow>;
-      activity_logs: TableShape<ActivityLogRow>;
-      notifications: TableShape<NotificationRow>;
-    };
-    Views: Record<string, never>;
-    Functions: {
-      current_institute_id: { Args: Record<string, never>; Returns: string };
-      current_user_role: { Args: Record<string, never>; Returns: UserRole };
-      is_super_admin: { Args: Record<string, never>; Returns: boolean };
-      increment_fee_payment: { Args: { p_fee_id: string; p_amount: number }; Returns: undefined };
-      next_receipt_number: { Args: { p_institute_id: string }; Returns: string };
-    };
-    Enums: {
-      user_role: UserRole;
-      gender: Gender;
-      student_status: StudentStatus;
-      fee_type: FeeType;
-      fee_status: FeeStatus;
-      payment_status: PaymentStatus;
-      payment_method: PaymentMethod;
-      reminder_type: ReminderType;
-      reminder_channel: ReminderChannel;
-      delivery_status: DeliveryStatus;
-      institute_type: InstituteType;
-    };
-  };
-}

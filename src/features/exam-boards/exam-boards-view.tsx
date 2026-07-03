@@ -11,6 +11,7 @@ import { FormDialog } from "@/components/form-dialog";
 import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+  stickyActionsHead, stickyActionsCell,
 } from "@/components/ui/table";
 import { renderTemplate } from "@/lib/wa-link";
 import { getSector } from "@/lib/constants";
@@ -95,7 +96,7 @@ export function ExamBoardsView() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Student</TableHead><TableHead>Board / tier</TableHead><TableHead>Exam date</TableHead>
-                  <TableHead>Fee</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Action</TableHead>
+                  <TableHead>Fee</TableHead><TableHead>Status</TableHead><TableHead className={`text-right ${stickyActionsHead}`}>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -110,7 +111,7 @@ export function ExamBoardsView() {
                         <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status]}</Badge>
                       </button>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className={`text-right ${stickyActionsCell}`}>
                       <SendOnWhatsApp
                         size="sm" variant="outline" phone={r.parentMobile} label="Notify"
                         message={renderTemplate(BODY, { student_name: r.studentName, board: r.board, tier: r.tier, date: r.examDate ? formatDate(r.examDate) : "soon", fee: String(r.fee), business: biz })}

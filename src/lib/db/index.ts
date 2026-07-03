@@ -11,7 +11,7 @@ import * as schema from "./schema";
  * not supported over HTTP; do those with explicit per-row guards instead.)
  *
  * The whole app talks to the database through this `db` export. To move to
- * Supabase (or any Postgres) later, only DATABASE_URL changes.
+ * any other Postgres provider later, only DATABASE_URL changes.
  */
 // Fall back to a syntactically-valid placeholder when DATABASE_URL is absent,
 // so `next build` (which imports this module) never crashes on missing env.

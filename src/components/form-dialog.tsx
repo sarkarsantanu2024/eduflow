@@ -26,7 +26,7 @@ const controlClass =
 /**
  * Generic "create / edit" dialog. In demo mode it validates required fields,
  * shows a themed success toast and closes (non-persistent). In live mode,
- * pass an `onSubmit` that writes to Supabase.
+ * pass an `onSubmit` that persists the record.
  */
 export function FormDialog({
   trigger,

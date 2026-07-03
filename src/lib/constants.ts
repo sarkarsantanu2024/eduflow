@@ -35,7 +35,7 @@ export const SUPPORT = {
 
 /** Sidebar navigation. `roles` gates visibility per role; `module` per sector. */
 export const NAV_ITEMS: NavItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["institute_admin", "teacher"] },
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["institute_admin"] },
   { title: "Students", href: "/students", icon: Users, roles: ["institute_admin", "teacher"], labelKey: "members" },
   { title: "Courses", href: "/courses", icon: BookOpen, roles: ["institute_admin"], labelKey: "courses" },
   { title: "Batches", href: "/batches", icon: CalendarClock, roles: ["institute_admin", "teacher"], labelKey: "batches" },
@@ -52,7 +52,8 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Fees", href: "/fees", icon: Receipt, roles: ["institute_admin"] },
   { title: "Expenses", href: "/expenses", icon: Coins, roles: ["institute_admin"] },
   { title: "WhatsApp Reminders", href: "/reminders", icon: MessageSquare, roles: ["institute_admin"] },
-  { title: "Billing & Plans", href: "/billing", icon: Wallet, roles: ["institute_admin"] },
+  // Billing & Plans hidden while the product is free. Re-add this line to restore it.
+  // { title: "Billing & Plans", href: "/billing", icon: Wallet, roles: ["institute_admin"] },
   { title: "Support", href: "/support", icon: LifeBuoy, roles: ["institute_admin", "teacher"] },
 ];
 

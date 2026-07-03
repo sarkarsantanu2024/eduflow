@@ -12,6 +12,7 @@ import { FormDialog } from "@/components/form-dialog";
 import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+  stickyActionsHead, stickyActionsCell,
 } from "@/components/ui/table";
 import { renderTemplate } from "@/lib/wa-link";
 import {
@@ -100,7 +101,7 @@ export function TestsView() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Rank</TableHead><TableHead>Student</TableHead>
-                    <TableHead>Score</TableHead><TableHead className="text-right">Action</TableHead>
+                    <TableHead>Score</TableHead><TableHead className={`text-right ${stickyActionsHead}`}>Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -113,7 +114,7 @@ export function TestsView() {
                       </TableCell>
                       <TableCell className="font-medium">{r.studentName}</TableCell>
                       <TableCell className="font-semibold">{r.score}/{r.maxScore}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className={`text-right ${stickyActionsCell}`}>
                         <SendOnWhatsApp
                           size="sm" variant="outline" phone={r.parentMobile} label="Send result"
                           message={renderTemplate(BODY, { student_name: r.studentName, score: String(r.score), max: String(r.maxScore), test: r.testName, rank: String(r.rank), business: biz })}
