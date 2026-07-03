@@ -4,13 +4,24 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
 import { formatCurrency } from "@/lib/utils";
 
 /** Real, scannable UPI intent QR (renders the amount + payee) via a free QR service. */
-export function upiQrUrl(upiId: string, payeeName: string, amount: number, note: string) {
+export function upiQrUrl(
+  upiId: string,
+  payeeName: string,
+  amount: number,
+  note: string,
+) {
   const upi =
     `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}` +
     `&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
@@ -18,30 +29,50 @@ export function upiQrUrl(upiId: string, payeeName: string, amount: number, note:
 }
 
 /**
- * Previews a WhatsApp message (and a UPI QR when there's an amount to pay) and
- * runs an action on confirm. Demo mode: nothing is actually sent — this is the
- * preview + "mark as …" step. Swap in the WhatsApp Cloud API later.
+ * Previews a WhatsApp message (and a UPI QR when there's an amount to pay).
+ *
+ * Two clearly-separated confirmations:
+ *  • `onSent`  — the message was sent via WhatsApp (e.g. stamp "reminder sent").
+ *                Sending is the ONLY thing that records this, so there's no
+ *                redundant "Mark as sent" button.
+ *  • `action`  — an optional NON-WhatsApp state change (e.g. "Mark as paid" for
+ *                an offline cash/UPI payment). Kept separate so sending a message
+ *                never accidentally records a payment.
+ *
+ * Demo mode: WhatsApp opens via a wa.me link; swap in the Cloud API later.
  */
 export function WaQrDialog({
-  trigger, title, recipientName, mobile, message,
-  amount = 0, upiId, payeeName = "Institute", note = "",
-  actionLabel, actionIcon, onAction,
+  trigger,
+  title,
+  recipientName,
+  mobile,
+  message,
+  amount = 0,
+  upiId,
+  qrImage,
+  payeeName = "Institute",
+  note = "",
+  onSent,
+  action,
 }: {
   trigger: React.ReactNode;
   title: string;
   recipientName: string;
   mobile: string;
   message: string;
-  amount?: number; // rupees; > 0 shows a UPI QR
+  amount?: number; // rupees; > 0 shows a payment QR
   upiId?: string;
+  qrImage?: string; // uploaded PhonePe/GPay/Paytm QR — preferred when set
   payeeName?: string;
   note?: string;
-  actionLabel: string;
-  actionIcon?: React.ReactNode;
-  onAction: () => void;
+  onSent?: () => void; // fired when the message is sent on WhatsApp
+  action?: { label: string; icon?: React.ReactNode; onClick: () => void }; // optional offline action
 }) {
   const [open, setOpen] = useState(false);
-  const showQr = amount > 0 && !!upiId;
+  // Prefer the center's uploaded QR; otherwise build a UPI-intent QR from the UPI ID.
+  const qrSrc =
+    qrImage || (upiId ? upiQrUrl(upiId, payeeName, amount, note) : "");
+  const showQr = amount > 0 && !!qrSrc;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -49,7 +80,9 @@ export function WaQrDialog({
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>To {recipientName} · WhatsApp {mobile}</DialogDescription>
+          <DialogDescription>
+            To {recipientName} · WhatsApp {mobile}
+          </DialogDescription>
         </DialogHeader>
 
         {/* WhatsApp-style message bubble */}
@@ -60,30 +93,46 @@ export function WaQrDialog({
         {showQr && (
           <div className="flex flex-col items-center gap-2">
             <img
-              src={upiQrUrl(upiId!, payeeName, amount, note)}
-              alt="UPI QR code"
+              src={qrSrc}
+              alt="Payment QR code"
               className="size-44 rounded-lg border bg-white object-contain"
             />
             <p className="text-xs text-muted-foreground">
-              Scan to pay <span className="font-semibold text-foreground">{formatCurrency(amount * 100)}</span> · {upiId}
+              Scan to pay{" "}
+              <span className="font-semibold text-foreground">
+                {formatCurrency(amount * 100)}
+              </span>
+              {upiId && <> · {upiId}</>}
             </p>
+            <a
+              href={qrSrc}
+              download="payment-qr.png"
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              Save QR image to attach in WhatsApp
+            </a>
           </div>
         )}
 
-        <p className="rounded-lg border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          Tap <span className="font-medium text-foreground">Send on WhatsApp</span> — it opens WhatsApp
-          with this message ready, you just press send. Free, from your own number.
-        </p>
-
         <DialogFooter className="flex-col gap-2 sm:flex-row">
-          <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
-          <Button variant="outline" onClick={() => { onAction(); setOpen(false); }}>
-            {actionIcon} {actionLabel}
-          </Button>
+          {action && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                action.onClick();
+                setOpen(false);
+              }}
+            >
+              {action.icon} {action.label}
+            </Button>
+          )}
           <SendOnWhatsApp
             phone={mobile}
             message={message}
-            onSent={() => { onAction(); setOpen(false); }}
+            onSent={() => {
+              onSent?.();
+              setOpen(false);
+            }}
           />
         </DialogFooter>
       </DialogContent>

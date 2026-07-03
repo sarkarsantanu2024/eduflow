@@ -20,10 +20,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
   let needsOnboarding = false;
 
   if (activeId) {
-    const institute = await db.query.institutes.findFirst({
-      where: eq(institutes.id, activeId),
-      columns: { name: true, onboarded: true, isActive: true },
-    });
+    // These two are independent — run them in one round-trip, not two.
+    const [institute, sub] = await Promise.all([
+      db.query.institutes.findFirst({
+        where: eq(institutes.id, activeId),
+        columns: { name: true, onboarded: true, isActive: true },
+      }),
+      db
+        .select({ planName: subscriptionPlans.name })
+        .from(subscriptions)
+        .innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id))
+        .where(eq(subscriptions.instituteId, activeId))
+        .limit(1),
+    ]);
+
     instituteName = institute?.name;
 
     // Suspended/blocked center: lock out the owner & staff (super-admin
@@ -33,13 +43,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
     }
 
     needsOnboarding = profile.role === "institute_admin" && institute?.onboarded === false;
-
-    const sub = await db
-      .select({ planName: subscriptionPlans.name })
-      .from(subscriptions)
-      .innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id))
-      .where(eq(subscriptions.instituteId, activeId))
-      .limit(1);
     if (sub[0]) planLabel = `${sub[0].planName} plan`;
   }
 

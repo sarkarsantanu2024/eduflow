@@ -95,7 +95,24 @@ export interface Expense {
   note: string;
 }
 
-export const EXPENSE_CATEGORIES = ["Rent", "Salary", "Utilities", "Marketing", "Supplies", "Maintenance", "Other"] as const;
+export const EXPENSE_CATEGORIES = [
+  "Rent",
+  "Head Office",
+  "Teacher Salary",
+  "Staff Salary",
+  "Electricity Bill",
+  "Water Bill",
+  "Internet / Phone",
+  "Cleaning / Housekeeping",
+  "Study Materials",
+  "Printing / Stationery",
+  "Marketing / Ads",
+  "Maintenance / Repairs",
+  "Furniture / Equipment",
+  "Refreshments",
+  "Transport",
+  "Miscellaneous",
+] as const;
 
 export interface Attendance {
   id: string;
@@ -170,7 +187,7 @@ export interface Material {
   studentName: string;
   item: string;
   amount: number;
-  issued: boolean;
+  issued: boolean; // reused as "charge paid"
   date: string;
 }
 
@@ -226,6 +243,23 @@ export const DEFAULT_CERT_LAYOUT: CertLayout = {
   color: "#1f2937",
 };
 
+/**
+ * A recurring monthly cost the center owes someone (Head Office royalty, school
+ * room rent, a fixed subscription…). One model covers every case via `basis`:
+ *  - fixed:       a flat ₹/month
+ *  - per_student: ₹ × active students   (e.g. school rent per head)
+ *  - percent:     % of the month's fees (e.g. franchise royalty)
+ * Each is auto-posted once a month as an expense so Net Profit is the real margin.
+ */
+export type ChargeBasis = "fixed" | "per_student" | "percent";
+export interface RecurringCharge {
+  id: string;
+  name: string;
+  basis: ChargeBasis;
+  amount: number; // ₹ for fixed/per_student, % for percent
+  category: string; // expense category the auto-posted expense uses
+}
+
 export interface Profile {
   businessName: string;
   businessType: string;
@@ -237,6 +271,9 @@ export interface Profile {
   address: string;
   monthlyFee: number;
   reactivationFee: number;
+  hoRoyaltyPerStudent: number; // legacy — migrated into recurringCharges
+  hoRoyaltyPercent: number; // legacy — migrated into recurringCharges
+  recurringCharges: RecurringCharge[];
   website: string;
   upiId: string;
   qrImage: string; // data URL or Blob URL
@@ -276,7 +313,7 @@ export type CollectionName =
 
 export const EMPTY_PROFILE: Profile = {
   businessName: "", businessType: "abacus", ownerName: "", email: "", phone: "",
-  gst: "", city: "", address: "", monthlyFee: 0, reactivationFee: 0, website: "", upiId: "", qrImage: "", avatar: "",
+  gst: "", city: "", address: "", monthlyFee: 0, reactivationFee: 0, hoRoyaltyPerStudent: 0, hoRoyaltyPercent: 0, recurringCharges: [], website: "", upiId: "", qrImage: "", avatar: "",
   facebook: "", instagram: "", youtube: "", whatsapp: "",
   certImage: "", certLayout: DEFAULT_CERT_LAYOUT,
 };

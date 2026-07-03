@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, stickyActionsHead, stickyActionsCell } from "@/components/ui/table";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -50,7 +50,7 @@ export function AdminConsole({ customers }: { customers: CustomerRow[] }) {
                 <TableHead className="text-right">Collected</TableHead>
                 <TableHead className="text-right">Pending</TableHead>
                 <TableHead>Owner</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className={`text-right ${stickyActionsHead}`}>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -69,7 +69,7 @@ export function AdminConsole({ customers }: { customers: CustomerRow[] }) {
                   <TableCell className="text-right">{rupees(c.revenue)}</TableCell>
                   <TableCell className="text-right">{rupees(c.pending)}</TableCell>
                   <TableCell className="text-xs">{c.ownerEmail ?? "—"}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className={`text-right ${stickyActionsCell}`}>
                     <div className="flex justify-end gap-1.5">
                       <form action={openCenter}>
                         <input type="hidden" name="instituteId" value={c.id} />

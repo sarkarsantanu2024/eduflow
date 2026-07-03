@@ -12,6 +12,7 @@ import { FormDialog } from "@/components/form-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+  stickyActionsHead, stickyActionsCell,
 } from "@/components/ui/table";
 import {
   useCollection, useHydrated, addItem, removeItem, newId,
@@ -62,7 +63,7 @@ export function ExpensesView() {
         { name: "note", label: "Note", type: "textarea" },
       ]}
       onSubmit={(v) => addItem<Expense>("expenses", {
-        id: newId("exp"), title: v("title"), category: v("category") || "Other",
+        id: newId("exp"), title: v("title"), category: v("category") || "Miscellaneous",
         amount: Number(v("amount")) || 0, date: v("date") || today, note: v("note"),
       })}
     />
@@ -133,7 +134,7 @@ export function ExpensesView() {
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead><TableHead>Title</TableHead><TableHead>Category</TableHead>
-              <TableHead>Note</TableHead><TableHead>Amount</TableHead><TableHead className="text-right">Action</TableHead>
+              <TableHead>Note</TableHead><TableHead>Amount</TableHead><TableHead className={`text-right ${stickyActionsHead}`}>Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -147,7 +148,7 @@ export function ExpensesView() {
                 <TableCell><Badge variant="outline">{e.category}</Badge></TableCell>
                 <TableCell className="max-w-[14rem] truncate text-muted-foreground" title={e.note || ""}>{e.note || "—"}</TableCell>
                 <TableCell className="font-semibold">{formatCurrency(e.amount * 100)}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className={`text-right ${stickyActionsCell}`}>
                   <ConfirmDialog
                     title={`Delete "${e.title}"?`} confirmLabel="Delete" destructive
                     onConfirm={() => { removeItem("expenses", e.id); toast.success("Expense deleted"); }}

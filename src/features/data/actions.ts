@@ -83,12 +83,29 @@ export async function fetchDb(): Promise<Db> {
   const result: Record<string, unknown[]> = {};
   await Promise.all(
     (Object.keys(CONFIG) as CollectionName[]).map(async (name) => {
-      const rows = await db.select().from(CONFIG[name].table).where(eq(CONFIG[name].table.instituteId, instituteId));
-      result[name] = rows.map((r: Record<string, unknown>) => fromDb(name, r));
+      try {
+        const rows = await db.select().from(CONFIG[name].table).where(eq(CONFIG[name].table.instituteId, instituteId));
+        result[name] = rows.map((r: Record<string, unknown>) => fromDb(name, r));
+      } catch (err) {
+        // One collection failing (e.g. a pending migration) must never blank the
+        // whole app — fall back to empty for just that collection.
+        console.error(`[fetchDb] failed to load "${name}":`, err);
+        result[name] = [];
+      }
     }),
   );
 
-  return { ...(result as unknown as Omit<Db, "profile">), profile: await fetchProfile(instituteId) };
+  // Profile is resilient too: if it fails (e.g. a pending migration), fall back
+  // to an empty profile rather than blanking the whole app.
+  let profile: Profile;
+  try {
+    profile = await fetchProfile(instituteId);
+  } catch (err) {
+    console.error("[fetchDb] failed to load profile:", err);
+    profile = EMPTY_PROFILE;
+  }
+
+  return { ...(result as unknown as Omit<Db, "profile">), profile };
 }
 
 /** Load the active institute's profile (center settings). */
@@ -110,6 +127,9 @@ export async function fetchProfile(instituteIdArg?: string): Promise<Profile> {
     address: inst.address ?? "",
     monthlyFee: inst.monthlyFee ?? 0,
     reactivationFee: inst.reactivationFee ?? 0,
+    hoRoyaltyPerStudent: inst.hoRoyaltyPerStudent ?? 0,
+    hoRoyaltyPercent: inst.hoRoyaltyPercent ?? 0,
+    recurringCharges: inst.recurringCharges ?? [],
     website: inst.website ?? "",
     upiId: inst.upiId ?? "",
     qrImage: inst.qrImageUrl ?? "",
@@ -147,7 +167,7 @@ export async function deleteRow(collection: CollectionName, id: string): Promise
 const PROFILE_MAP: Record<keyof Profile, string> = {
   businessName: "name", businessType: "type", ownerName: "ownerName", email: "email",
   phone: "phone", gst: "gst", city: "city", address: "address", monthlyFee: "monthlyFee",
-  reactivationFee: "reactivationFee", website: "website", upiId: "upiId", qrImage: "qrImageUrl",
+  reactivationFee: "reactivationFee", hoRoyaltyPerStudent: "hoRoyaltyPerStudent", hoRoyaltyPercent: "hoRoyaltyPercent", recurringCharges: "recurringCharges", website: "website", upiId: "upiId", qrImage: "qrImageUrl",
   avatar: "avatarUrl", facebook: "facebook", instagram: "instagram", youtube: "youtube",
   whatsapp: "whatsapp", certImage: "certImageUrl", certLayout: "certLayout",
 };

@@ -67,6 +67,7 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
     // sync parent fields for reminders/fees
     const payload = {
       ...form,
+      centreName: profile.businessName || form.centreName,
       parentName: form.parentName || form.fatherName || form.motherName,
       parentMobile: form.parentMobile || form.fatherContact || form.motherContact,
     };
@@ -122,10 +123,12 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
             </Field>
             <Field label="Date of birth"><Input type="date" value={form.dob} onChange={(e) => set("dob", e.target.value)} /></Field>
             <Field label="Admission date"><Input type="date" value={form.admissionDate} onChange={(e) => set("admissionDate", e.target.value)} /></Field>
-            <Field label="Centre name"><Input value={form.centreName} onChange={(e) => set("centreName", e.target.value)} /></Field>
-            <Field label="Course">
+            <Field label="Centre name">
+              <Input value={profile.businessName} readOnly className="cursor-not-allowed bg-muted/50" title="Your centre — change it in Profile" />
+            </Field>
+            <Field label="Course/Level">
               <select className={selectClass} value={form.courseId} onChange={(e) => set("courseId", e.target.value)}>
-                <option value="">Select course…</option>
+                <option value="">Select course/level…</option>
                 {courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>

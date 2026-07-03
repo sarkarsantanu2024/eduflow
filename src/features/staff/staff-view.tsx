@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, stickyActionsHead, stickyActionsCell } from "@/components/ui/table";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -56,7 +56,7 @@ export function StaffView({ data }: { data: StaffData }) {
                 <TableHead>Username (login)</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className={`text-right ${stickyActionsHead}`}>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -68,7 +68,7 @@ export function StaffView({ data }: { data: StaffData }) {
                   <TableCell>
                     <Badge variant={s.isActive ? "success" : "secondary"}>{s.isActive ? "Active" : "Suspended"}</Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className={`text-right ${stickyActionsCell}`}>
                     <div className="flex justify-end gap-1.5">
                       <ResetStaffDialog userId={s.id} name={s.fullName || s.email} onDone={() => router.refresh()} />
                       <form action={setStaffActive}>

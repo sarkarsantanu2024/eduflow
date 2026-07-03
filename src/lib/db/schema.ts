@@ -2,7 +2,7 @@ import {
   pgTable, pgEnum, uuid, text, integer, boolean, timestamp, date, jsonb,
   doublePrecision, uniqueIndex, index,
 } from "drizzle-orm/pg-core";
-import type { CertLayout } from "../store/types";
+import type { CertLayout, RecurringCharge } from "../store/types";
 
 /**
  * EduFlow database schema (Neon Postgres via Drizzle).
@@ -82,6 +82,12 @@ export const institutes = pgTable("institutes", {
   // Fees / payments
   monthlyFee: integer("monthly_fee").notNull().default(0), // flat center fee, rupees
   reactivationFee: integer("reactivation_fee").notNull().default(0),
+  // Legacy franchise royalty fields — migrated into recurringCharges.
+  hoRoyaltyPerStudent: integer("ho_royalty_per_student").notNull().default(0),
+  hoRoyaltyPercent: integer("ho_royalty_percent").notNull().default(0),
+  // Recurring monthly costs (royalty, space rent, fixed subscriptions…) that
+  // auto-post as expenses. See RecurringCharge.
+  recurringCharges: jsonb("recurring_charges").$type<RecurringCharge[]>().notNull().default([]),
   upiId: text("upi_id"),
   // Branding / media (Vercel Blob URLs)
   logoUrl: text("logo_url"),
@@ -361,7 +367,7 @@ export const materials = pgTable("materials", {
   studentName: text("student_name").notNull().default(""),
   item: text("item").notNull().default(""),
   amount: integer("amount").notNull().default(0),
-  issued: boolean("issued").notNull().default(false),
+  issued: boolean("issued").notNull().default(false), // reused as "charge paid"
   date: date("date"),
   ...timestamps,
 }, (t) => ({ byInstitute: index("materials_institute_idx").on(t.instituteId) }));

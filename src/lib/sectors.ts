@@ -76,11 +76,11 @@ export interface SectorConfig {
 
 // Messages every sector shares (fee lifecycle + housekeeping).
 const COMMON_TEMPLATES: SeedTemplate[] = [
-  { name: "Fee Due Reminder", type: "fee_due", body: "Hi {{parent_name}}, the fee of ₹{{amount}} for {{student_name}} is due on {{due_date}}. Please pay via the UPI QR we sent. — {{business}}" },
-  { name: "Fee Overdue", type: "fee_overdue", body: "Reminder: ₹{{amount}} for {{student_name}} is overdue. Kindly clear it at the earliest. — {{business}}" },
-  { name: "Absent Today", type: "absent", body: "Dear {{parent_name}}, {{student_name}} was marked absent today. Please ensure regular attendance. — {{business}}" },
-  { name: "Birthday Wish", type: "birthday", body: "Happy Birthday {{student_name}}! 🎉 Wishing you a wonderful year ahead. — {{business}}" },
-  { name: "Holiday Notice", type: "holiday_notice", body: "Dear parents, the centre will remain closed on {{date}} for {{occasion}}. — {{business}}" },
+  { name: "Fee Due Reminder", type: "fee_due", body: "Dear {{parent_name}}, this is a gentle reminder that the fee of ₹{{amount}} for {{student_name}} is due on {{due_date}}. Kindly pay at your convenience using the UPI ID/QR shared with you. Thank you. — {{business}}" },
+  { name: "Fee Overdue", type: "fee_overdue", body: "Dear {{parent_name}}, the fee of ₹{{amount}} for {{student_name}} is now overdue. We kindly request you to clear it at the earliest. Please ignore this message if already paid. Thank you. — {{business}}" },
+  { name: "Absent Today", type: "absent", body: "Dear {{parent_name}}, we noticed that {{student_name}} was absent from class today. Kindly ensure regular attendance for steady progress. Thank you. — {{business}}" },
+  { name: "Birthday Wish", type: "birthday", body: "Dear Parent, wishing {{student_name}} a very Happy Birthday! 🎂 On behalf of everyone at {{business}}, we hope the day is full of joy and the year ahead brings great health, happiness and success in studies. With warm regards, {{business}}." },
+  { name: "Holiday Notice", type: "holiday_notice", body: "Dear Parents, please note that {{business}} will remain closed on {{date}} on account of {{occasion}}. Regular classes will resume on the next working day. Thank you. — {{business}}" },
 ];
 
 export const SECTORS: SectorConfig[] = [
@@ -104,10 +104,10 @@ export const SECTORS: SectorConfig[] = [
     ],
     seedTemplates: [
       ...COMMON_TEMPLATES,
-      { name: "Level Promotion", type: "promotion", body: "Congratulations! {{student_name}} has cleared the assessment and is promoted to {{level}}. 🎉 Proud of the progress! — {{business}}" },
-      { name: "Speed Test Result", type: "result", body: "{{student_name}} scored {{score}} in today's speed test. Great mental-maths work! — {{business}}" },
-      { name: "Competition Notice", type: "competition", body: "Dear parent, {{student_name}} is selected for the {{event}} abacus competition on {{date}}. Entry fee ₹{{amount}}. — {{business}}" },
-      { name: "Certificate Ready", type: "certificate", body: "{{student_name}}'s {{level}} completion certificate is ready for collection. — {{business}}" },
+      { name: "Level Promotion", type: "promotion", body: "Dear Parent, we are delighted to share that {{student_name}} has successfully cleared the assessment and is promoted to {{level}}. 🎉 Congratulations on this wonderful progress! — {{business}}" },
+      { name: "Speed Test Result", type: "result", body: "Dear Parent, {{student_name}} scored {{score}} in today's speed test — excellent mental-maths work! Please keep encouraging the daily practice. — {{business}}" },
+      { name: "Competition Notice", type: "competition", body: "Dear Parent, we are pleased to inform you that {{student_name}} has been selected for the {{event}} abacus competition on {{date}}. The entry fee is ₹{{amount}}. — {{business}}" },
+      { name: "Certificate Ready", type: "certificate", body: "Dear Parent, {{student_name}}'s {{level}} completion certificate is now ready for collection from the centre. Congratulations! — {{business}}" },
     ],
   },
   {
@@ -125,9 +125,9 @@ export const SECTORS: SectorConfig[] = [
     ],
     seedTemplates: [
       ...COMMON_TEMPLATES,
-      { name: "Test Score & Rank", type: "result", body: "{{student_name}} scored {{score}} in the {{test}} test — Rank {{rank}} in the batch. Keep it up! — {{business}}" },
-      { name: "Mock Test Schedule", type: "test_schedule", body: "Dear parent, a full-syllabus mock test for {{student_name}}'s batch is on {{date}}. Please ensure attendance. — {{business}}" },
-      { name: "PTM Notice", type: "ptm", body: "Parent–Teacher Meeting on {{date}} to discuss {{student_name}}'s performance. — {{business}}" },
+      { name: "Test Score & Rank", type: "result", body: "Dear Parent, {{student_name}} scored {{score}} in the {{test}} test and secured Rank {{rank}} in the batch. Well done — keep up the good work! — {{business}}" },
+      { name: "Mock Test Schedule", type: "test_schedule", body: "Dear Parent, a full-syllabus mock test for {{student_name}}'s batch is scheduled on {{date}}. Kindly ensure attendance and timely preparation. — {{business}}" },
+      { name: "PTM Notice", type: "ptm", body: "Dear Parent, a Parent–Teacher Meeting is scheduled on {{date}} to discuss {{student_name}}'s progress. We look forward to your presence. — {{business}}" },
     ],
   },
   {
@@ -147,9 +147,9 @@ export const SECTORS: SectorConfig[] = [
     ],
     seedTemplates: [
       ...COMMON_TEMPLATES,
-      { name: "Admission Confirmed", type: "admission", body: "Welcome {{student_name}}! Admission confirmed for {{course}}. Roll no: {{roll}}. Classes start {{date}}. — {{business}}" },
-      { name: "Exam Schedule", type: "exam", body: "Dear {{student_name}}, your {{course}} theory & practical exam is on {{date}}. All the best! — {{business}}" },
-      { name: "Certificate Ready", type: "certificate", body: "Congratulations {{student_name}}! Your {{course}} certificate is issued. Verify online or collect from the centre. — {{business}}" },
+      { name: "Admission Confirmed", type: "admission", body: "Dear {{student_name}}, welcome to {{business}}! Your admission for {{course}} is confirmed (Roll no: {{roll}}). Classes begin on {{date}}. We wish you a great learning journey. — {{business}}" },
+      { name: "Exam Schedule", type: "exam", body: "Dear Parent, {{student_name}}'s {{course}} theory & practical examination is scheduled on {{date}}. We wish them all the best. — {{business}}" },
+      { name: "Certificate Ready", type: "certificate", body: "Dear Parent, congratulations! {{student_name}}'s {{course}} certificate has been issued. You may verify it online or collect it from the centre. — {{business}}" },
     ],
   },
   {
@@ -167,10 +167,10 @@ export const SECTORS: SectorConfig[] = [
     ],
     seedTemplates: [
       ...COMMON_TEMPLATES,
-      { name: "Grade Promotion", type: "promotion", body: "Congratulations! {{student_name}} has cleared {{level}} and moves to the next grade. 💃 — {{business}}" },
-      { name: "Annual Function Invite", type: "event", body: "You're invited! {{student_name}} performs at our Annual Function on {{date}} at {{venue}}. Don't miss it! — {{business}}" },
-      { name: "Board Exam Registration", type: "exam", body: "Dear parent, registration for the {{board}} dance exam closes on {{date}}. Fee ₹{{amount}}. — {{business}}" },
-      { name: "Rehearsal Schedule", type: "rehearsal", body: "Rehearsal for {{student_name}}'s item is on {{date}} at {{time}}. Please be on time. — {{business}}" },
+      { name: "Grade Promotion", type: "promotion", body: "Dear Parent, congratulations! {{student_name}} has cleared {{level}} and now moves to the next grade. 💃 We're proud of this progress. — {{business}}" },
+      { name: "Annual Function Invite", type: "event", body: "Dear Parent, you are cordially invited to our Annual Function on {{date}} at {{venue}}, where {{student_name}} will be performing. We would be delighted to have you there. — {{business}}" },
+      { name: "Board Exam Registration", type: "exam", body: "Dear Parent, registration for the {{board}} dance examination closes on {{date}}. The fee is ₹{{amount}}. Kindly complete it at the earliest. — {{business}}" },
+      { name: "Rehearsal Schedule", type: "rehearsal", body: "Dear Parent, rehearsal for {{student_name}}'s performance is scheduled on {{date}} at {{time}}. Kindly ensure they arrive on time. — {{business}}" },
     ],
   },
   {
@@ -188,9 +188,9 @@ export const SECTORS: SectorConfig[] = [
     ],
     seedTemplates: [
       ...COMMON_TEMPLATES,
-      { name: "Exam Registration", type: "exam", body: "Dear parent, {{board}} drawing exam registration for {{student_name}} closes on {{date}}. Fee ₹{{amount}}. — {{business}}" },
-      { name: "Competition Notice", type: "competition", body: "{{student_name}} can participate in the {{event}} art contest. Submission by {{date}}. — {{business}}" },
-      { name: "Exhibition Invite", type: "event", body: "Our students' art exhibition is on {{date}} at {{venue}}. {{student_name}}'s work will be on display! — {{business}}" },
+      { name: "Exam Registration", type: "exam", body: "Dear Parent, registration for the {{board}} drawing examination for {{student_name}} closes on {{date}}. The fee is ₹{{amount}}. Kindly complete it at the earliest. — {{business}}" },
+      { name: "Competition Notice", type: "competition", body: "Dear Parent, {{student_name}} has the opportunity to participate in the {{event}} art contest. Kindly submit the entry by {{date}}. — {{business}}" },
+      { name: "Exhibition Invite", type: "event", body: "Dear Parent, you are invited to our students' art exhibition on {{date}} at {{venue}}, where {{student_name}}'s work will be on display. We hope to see you there. — {{business}}" },
     ],
   },
   {
@@ -208,9 +208,9 @@ export const SECTORS: SectorConfig[] = [
     ],
     seedTemplates: [
       ...COMMON_TEMPLATES,
-      { name: "Demo Class Invite", type: "demo", body: "Hi {{parent_name}}, a free spoken-English demo class is on {{date}} at {{time}}. Bring {{student_name}} along! — {{business}}" },
-      { name: "Level Promotion", type: "promotion", body: "Well done! {{student_name}} has completed {{level}} and is promoted to the next module. 🗣️ — {{business}}" },
-      { name: "Daily Practice", type: "practice", body: "Today's practice for {{student_name}}: speak 5 sentences about {{topic}}. Send us a voice note! — {{business}}" },
+      { name: "Demo Class Invite", type: "demo", body: "Dear {{parent_name}}, we are hosting a free Spoken English demo class on {{date}} at {{time}}. You are welcome to bring {{student_name}} along. — {{business}}" },
+      { name: "Level Promotion", type: "promotion", body: "Dear Parent, well done! {{student_name}} has completed {{level}} and is promoted to the next module. 🗣️ Congratulations on the progress. — {{business}}" },
+      { name: "Daily Practice", type: "practice", body: "Dear Parent, today's practice for {{student_name}}: speak five sentences about {{topic}}. Kindly send us a short voice note. Thank you for your support. — {{business}}" },
     ],
   },
   {
@@ -228,8 +228,8 @@ export const SECTORS: SectorConfig[] = [
     ],
     seedTemplates: [
       ...COMMON_TEMPLATES,
-      { name: "Test Marks", type: "result", body: "{{student_name}} scored {{score}} in the {{test}} test. — {{business}}" },
-      { name: "Class Rescheduled", type: "reschedule", body: "Dear parent, {{student_name}}'s class on {{date}} is rescheduled to {{time}}. — {{business}}" },
+      { name: "Test Marks", type: "result", body: "Dear Parent, {{student_name}} scored {{score}} in the {{test}} test. Please encourage continued practice. — {{business}}" },
+      { name: "Class Rescheduled", type: "reschedule", body: "Dear Parent, please note that {{student_name}}'s class on {{date}} has been rescheduled to {{time}}. We regret any inconvenience. — {{business}}" },
     ],
   },
   {

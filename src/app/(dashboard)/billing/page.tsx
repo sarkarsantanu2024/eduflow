@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Check, MessageSquare, Sparkles, Building2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,12 @@ import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Billing & Plans" };
 
+// Billing is hidden while the product is free — block direct access to /billing too.
+// Delete this line (and restore the sidebar item in constants.ts) to bring it back.
+const BILLING_ENABLED = false;
+
 export default function BillingPage() {
+  if (!BILLING_ENABLED) redirect("/dashboard");
   return (
     <div className="space-y-6">
       <PageHeader

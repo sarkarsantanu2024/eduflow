@@ -26,7 +26,7 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
   ({ className, ...props }, ref) => (
     <tr
       ref={ref}
-      className={cn("border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted", className)}
+      className={cn("group border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted", className)}
       {...props}
     />
   )
@@ -50,5 +50,18 @@ const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<
   )
 );
 TableCell.displayName = "TableCell";
+
+/**
+ * Pins a table's last column (typically "Actions") to the right edge so it
+ * stays visible while the rest of the row scrolls horizontally on small screens.
+ * Apply to the header cell and matching body cell of that column. The opaque
+ * background cleanly covers cells that scroll underneath; the body-cell variant
+ * mirrors the row's hover/selected tint via `group-*` (TableRow is a `group`).
+ */
+export const stickyActionsHead = "sticky right-0 z-20 bg-card";
+export const stickyActionsCell = cn(
+  "sticky right-0 z-10 bg-card",
+  "group-hover:bg-muted/50 group-data-[state=selected]:bg-muted group-data-[selected]:bg-accent/30",
+);
 
 export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell };
