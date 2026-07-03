@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
         <p className="text-muted-foreground">
-          Tip: once you&apos;re signed in, you can change your password anytime from your <strong>Profile</strong>.
+          Tip: center owners can change their password anytime from <strong>Profile</strong> once signed in.
         </p>
       </div>
 
