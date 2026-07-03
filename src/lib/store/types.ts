@@ -191,6 +191,29 @@ export interface Material {
   date: string;
 }
 
+/** One dated entry logging marketing-collateral counts received/printed. */
+export interface AdMaterial {
+  id: string;
+  date: string;
+  banner: number;
+  leaflet: number;
+  sunPack: number;
+  poster: number;
+  voice: number;
+  other: string;
+  addedBy: string;
+}
+
+/** One dated entry logging stationery / gift counts. */
+export interface Stationery {
+  id: string;
+  date: string;
+  stationery: number;
+  gift: number;
+  other: string;
+  addedBy: string;
+}
+
 export interface InstituteEvent {
   id: string;
   title: string;
@@ -301,6 +324,8 @@ export interface Db {
   examRegs: ExamReg[];
   performances: Performance[];
   materials: Material[];
+  adMaterials: AdMaterial[];
+  stationery: Stationery[];
   events: InstituteEvent[];
   teachers: Teacher[];
   profile: Profile;
@@ -309,7 +334,7 @@ export interface Db {
 export type CollectionName =
   | "students" | "courses" | "batches" | "templates" | "fees" | "payments" | "expenses"
   | "attendance" | "promotions" | "testScores" | "certificates" | "examRegs"
-  | "performances" | "materials" | "events" | "teachers";
+  | "performances" | "materials" | "adMaterials" | "stationery" | "events" | "teachers";
 
 export const EMPTY_PROFILE: Profile = {
   businessName: "", businessType: "abacus", ownerName: "", email: "", phone: "",
@@ -321,6 +346,6 @@ export const EMPTY_PROFILE: Profile = {
 export const EMPTY_DB: Db = {
   students: [], courses: [], batches: [], templates: [], fees: [], payments: [], expenses: [],
   attendance: [], promotions: [], testScores: [], certificates: [], examRegs: [],
-  performances: [], materials: [], events: [], teachers: [],
+  performances: [], materials: [], adMaterials: [], stationery: [], events: [], teachers: [],
   profile: EMPTY_PROFILE,
 };

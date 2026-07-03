@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import {
   institutes, students, courses, batches, templates, fees, payments, expenses,
   attendance, promotions, testScores, certificates, examRegs, performances,
-  materials, events, teachers,
+  materials, adMaterials, stationery, events, teachers,
 } from "@/lib/db/schema";
 import { getActiveInstituteId, requireActiveInstituteId } from "@/lib/tenant";
 import {
@@ -38,6 +38,8 @@ const CONFIG: Record<CollectionName, Cfg> = {
   examRegs: { table: examRegs, rename: {}, nullEmpty: ["studentId", "examDate"] },
   performances: { table: performances, rename: {}, nullEmpty: ["studentId", "date"] },
   materials: { table: materials, rename: {}, nullEmpty: ["studentId", "date"] },
+  adMaterials: { table: adMaterials, rename: {}, nullEmpty: ["date"] },
+  stationery: { table: stationery, rename: {}, nullEmpty: ["date"] },
   events: { table: events, rename: {}, nullEmpty: ["date"] },
   teachers: { table: teachers, rename: {}, nullEmpty: ["joinDate"] },
 };
