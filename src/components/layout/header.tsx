@@ -120,13 +120,15 @@ export function Header({
               </p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/profile"><User /> My Profile</Link>
-            </DropdownMenuItem>
             {profile.role !== "teacher" && (
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard"><LayoutDashboard /> Dashboard</Link>
-              </DropdownMenuItem>
+              <>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile"><User /> My Profile</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard"><LayoutDashboard /> Dashboard</Link>
+                </DropdownMenuItem>
+              </>
             )}
             <DropdownMenuItem asChild>
               <Link href="/support"><LifeBuoy /> Help &amp; Support</Link>
