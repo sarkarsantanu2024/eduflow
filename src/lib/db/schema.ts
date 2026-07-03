@@ -372,6 +372,33 @@ export const materials = pgTable("materials", {
   ...timestamps,
 }, (t) => ({ byInstitute: index("materials_institute_idx").on(t.instituteId) }));
 
+// ── Ad materials log (marketing collateral counts per entry) ─────────
+export const adMaterials = pgTable("ad_materials", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  instituteId: uuid("institute_id").notNull().references(() => institutes.id, { onDelete: "cascade" }),
+  date: date("date"),
+  banner: integer("banner").notNull().default(0),
+  leaflet: integer("leaflet").notNull().default(0),
+  sunPack: integer("sun_pack").notNull().default(0),
+  poster: integer("poster").notNull().default(0),
+  voice: integer("voice").notNull().default(0),
+  other: text("other").notNull().default(""),
+  addedBy: text("added_by").notNull().default(""),
+  ...timestamps,
+}, (t) => ({ byInstitute: index("ad_materials_institute_idx").on(t.instituteId) }));
+
+// ── Stationery log (stationery / gifts per entry) ────────────────────
+export const stationery = pgTable("stationery", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  instituteId: uuid("institute_id").notNull().references(() => institutes.id, { onDelete: "cascade" }),
+  date: date("date"),
+  stationery: integer("stationery").notNull().default(0),
+  gift: integer("gift").notNull().default(0),
+  other: text("other").notNull().default(""),
+  addedBy: text("added_by").notNull().default(""),
+  ...timestamps,
+}, (t) => ({ byInstitute: index("stationery_institute_idx").on(t.instituteId) }));
+
 // ── Events ───────────────────────────────────────────────────────────
 export const events = pgTable("events", {
   id: uuid("id").primaryKey().defaultRandom(),
