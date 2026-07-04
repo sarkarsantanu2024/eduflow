@@ -220,6 +220,14 @@ export function ProfileView() {
                 placeholder="500"
               />
             </Field>
+            <Field label="Admission fee (₹)">
+              <Input
+                type="number"
+                value={profile.admissionFee || ""}
+                onChange={(e) => set("admissionFee", Number(e.target.value) || 0)}
+                placeholder="One-time, new admissions (0 = none)"
+              />
+            </Field>
             <Field label="Reactivation fee (₹)">
               <Input
                 type="number"
@@ -301,10 +309,13 @@ export function ProfileView() {
                     {EXPENSE_CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
                 </div>
-                <Button type="button" variant="ghost" size="icon" aria-label="Remove charge"
-                  onClick={() => removeCharge(c.id)}>
-                  <Trash2 className="text-destructive" />
-                </Button>
+                <ConfirmDialog
+                  title={`Remove "${c.name || "this charge"}"?`}
+                  description="It will stop auto-posting as a monthly expense. Existing posted months are not affected."
+                  confirmLabel="Remove" destructive
+                  onConfirm={() => removeCharge(c.id)}
+                  trigger={<Button type="button" variant="ghost" size="icon" aria-label="Remove charge"><Trash2 className="text-destructive" /></Button>}
+                />
               </div>
             ))}
 
