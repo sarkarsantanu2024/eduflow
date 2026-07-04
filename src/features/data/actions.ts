@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, isNotNull, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   institutes, students, courses, batches, templates, fees, payments, expenses,
@@ -44,7 +44,12 @@ const CONFIG: Record<CollectionName, Cfg> = {
   teachers: { table: teachers, rename: {}, nullEmpty: ["joinDate"] },
 };
 
-const STRIP = new Set(["instituteId", "createdAt", "updatedAt"]);
+const STRIP = new Set(["instituteId", "createdAt", "updatedAt", "deletedAt"]);
+
+// Collections that support soft delete (Trash). Their rows carry `deletedAt`;
+// normal reads filter it out, and only these can be trashed/restored.
+const SOFT_DELETE = new Set<CollectionName>(["students", "fees", "payments", "expenses", "materials"]);
+const TRASH_TTL_DAYS = 30;
 
 /** Client item → DB insert/update values. */
 function toDb(collection: CollectionName, item: Record<string, unknown>): Record<string, unknown> {
@@ -86,7 +91,11 @@ export async function fetchDb(): Promise<Db> {
   await Promise.all(
     (Object.keys(CONFIG) as CollectionName[]).map(async (name) => {
       try {
-        const rows = await db.select().from(CONFIG[name].table).where(eq(CONFIG[name].table.instituteId, instituteId));
+        const t = CONFIG[name].table;
+        const where = SOFT_DELETE.has(name)
+          ? and(eq(t.instituteId, instituteId), isNull(t.deletedAt))
+          : eq(t.instituteId, instituteId);
+        const rows = await db.select().from(t).where(where);
         result[name] = rows.map((r: Record<string, unknown>) => fromDb(name, r));
       } catch (err) {
         // One collection failing (e.g. a pending migration) must never blank the
@@ -165,6 +174,82 @@ export async function deleteRow(collection: CollectionName, id: string): Promise
   const instituteId = await requireActiveInstituteId();
   const table = CONFIG[collection].table;
   await db.delete(table).where(and(eq(table.id, id), eq(table.instituteId, instituteId)));
+}
+
+/* ── Soft delete / Trash (core entities only) ────────────────────── */
+
+/** Move a row to Trash (recoverable). Falls back to a hard delete for
+ *  collections that don't support soft delete. */
+export async function softDeleteRow(collection: CollectionName, id: string): Promise<void> {
+  if (!SOFT_DELETE.has(collection)) return deleteRow(collection, id);
+  const instituteId = await requireActiveInstituteId();
+  const table = CONFIG[collection].table;
+  await db.update(table).set({ deletedAt: new Date() }).where(and(eq(table.id, id), eq(table.instituteId, instituteId)));
+}
+
+/** Restore a trashed row (clear its deletedAt). */
+export async function restoreRow(collection: CollectionName, id: string): Promise<void> {
+  if (!SOFT_DELETE.has(collection)) return;
+  const instituteId = await requireActiveInstituteId();
+  const table = CONFIG[collection].table;
+  await db.update(table).set({ deletedAt: null }).where(and(eq(table.id, id), eq(table.instituteId, instituteId)));
+}
+
+export type TrashItem = { collection: CollectionName; id: string; label: string; amount: number; deletedAt: string };
+
+function trashLabel(collection: CollectionName, r: Record<string, unknown>): string {
+  const s = (k: string) => String(r[k] ?? "");
+  switch (collection) {
+    case "students": return `${s("firstName")} ${s("lastName")}`.trim() + (r.code ? ` (${s("code")})` : "");
+    case "fees": return `${s("title")} — ${s("studentName")}`;
+    case "payments": return `Payment — ${s("studentName")}`;
+    case "expenses": return `${s("title")} · ${s("category")}`;
+    case "materials": return `${s("item")} — ${s("studentName")}`;
+    default: return s("id");
+  }
+}
+
+/** Everything currently in Trash for the active institute (purges expired first). */
+export async function fetchTrash(): Promise<TrashItem[]> {
+  const instituteId = await getActiveInstituteId();
+  if (!instituteId) return [];
+  await purgeExpiredTrash();
+
+  const out: TrashItem[] = [];
+  await Promise.all(
+    Array.from(SOFT_DELETE).map(async (name) => {
+      const t = CONFIG[name].table;
+      try {
+        const rows = await db.select().from(t).where(and(eq(t.instituteId, instituteId), isNotNull(t.deletedAt)));
+        for (const raw of rows as Record<string, unknown>[]) {
+          const item = fromDb(name, raw);
+          const deletedAt = raw.deletedAt instanceof Date ? raw.deletedAt.toISOString() : String(raw.deletedAt);
+          out.push({
+            collection: name, id: String(item.id), label: trashLabel(name, item),
+            amount: typeof item.amount === "number" ? item.amount : 0, deletedAt,
+          });
+        }
+      } catch (err) {
+        console.error(`[fetchTrash] failed for "${name}":`, err);
+      }
+    }),
+  );
+  // Most-recently trashed first.
+  return out.sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
+}
+
+/** Permanently delete rows trashed more than TRASH_TTL_DAYS ago. */
+export async function purgeExpiredTrash(): Promise<void> {
+  const instituteId = await getActiveInstituteId();
+  if (!instituteId) return;
+  const cutoff = new Date(Date.now() - TRASH_TTL_DAYS * 24 * 60 * 60 * 1000);
+  await Promise.all(
+    Array.from(SOFT_DELETE).map((name) => {
+      const t = CONFIG[name].table;
+      return db.delete(t).where(and(eq(t.instituteId, instituteId), isNotNull(t.deletedAt), lt(t.deletedAt, cutoff)))
+        .catch((err) => console.error(`[purgeExpiredTrash] failed for "${name}":`, err));
+    }),
+  );
 }
 
 const PROFILE_MAP: Record<keyof Profile, string> = {

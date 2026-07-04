@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, BookOpen, CalendarClock, Receipt,
   MessageSquare, LifeBuoy, Wallet, Coins, ClipboardCheck, TrendingUp,
-  Trophy, Award, ScrollText, Package, PartyPopper, GraduationCap, KeyRound, Megaphone, type LucideIcon,
+  Trophy, Award, ScrollText, Package, PartyPopper, GraduationCap, KeyRound, Megaphone, Trash2, type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/types/database.types";
 import type { ModuleKey } from "@/lib/sectors";
@@ -53,6 +53,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Fees", href: "/fees", icon: Receipt, roles: ["institute_admin"] },
   { title: "Expenses", href: "/expenses", icon: Coins, roles: ["institute_admin"] },
   { title: "WhatsApp Reminders", href: "/reminders", icon: MessageSquare, roles: ["institute_admin"] },
+  { title: "Trash", href: "/trash", icon: Trash2, roles: ["institute_admin"] },
   // Billing & Plans hidden while the product is free. Re-add this line to restore it.
   // { title: "Billing & Plans", href: "/billing", icon: Wallet, roles: ["institute_admin"] },
   { title: "Support", href: "/support", icon: LifeBuoy, roles: ["institute_admin", "teacher"] },

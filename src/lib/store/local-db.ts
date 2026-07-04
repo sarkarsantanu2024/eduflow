@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import {
-  fetchDb, createRow, updateRow, deleteRow, saveProfile, clearInstituteData,
+  fetchDb, createRow, updateRow, deleteRow, softDeleteRow, restoreRow, saveProfile, clearInstituteData,
 } from "@/features/data/actions";
 import {
   EMPTY_DB, EMPTY_PROFILE,
@@ -78,9 +78,23 @@ export function updateItem<T extends { id: string }>(name: CollectionName, id: s
   void updateRow(name, id, patch as Record<string, unknown>).catch(reloadDb);
 }
 
+/** Delete a row. Core entities (students, fees, payments, expenses, materials)
+ *  are moved to Trash (recoverable); everything else is a hard delete. Either
+ *  way the row leaves the active view immediately. */
 export function removeItem(name: CollectionName, id: string) {
   setDb({ ...mem, [name]: (mem[name] as { id: string }[]).filter((x) => x.id !== id) });
-  void deleteRow(name, id).catch(reloadDb);
+  void softDeleteRow(name, id).catch(reloadDb);
+}
+
+/** Restore a trashed row, then re-hydrate so it reappears in its section. */
+export async function restoreItem(name: CollectionName, id: string) {
+  await restoreRow(name, id);
+  reloadDb();
+}
+
+/** Permanently delete a trashed row from the database (no recovery). */
+export async function permanentlyDelete(name: CollectionName, id: string) {
+  await deleteRow(name, id);
 }
 
 export function setProfile(patch: Partial<Profile>) {

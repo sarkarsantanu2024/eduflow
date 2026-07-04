@@ -48,6 +48,12 @@ const timestamps = {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 };
 
+// Soft-delete marker for core entities: null = live, timestamp = in Trash
+// (recoverable). Purged permanently 30 days after this time.
+const softDelete = {
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+};
+
 // ── Subscription plans (GLOBAL, not tenant-scoped) ───────────────────
 export const subscriptionPlans = pgTable("subscription_plans", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -209,6 +215,7 @@ export const students = pgTable("students", {
   parentEmail: text("parent_email").notNull().default(""),
   photoUrl: text("photo_url"), // Vercel Blob URL
   status: studentStatus("status").notNull().default("active"),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({
   byInstitute: index("students_institute_idx").on(t.instituteId),
@@ -233,6 +240,7 @@ export const fees = pgTable("fees", {
   reminderSentAt: text("reminder_sent_at").notNull().default(""),
   approved: boolean("approved").notNull().default(false),
   voucherSentAt: text("voucher_sent_at").notNull().default(""),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("fees_institute_idx").on(t.instituteId) }));
 
@@ -249,6 +257,7 @@ export const payments = pgTable("payments", {
   // fee → restore the fee's dues, material → un-collect the kit, reactivation → just delete.
   source: text("source").notNull().default("fee"),
   date: date("date"),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("payments_institute_idx").on(t.instituteId) }));
 
@@ -261,6 +270,7 @@ export const expenses = pgTable("expenses", {
   amount: integer("amount").notNull().default(0), // rupees
   date: date("date"),
   note: text("note").notNull().default(""),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("expenses_institute_idx").on(t.instituteId) }));
 
@@ -373,6 +383,7 @@ export const materials = pgTable("materials", {
   amount: integer("amount").notNull().default(0),
   issued: boolean("issued").notNull().default(false), // reused as "charge paid"
   date: date("date"),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("materials_institute_idx").on(t.instituteId) }));
 
