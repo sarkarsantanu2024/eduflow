@@ -46,9 +46,9 @@ const CONFIG: Record<CollectionName, Cfg> = {
 
 const STRIP = new Set(["instituteId", "createdAt", "updatedAt", "deletedAt"]);
 
-// Collections that support soft delete (Trash). Their rows carry `deletedAt`;
-// normal reads filter it out, and only these can be trashed/restored.
-const SOFT_DELETE = new Set<CollectionName>(["students", "fees", "payments", "expenses", "materials"]);
+// Every tenant collection supports soft delete (Trash): rows carry `deletedAt`,
+// normal reads filter it out, and anything deleted can be restored or purged.
+const SOFT_DELETE = new Set<CollectionName>(Object.keys(CONFIG) as CollectionName[]);
 const TRASH_TTL_DAYS = 30;
 
 /** Client item → DB insert/update values. */
@@ -197,16 +197,17 @@ export async function restoreRow(collection: CollectionName, id: string): Promis
 
 export type TrashItem = { collection: CollectionName; id: string; label: string; amount: number; deletedAt: string };
 
+// A human label for any collection's row, from whatever common fields it has.
 function trashLabel(collection: CollectionName, r: Record<string, unknown>): string {
-  const s = (k: string) => String(r[k] ?? "");
-  switch (collection) {
-    case "students": return `${s("firstName")} ${s("lastName")}`.trim() + (r.code ? ` (${s("code")})` : "");
-    case "fees": return `${s("title")} — ${s("studentName")}`;
-    case "payments": return `Payment — ${s("studentName")}`;
-    case "expenses": return `${s("title")} · ${s("category")}`;
-    case "materials": return `${s("item")} — ${s("studentName")}`;
-    default: return s("id");
-  }
+  const s = (k: string) => String(r[k] ?? "").trim();
+  const person = s("firstName") ? `${s("firstName")} ${s("lastName")}`.trim() : "";
+  const primary = person || s("name") || s("title") || s("item") || s("studentName");
+  let detail = "";
+  if (s("studentName") && primary !== s("studentName")) detail = ` — ${s("studentName")}`;
+  else if (s("category")) detail = ` · ${s("category")}`;
+  else if (s("code")) detail = ` (${s("code")})`;
+  else if (s("date")) detail = ` · ${s("date")}`;
+  return (primary + detail).trim() || collection;
 }
 
 /** Everything currently in Trash for the active institute (purges expired first). */

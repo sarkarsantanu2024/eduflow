@@ -152,6 +152,7 @@ export const courses = pgTable("courses", {
   instituteId: uuid("institute_id").notNull().references(() => institutes.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description").notNull().default(""),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("courses_institute_idx").on(t.instituteId) }));
 
@@ -168,6 +169,7 @@ export const teachers = pgTable("teachers", {
   joinDate: date("join_date"),
   salary: integer("salary").notNull().default(0),
   note: text("note").notNull().default(""),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("teachers_institute_idx").on(t.instituteId) }));
 
@@ -181,6 +183,7 @@ export const batches = pgTable("batches", {
   timing: text("timing").notNull().default(""),
   days: text("days").notNull().default(""), // free text, e.g. "Mon, Wed, Fri"
   capacity: text("capacity").notNull().default(""), // free text to match the UI
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("batches_institute_idx").on(t.instituteId) }));
 
@@ -284,6 +287,7 @@ export const templates = pgTable("templates", {
   type: text("type").notNull().default("custom"),
   channel: text("channel").notNull().default("whatsapp"),
   body: text("body").notNull(),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("templates_institute_idx").on(t.instituteId) }));
 
@@ -297,6 +301,7 @@ export const attendance = pgTable("attendance", {
   studentName: text("student_name").notNull().default(""),
   parentMobile: text("parent_mobile").notNull().default(""),
   present: boolean("present").notNull().default(true),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("attendance_institute_idx").on(t.instituteId) }));
 
@@ -312,6 +317,7 @@ export const promotions = pgTable("promotions", {
   score: text("score").notNull().default(""),
   date: date("date"),
   notified: boolean("notified").notNull().default(false),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("promotions_institute_idx").on(t.instituteId) }));
 
@@ -327,6 +333,7 @@ export const testScores = pgTable("test_scores", {
   parentMobile: text("parent_mobile").notNull().default(""),
   score: doublePrecision("score").notNull().default(0),
   maxScore: doublePrecision("max_score").notNull().default(100),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("test_scores_institute_idx").on(t.instituteId) }));
 
@@ -340,6 +347,7 @@ export const certificates = pgTable("certificates", {
   title: text("title").notNull(),
   course: text("course").notNull().default(""),
   issueDate: date("issue_date"),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({
   byInstitute: index("certificates_institute_idx").on(t.instituteId),
@@ -358,6 +366,7 @@ export const examRegs = pgTable("exam_regs", {
   examDate: date("exam_date"),
   fee: integer("fee").notNull().default(0),
   status: text("status").notNull().default("registered"), // registered | admit_card | result_out
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("exam_regs_institute_idx").on(t.instituteId) }));
 
@@ -372,6 +381,7 @@ export const performances = pgTable("performances", {
   level: text("level").notNull().default(""),
   result: text("result").notNull().default(""),
   date: date("date"),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("performances_institute_idx").on(t.instituteId) }));
 
@@ -401,6 +411,7 @@ export const adMaterials = pgTable("ad_materials", {
   voice: integer("voice").notNull().default(0),
   other: text("other").notNull().default(""),
   addedBy: text("added_by").notNull().default(""),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("ad_materials_institute_idx").on(t.instituteId) }));
 
@@ -413,6 +424,7 @@ export const stationery = pgTable("stationery", {
   gift: integer("gift").notNull().default(0),
   other: text("other").notNull().default(""),
   addedBy: text("added_by").notNull().default(""),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("stationery_institute_idx").on(t.instituteId) }));
 
@@ -424,6 +436,7 @@ export const events = pgTable("events", {
   date: date("date"),
   venue: text("venue").notNull().default(""),
   note: text("note").notNull().default(""),
+  ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("events_institute_idx").on(t.instituteId) }));
 
