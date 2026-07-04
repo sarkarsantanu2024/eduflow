@@ -236,7 +236,7 @@ export function StudentsView() {
             </Button>
             <ConfirmDialog
               title="Remove duplicate students?"
-              description="Removes students that share the same name and mobile number, keeping one of each. This cannot be undone."
+              description="Removes students that share the same name and mobile number, keeping one of each. Duplicates go to Trash and can be restored."
               confirmLabel="Remove duplicates" destructive
               onConfirm={removeDuplicates}
               trigger={<Button variant="outline"><CopyX /> Remove duplicates</Button>}
@@ -293,7 +293,7 @@ export function StudentsView() {
                 <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
                 <ConfirmDialog
                   title={`Delete ${selected.size} ${members.toLowerCase()}?`}
-                  description="This permanently removes the selected records. This cannot be undone."
+                  description="Moves the selected students to Trash — you can restore them within 30 days."
                   confirmLabel="Delete selected" destructive
                   onConfirm={deleteSelected}
                   trigger={<Button size="sm" variant="destructive"><Trash2 /> Delete selected</Button>}
@@ -396,7 +396,7 @@ export function StudentsView() {
                         </Button>
                         <ConfirmDialog
                           title={`Delete ${s.firstName}?`}
-                          description="This permanently removes the student record."
+                          description="Moves the student to Trash — you can restore it within 30 days from the Trash page."
                           confirmLabel="Delete" destructive
                           onConfirm={() => { removeItem("students", s.id); toast.success("Student deleted"); }}
                           trigger={<Button size="icon" variant="ghost" aria-label="Delete"><Trash2 className="text-destructive" /></Button>}
