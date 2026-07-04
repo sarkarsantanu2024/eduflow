@@ -64,8 +64,18 @@ export function ProfileView() {
     set("businessType", value); // menus + labels switch instantly
   }
 
+  // A saved centre ALWAYS has a business name (set at signup). If it's empty
+  // while we're "hydrated", the profile almost certainly failed to load (e.g. a
+  // transient DB error) and the form is showing blanks — persisting the whole
+  // object now would overwrite the real record with empties. Guard against it.
+  const loadFailed = hydrated && !profile.businessName.trim();
+
   // Persist the whole profile, then refresh so the onboarding gate clears.
   async function save() {
+    if (loadFailed) {
+      toast.error("Your saved profile didn't load — please refresh the page before saving, so you don't overwrite your details.");
+      return;
+    }
     setSaving(true);
     try {
       await persistProfile(profile);
@@ -107,6 +117,12 @@ export function ProfileView() {
 
   return (
     <div className="space-y-6">
+      {loadFailed && (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          We couldn&apos;t load your saved profile. <strong>Refresh the page</strong> before editing — saving
+          now could overwrite your details with blanks.
+        </div>
+      )}
       <PageHeader
         title="My Profile"
         description="Your account, business, payment and contact details — saved securely to your account."
@@ -472,7 +488,7 @@ export function ProfileView() {
 
       {/* Sticky save bar — stays visible while scrolling the long form */}
       <div className="sticky bottom-0 z-10 -mx-4 flex justify-end border-t bg-background/85 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
-        <Button onClick={save} disabled={saving}>
+        <Button onClick={save} disabled={saving || loadFailed}>
           {saving ? "Saving…" : "Save changes"}
         </Button>
       </div>
