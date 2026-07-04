@@ -26,7 +26,7 @@ import { formatDate } from "@/lib/utils";
 import { downloadFile } from "@/lib/csv";
 import { studentTemplateCsv, type ImportedStudent } from "@/features/students/student-csv";
 import { ImportColumnsDialog } from "@/features/students/import-dialog";
-import { WelcomePackDialog } from "@/features/students/welcome-pack-dialog";
+import { PosterPackDialog } from "@/features/students/welcome-pack-dialog";
 import { extractStudentFromPdf } from "@/features/students/student-pdf";
 
 const statusVariant: Record<StudentStatus, "success" | "secondary" | "warning" | "destructive"> = {
@@ -389,8 +389,10 @@ export function StudentsView() {
                     <TableCell><Badge variant={statusVariant[s.status]}>{s.status}</Badge></TableCell>
                     <TableCell className={`text-right ${stickyActionsCell}`}>
                       <div className="flex justify-end gap-1">
-                        <WelcomePackDialog student={s} profile={profile} courses={courses}
+                        <PosterPackDialog occasion="welcome" student={s} profile={profile} courses={courses}
                           trigger={<Button size="icon" variant="ghost" aria-label="Welcome pack" title="Welcome pack"><PartyPopper /></Button>} />
+                        <PosterPackDialog occasion="birthday" student={s} profile={profile} courses={courses}
+                          trigger={<Button size="icon" variant="ghost" aria-label="Birthday greeting" title="Birthday greeting"><Cake /></Button>} />
                         <Button size="icon" variant="ghost" aria-label="Edit" onClick={() => router.push(`/students/${s.id}/edit`)}>
                           <Pencil />
                         </Button>
