@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { signIn as nextSignIn, signOut as nextSignOut } from "@/auth";
 // (Google OAuth removed — email/password only.)
 import { db } from "@/lib/db";
-import { institutes, users, subscriptions, subscriptionPlans, templates } from "@/lib/db/schema";
+import { institutes, users, subscriptions, subscriptionPlans, templates, courses } from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { getCurrentProfile } from "@/lib/auth";
 import { getSector } from "@/lib/sectors";
@@ -76,8 +76,17 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
     });
   }
 
+  const sector = getSector(type);
+
+  // Seed the sector's default course / level set so the new centre's dropdowns
+  // (e.g. the student form's Course/Level) are ready to use out of the box.
+  const sectorCourses = sector.seedCourses.map((c) => ({
+    instituteId: institute.id, name: c.name, description: c.description,
+  }));
+  if (sectorCourses.length) await db.insert(courses).values(sectorCourses);
+
   // Seed ready-to-use WhatsApp templates tuned to this sector.
-  const sectorTemplates = getSector(type).seedTemplates.map((t) => ({
+  const sectorTemplates = sector.seedTemplates.map((t) => ({
     instituteId: institute.id, name: t.name, type: t.type, channel: "whatsapp", body: t.body,
   }));
   if (sectorTemplates.length) await db.insert(templates).values(sectorTemplates);

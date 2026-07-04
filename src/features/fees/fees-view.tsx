@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { FormDialog } from "@/components/form-dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
@@ -22,8 +23,8 @@ import {
   stickyActionsHead, stickyActionsCell,
 } from "@/components/ui/table";
 import {
-  useCollection, useHydrated, useProfile, addItem, updateItem, setProfile, newId, effectiveFee,
-  type Fee, type Payment, type Student, type Expense, type RecurringCharge,
+  useCollection, useHydrated, useProfile, addItem, updateItem, removeItem, setProfile, newId, effectiveFee,
+  type Fee, type Payment, type Student, type Expense, type Material, type RecurringCharge,
 } from "@/lib/store/local-db";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -48,6 +49,7 @@ export function FeesView() {
   const payments = useCollection("payments");
   const expenses = useCollection("expenses");
   const teachers = useCollection("teachers");
+  const materials = useCollection("materials");
   const profile = useProfile();
   const [tab, setTab] = useState<Tab>("monthly");
 
@@ -84,7 +86,7 @@ export function FeesView() {
       left -= part;
     });
     if (paid > 0) {
-      addItem<Payment>("payments", { id: newId("pay"), studentId, studentName, amount: paid, method, status: "success", date: today });
+      addItem<Payment>("payments", { id: newId("pay"), studentId, studentName, amount: paid, method, status: "success", source: "fee", date: today });
       toast.success(`Collected ${formatCurrency(paid * 100)}`, { description: `${studentName} · recorded in History` });
     }
   }
@@ -92,9 +94,38 @@ export function FeesView() {
   // Collect the center's reactivation fee and resume service (dues are cleared first).
   function reactivate(student: Student) {
     const name = `${student.firstName} ${student.lastName}`.trim();
-    addItem<Payment>("payments", { id: newId("pay"), studentId: student.id, studentName: name, amount: reactivationFee, method: "upi", status: "success", date: today });
+    addItem<Payment>("payments", { id: newId("pay"), studentId: student.id, studentName: name, amount: reactivationFee, method: "upi", status: "success", source: "reactivation", date: today });
     updateItem<Student>("students", student.id, { status: "active" });
     toast.success(`${name} reactivated`, { description: `₹${reactivationFee} reactivation fee collected` });
+  }
+
+  // Undo a recorded collection (e.g. a test entry or a mistaken tap). Removes the
+  // payment AND rolls back exactly what it collected, using the payment's source
+  // so a material reversal never touches fees (and vice-versa) — keeping the Fees
+  // "Collected" total and the Dashboard (which sums payments) in agreement.
+  function reversePayment(p: Payment) {
+    if (p.source === "material") {
+      // Un-collect the matching material charge — leave fees alone.
+      const m = materials.find((x) => x.studentId === p.studentId && x.amount === p.amount && x.issued);
+      if (m) updateItem<Material>("materials", m.id, { issued: false });
+    } else if (p.source === "fee") {
+      // Roll back the fee(s) this payment covered — newest-paid first, mirroring
+      // the oldest-first collection.
+      let left = p.amount;
+      const paidFees = fees
+        .filter((f) => f.studentId === p.studentId && f.amountPaid > 0)
+        .sort((a, b) => (b.period || b.dueDate).localeCompare(a.period || a.dueDate));
+      paidFees.forEach((f) => {
+        if (left <= 0) return;
+        const take = Math.min(f.amountPaid, left);
+        const newPaid = f.amountPaid - take;
+        updateItem<Fee>("fees", f.id, { amountPaid: newPaid, status: newPaid <= 0 ? "pending" : "partial" });
+        left -= take;
+      });
+    }
+    // "reactivation" (and any legacy/unknown source) → just remove the payment.
+    removeItem("payments", p.id);
+    toast.success(`Reversed ${formatCurrency(p.amount * 100)}`, { description: `${p.studentName} · collection undone` });
   }
 
   function markReminder(list: Fee[]) {
@@ -254,7 +285,7 @@ export function FeesView() {
         />
       )}
 
-      {tab === "history" && <HistoryTab payments={payments} />}
+      {tab === "history" && <HistoryTab payments={payments} onReverse={reversePayment} />}
     </div>
   );
 }
@@ -582,7 +613,7 @@ function OtherTab({
 }
 
 /* ── Collection history (replaces the old Payments page) ──────── */
-function HistoryTab({ payments }: { payments: Payment[] }) {
+function HistoryTab({ payments, onReverse }: { payments: Payment[]; onReverse: (p: Payment) => void }) {
   if (payments.length === 0) {
     return <EmptyState icon={History} title="No payments yet" description="Collected payments from the Monthly and Other tabs appear here." />;
   }
@@ -593,6 +624,7 @@ function HistoryTab({ payments }: { payments: Payment[] }) {
           <TableRow>
             <TableHead>Student</TableHead><TableHead>Amount</TableHead>
             <TableHead>Method</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead>
+            <TableHead className={`text-right ${stickyActionsHead}`}>Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -603,6 +635,15 @@ function HistoryTab({ payments }: { payments: Payment[] }) {
               <TableCell className="uppercase">{p.method}</TableCell>
               <TableCell>{p.date ? formatDate(p.date) : "—"}</TableCell>
               <TableCell><Badge variant={p.status === "success" ? "success" : "warning"}>{p.status}</Badge></TableCell>
+              <TableCell className={`text-right ${stickyActionsCell}`}>
+                <ConfirmDialog
+                  title={`Reverse ${formatCurrency(p.amount * 100)} from ${p.studentName}?`}
+                  description="Removes this collection and rolls back the fee it paid. Use this for a test entry or a payment recorded by mistake."
+                  confirmLabel="Reverse" destructive
+                  onConfirm={() => onReverse(p)}
+                  trigger={<Button size="icon" variant="ghost" aria-label="Reverse payment" title="Reverse this collection"><RotateCcw className="text-destructive" /></Button>}
+                />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

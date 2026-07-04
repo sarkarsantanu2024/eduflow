@@ -40,3 +40,6 @@ yarn-error.log*
 
 # local logs / scratch files
 *.log
+
+# Generated client documents (PPT / cost / marketing)
+deliverables/

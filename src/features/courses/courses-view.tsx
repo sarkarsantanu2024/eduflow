@@ -12,6 +12,7 @@ import {
   useCollection, useHydrated, useProfile, addItem, updateItem, removeItem, newId, type Course,
 } from "@/lib/store/local-db";
 import { getLabels } from "@/lib/constants";
+import { getSector } from "@/lib/sectors";
 
 function fields(c?: Course): FormField[] {
   return [
@@ -23,7 +24,16 @@ function fields(c?: Course): FormField[] {
 export function CoursesView() {
   const hydrated = useHydrated();
   const courses = useCollection("courses");
-  const { courses: label } = getLabels(useProfile().businessType);
+  const businessType = useProfile().businessType;
+  const { courses: label } = getLabels(businessType);
+  const defaults = getSector(businessType).seedCourses;
+
+  const loadDefaults = () => {
+    defaults.forEach((c) =>
+      addItem<Course>("courses", { id: newId("course"), name: c.name, description: c.description }),
+    );
+    toast.success(`${defaults.length} default ${label.toLowerCase()} added`);
+  };
 
   const addBtn = (
     <FormDialog
@@ -42,11 +52,14 @@ export function CoursesView() {
 
       {!hydrated ? null : courses.length === 0 ? (
         <EmptyState
-          icon={BookOpen} title="No courses yet"
-          description="Add a course, or load sample data (the full Abacus level set)."
+          icon={BookOpen} title={`No ${label.toLowerCase()} yet`}
+          description={`Add one manually, or load the default ${label.toLowerCase()} set to get started.`}
           action={
             <div className="flex gap-2">
               {addBtn}
+              {defaults.length > 0 && (
+                <Button variant="outline" onClick={loadDefaults}>Load default {label.toLowerCase()}</Button>
+              )}
             </div>
           }
         />
