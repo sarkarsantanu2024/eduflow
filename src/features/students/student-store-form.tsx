@@ -128,9 +128,15 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
             </Field>
             <Field label="Course/Level">
               <select className={selectClass} value={form.courseId} onChange={(e) => set("courseId", e.target.value)}>
-                <option value="">Select course/level…</option>
+                <option value="">{courses.length === 0 ? "No levels yet — add them on the Levels page" : "Select course/level…"}</option>
                 {courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
+              {courses.length === 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Open <a href="/courses" className="font-medium text-primary underline">Levels</a> and click
+                  “Load default levels” to add Basic, Kids&nbsp;1–4 and Level&nbsp;1–8 in one tap.
+                </p>
+              )}
             </Field>
             <Field label="Batch">
               <select className={selectClass} value={form.batchId} onChange={(e) => set("batchId", e.target.value)}>

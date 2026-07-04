@@ -76,6 +76,9 @@ export interface Fee {
   voucherSentAt: string;
 }
 
+/** What a collection was for — drives what a reversal rolls back. */
+export type PaymentSource = "fee" | "material" | "reactivation";
+
 export interface Payment {
   id: string;
   studentId: string;
@@ -83,6 +86,7 @@ export interface Payment {
   amount: number; // rupees
   method: "upi" | "cash" | "bank";
   status: "success" | "pending";
+  source: PaymentSource;
   date: string;
 }
 
@@ -113,6 +117,24 @@ export const EXPENSE_CATEGORIES = [
   "Transport",
   "Miscellaneous",
 ] as const;
+
+/**
+ * Categories for fixed costs that recur unchanged for months/years — these are
+ * set once in Profile › Monthly charges (or derived from Teachers) and posted
+ * automatically. They're intentionally kept OUT of the manual "Add expense"
+ * dropdown so owners configure them at their source instead of re-typing them.
+ */
+export const RECURRING_EXPENSE_CATEGORIES = [
+  "Rent",
+  "Head Office",
+  "Teacher Salary",
+  "Staff Salary",
+] as const;
+
+/** Categories offered in the manual one-off "Add expense" form. */
+export const ONE_OFF_EXPENSE_CATEGORIES = EXPENSE_CATEGORIES.filter(
+  (c) => !(RECURRING_EXPENSE_CATEGORIES as readonly string[]).includes(c),
+);
 
 export interface Attendance {
   id: string;

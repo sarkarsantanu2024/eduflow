@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Package, Pencil, Trash2, MessageCircle, IndianRupee, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
@@ -132,6 +132,7 @@ export function MaterialsView() {
   const hydrated = useHydrated();
   const materials = useCollection("materials");
   const students = useCollection("students");
+  const expenses = useCollection("expenses");
   const profile = useProfile();
 
   const biz = profile.businessName || "our institute";
@@ -167,10 +168,35 @@ export function MaterialsView() {
     updateItem<Material>("materials", m.id, { issued: true });
     addItem<Payment>("payments", {
       id: newId(), studentId: m.studentId, studentName: m.studentName,
-      amount: m.amount, method: "upi", status: "success", date: today,
+      amount: m.amount, method: "upi", status: "success", source: "material", date: today,
     });
     toast.success(`Collected ${formatCurrency(m.amount * 100)}`, { description: `${m.studentName} · ${m.item}` });
   }
+
+  // Deleting a material also removes the Head Office cost expense it posted, so
+  // the ledger doesn't keep an orphan cost for a kit that no longer exists.
+  function deleteMaterial(m: Material) {
+    removeItem("materials", m.id);
+    const costTitle = `Head Office — ${m.item} (${m.studentName})`;
+    const linked = expenses.find((e) => e.title === costTitle);
+    if (linked) removeItem("expenses", linked.id);
+    toast.success("Material deleted");
+  }
+
+  // One-time cleanup: older builds didn't remove a material's Head Office cost
+  // when the material was deleted, leaving orphan "Study Materials" expenses that
+  // dented Net Profit. Sweep them once per session — an expense is an orphan if
+  // it's a HO material cost whose material record no longer exists.
+  const swept = useRef(false);
+  useEffect(() => {
+    if (!hydrated || swept.current) return;
+    swept.current = true;
+    const validCostTitles = new Set(materials.map((m) => `Head Office — ${m.item} (${m.studentName})`));
+    expenses
+      .filter((e) => e.category === "Study Materials" && e.title.startsWith("Head Office — ") && !validCostTitles.has(e.title))
+      .forEach((e) => removeItem("expenses", e.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
 
   const issueBtn = <IssueMaterialDialog students={students} onIssue={onIssue} />;
 
@@ -237,9 +263,9 @@ export function MaterialsView() {
                         />
                         <ConfirmDialog
                           title={`Delete "${m.item}"?`}
-                          description={`This removes the ${m.item} record for ${m.studentName}.`}
+                          description={`This removes the ${m.item} record for ${m.studentName} and its Head Office cost from Expenses.`}
                           confirmLabel="Delete" destructive
-                          onConfirm={() => { removeItem("materials", m.id); toast.success("Material deleted"); }}
+                          onConfirm={() => deleteMaterial(m)}
                           trigger={<Button size="icon" variant="ghost" aria-label="Delete"><Trash2 className="text-destructive" /></Button>}
                         />
                       </div>

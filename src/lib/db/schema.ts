@@ -244,6 +244,9 @@ export const payments = pgTable("payments", {
   amount: integer("amount").notNull().default(0), // rupees
   method: paymentMethod("method").notNull().default("upi"),
   status: paymentStatus("status").notNull().default("success"),
+  // What this collection was for, so a reversal knows what to roll back:
+  // fee → restore the fee's dues, material → un-collect the kit, reactivation → just delete.
+  source: text("source").notNull().default("fee"),
   date: date("date"),
   ...timestamps,
 }, (t) => ({ byInstitute: index("payments_institute_idx").on(t.instituteId) }));
