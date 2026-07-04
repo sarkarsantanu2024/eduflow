@@ -215,6 +215,8 @@ export const students = pgTable("students", {
   parentEmail: text("parent_email").notNull().default(""),
   photoUrl: text("photo_url"), // Vercel Blob URL
   status: studentStatus("status").notNull().default("active"),
+  // New-admission handover checklist (bag, t-shirt, id card, fees card, …).
+  welcomeKit: jsonb("welcome_kit").$type<Record<string, boolean>>(),
   ...softDelete,
   ...timestamps,
 }, (t) => ({

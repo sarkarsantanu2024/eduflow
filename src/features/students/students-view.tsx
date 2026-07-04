@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Pencil, Trash2, Users, Upload, Download, FileText, CopyX, Cake } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, Upload, Download, FileText, CopyX, Cake, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { formatDate } from "@/lib/utils";
 import { downloadFile } from "@/lib/csv";
 import { studentTemplateCsv, type ImportedStudent } from "@/features/students/student-csv";
 import { ImportColumnsDialog } from "@/features/students/import-dialog";
+import { WelcomePackDialog } from "@/features/students/welcome-pack-dialog";
 import { extractStudentFromPdf } from "@/features/students/student-pdf";
 
 const statusVariant: Record<StudentStatus, "success" | "secondary" | "warning" | "destructive"> = {
@@ -388,6 +389,8 @@ export function StudentsView() {
                     <TableCell><Badge variant={statusVariant[s.status]}>{s.status}</Badge></TableCell>
                     <TableCell className={`text-right ${stickyActionsCell}`}>
                       <div className="flex justify-end gap-1">
+                        <WelcomePackDialog student={s} profile={profile} courses={courses}
+                          trigger={<Button size="icon" variant="ghost" aria-label="Welcome pack" title="Welcome pack"><PartyPopper /></Button>} />
                         <Button size="icon" variant="ghost" aria-label="Edit" onClick={() => router.push(`/students/${s.id}/edit`)}>
                           <Pencil />
                         </Button>
