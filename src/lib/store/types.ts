@@ -33,6 +33,7 @@ export interface Student {
   parentEmail: string;
   photo: string; // data URL or Blob URL
   status: StudentStatus;
+  welcomeKit?: WelcomeKit; // new-admission handover checklist
 }
 
 export interface Course {
@@ -258,6 +259,9 @@ export interface Teacher {
 }
 
 /** A student's effective monthly fee — their own override, else the center default. */
+/** New-admission handover checklist, tracked per student. */
+export type WelcomeKit = Partial<Record<"bag" | "tshirt" | "idCard" | "feesCard" | "books" | "welcomeFile", boolean>>;
+
 export function effectiveFee(student: { monthlyFee?: number }, centerFee: number): number {
   return student.monthlyFee && student.monthlyFee > 0 ? student.monthlyFee : centerFee;
 }
