@@ -315,6 +315,7 @@ export interface Profile {
   city: string;
   address: string;
   monthlyFee: number;
+  admissionFee: number; // one-time, charged when a NEW student is admitted
   reactivationFee: number;
   hoRoyaltyPerStudent: number; // legacy — migrated into recurringCharges
   hoRoyaltyPercent: number; // legacy — migrated into recurringCharges
@@ -360,7 +361,7 @@ export type CollectionName =
 
 export const EMPTY_PROFILE: Profile = {
   businessName: "", businessType: "abacus", ownerName: "", email: "", phone: "",
-  gst: "", city: "", address: "", monthlyFee: 0, reactivationFee: 0, hoRoyaltyPerStudent: 0, hoRoyaltyPercent: 0, recurringCharges: [], website: "", upiId: "", qrImage: "", avatar: "",
+  gst: "", city: "", address: "", monthlyFee: 0, admissionFee: 0, reactivationFee: 0, hoRoyaltyPerStudent: 0, hoRoyaltyPercent: 0, recurringCharges: [], website: "", upiId: "", qrImage: "", avatar: "",
   facebook: "", instagram: "", youtube: "", whatsapp: "",
   certImage: "", certLayout: DEFAULT_CERT_LAYOUT,
 };

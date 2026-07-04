@@ -81,6 +81,7 @@ export const institutes = pgTable("institutes", {
   website: text("website"),
   // Fees / payments
   monthlyFee: integer("monthly_fee").notNull().default(0), // flat center fee, rupees
+  admissionFee: integer("admission_fee").notNull().default(0), // one-time, new admissions
   reactivationFee: integer("reactivation_fee").notNull().default(0),
   // Legacy franchise royalty fields — migrated into recurringCharges.
   hoRoyaltyPerStudent: integer("ho_royalty_per_student").notNull().default(0),

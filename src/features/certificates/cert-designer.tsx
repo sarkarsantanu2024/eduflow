@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useProfile, setProfile, DEFAULT_CERT_LAYOUT, type CertLayout, type Certificate } from "@/lib/store/local-db";
 import { uploadImageFile } from "@/features/uploads/upload-client";
 import { renderCertCanvas } from "@/features/certificates/cert-pdf";
@@ -79,9 +80,13 @@ export function CertDesigner() {
             <Upload /> {profile.certImage ? "Replace template" : "Upload blank certificate"}
           </Button>
           {profile.certImage && (
-            <Button variant="outline" onClick={() => { setProfile({ certImage: "" }); toast.success("Template removed"); }}>
-              <Trash2 className="text-destructive" /> Remove
-            </Button>
+            <ConfirmDialog
+              title="Remove certificate template?"
+              description="Deletes the uploaded certificate background. You can upload a new one anytime."
+              confirmLabel="Remove" destructive
+              onConfirm={() => { setProfile({ certImage: "" }); toast.success("Template removed"); }}
+              trigger={<Button variant="outline"><Trash2 className="text-destructive" /> Remove</Button>}
+            />
           )}
           {profile.certImage && (
             <Button variant="outline" onClick={() => { setProfile({ certLayout: DEFAULT_CERT_LAYOUT }); toast.success("Layout reset"); }}>

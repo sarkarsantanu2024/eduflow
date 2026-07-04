@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/page-header";
 import {
-  useCollection, useProfile, addItem, updateItem, newId, type Student,
+  useCollection, useProfile, addItem, updateItem, newId, effectiveFee, type Student, type Fee,
 } from "@/lib/store/local-db";
 import { uploadImageFile } from "@/features/uploads/upload-client";
 import { getLabels } from "@/lib/constants";
@@ -36,9 +36,18 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
   const profile = useProfile();
   const { member } = getLabels(profile.businessType);
   const profileMonthlyFee = profile.monthlyFee || 0;
+  const profileAdmissionFee = profile.admissionFee || 0;
+  const today = new Date().toISOString().slice(0, 10);
+  const ym = today.slice(0, 7);
+  const monthLabel = new Date(`${ym}-01T00:00:00`).toLocaleString("en-IN", { month: "long", year: "numeric" });
+  // Whether to collect the first month up front at admission ("advance").
+  const [advanceMonth, setAdvanceMonth] = useState(true);
 
   const existing = studentId ? students.find((s) => s.id === studentId) : undefined;
   const [form, setForm] = useState<Omit<Student, "id">>(existing ? { ...existing } : blank);
+  // One-time admission fee raised at admission. Blank = use the centre default;
+  // editable so an owner can waive it (0) or adjust for a specific admission.
+  const [admissionFee, setAdmissionFee] = useState<number | "">("");
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -75,8 +84,41 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
       updateItem<Student>("students", existing.id, payload);
       toast.success("Student updated");
     } else {
-      addItem<Student>("students", { id: newId("student"), ...payload });
-      toast.success("Student added");
+      const sid = newId("student");
+      const name = `${payload.firstName} ${payload.lastName}`.trim();
+      addItem<Student>("students", { id: sid, ...payload });
+
+      // Admission collection for the NEW student only. Because this runs solely at
+      // creation (never in a background sweep), existing students are never charged
+      // retroactively. Two independent line items so the money is tracked correctly:
+      //   1) Admission fee — one-time (e.g. ₹1500). Blank → centre default; 0 → waive.
+      //   2) First month "advance" — this month's monthly fee (e.g. ₹500), paid up
+      //      front. Same shape/period as the monthly auto-post, which dedupes by
+      //      (studentId, period), so it's never billed twice.
+      const admFee = admissionFee === "" ? profileAdmissionFee : admissionFee;
+      const firstMonth = advanceMonth ? effectiveFee(payload, profile.monthlyFee || 0) : 0;
+      if (admFee > 0) {
+        addItem<Fee>("fees", {
+          id: newId("fee"), studentId: sid, studentName: name,
+          parentMobile: payload.parentMobile, kind: "other", period: "",
+          title: "Admission Fee", type: "admission", amount: admFee, amountPaid: 0,
+          status: "pending", dueDate: payload.admissionDate || today,
+          reminderSentAt: "", approved: false, voucherSentAt: "",
+        });
+      }
+      if (firstMonth > 0) {
+        addItem<Fee>("fees", {
+          id: newId("fee"), studentId: sid, studentName: name,
+          parentMobile: payload.parentMobile, kind: "monthly", period: ym,
+          title: `${monthLabel} Monthly Fee`, type: "monthly", amount: firstMonth, amountPaid: 0,
+          status: "pending", dueDate: `${ym}-05`,
+          reminderSentAt: "", approved: false, voucherSentAt: "",
+        });
+      }
+      const total = admFee + firstMonth;
+      toast.success("Student added", total > 0 ? {
+        description: `Raised ₹${total} to collect — admission ₹${admFee} + first month ₹${firstMonth}. See Fees.`,
+      } : undefined);
     }
     router.push("/students");
   }
@@ -148,6 +190,18 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
               <Input type="number" value={form.monthlyFee || ""} onChange={(e) => set("monthlyFee", Number(e.target.value) || 0)}
                 placeholder={`Center default (${profileMonthlyFee})`} />
             </Field>
+            {!existing && (
+              <Field label="Admission fee (₹)">
+                <Input type="number" value={admissionFee}
+                  onChange={(e) => setAdmissionFee(e.target.value === "" ? "" : Number(e.target.value) || 0)}
+                  placeholder={profileAdmissionFee > 0 ? `Center default (${profileAdmissionFee})` : "No admission fee set"} />
+                <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                  <input type="checkbox" checked={advanceMonth} onChange={(e) => setAdvanceMonth(e.target.checked)} className="size-3.5" />
+                  Collect first month ({monthLabel}) in advance
+                </label>
+                <p className="mt-1 text-xs text-muted-foreground">Charged once now. Blank = centre default; 0 = waive.</p>
+              </Field>
+            )}
             <Field label="Hobbies"><Input value={form.hobbies} onChange={(e) => set("hobbies", e.target.value)} /></Field>
             <Field label="Sibling age"><Input value={form.siblingAge} onChange={(e) => set("siblingAge", e.target.value)} /></Field>
           </div>
