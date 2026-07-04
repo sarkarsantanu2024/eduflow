@@ -26,23 +26,16 @@ const TYPE_LABEL: Record<string, string> = {
   adMaterials: "Ad material", stationery: "Stationery", events: "Event", teachers: "Teacher",
 };
 
-const TTL_DAYS = 30;
 const selectClass =
   "h-10 rounded-lg border border-input bg-card px-3 text-sm shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
 
-type SortKey = "recent" | "oldest" | "expiring" | "type" | "name";
+type SortKey = "recent" | "oldest" | "type" | "name";
 const SORTS: { key: SortKey; label: string }[] = [
   { key: "recent", label: "Recently deleted" },
   { key: "oldest", label: "Oldest first" },
-  { key: "expiring", label: "Auto-deletes soonest" },
   { key: "type", label: "Type (A–Z)" },
   { key: "name", label: "Name (A–Z)" },
 ];
-
-function daysLeft(deletedAt: string): number {
-  const gone = (Date.now() - new Date(deletedAt).getTime()) / (24 * 60 * 60 * 1000);
-  return Math.max(0, Math.ceil(TTL_DAYS - gone));
-}
 
 export function TrashView() {
   const [items, setItems] = useState<TrashItem[] | null>(null);
@@ -96,7 +89,6 @@ export function TrashView() {
     sorted.sort((a, b) => {
       switch (sort) {
         case "oldest": return a.deletedAt.localeCompare(b.deletedAt);
-        case "expiring": return a.deletedAt.localeCompare(b.deletedAt); // oldest deleted expires soonest
         case "type": return (TYPE_LABEL[a.collection] ?? a.collection).localeCompare(TYPE_LABEL[b.collection] ?? b.collection) || a.label.localeCompare(b.label);
         case "name": return a.label.localeCompare(b.label);
         default: return b.deletedAt.localeCompare(a.deletedAt); // recent
@@ -109,13 +101,13 @@ export function TrashView() {
     <div className="space-y-6">
       <PageHeader
         title="Trash"
-        description={`Anything you delete lands here and can be restored. Items are removed permanently ${TTL_DAYS} days after deletion.`}
+        description="Anything you delete lands here and can be restored. Items stay in Trash until you permanently delete them — nothing is removed automatically."
       />
 
       {items === null ? (
         <p className="py-10 text-center text-sm text-muted-foreground">Loading…</p>
       ) : items.length === 0 ? (
-        <EmptyState icon={Trash2} title="Trash is empty" description={`Deleted items appear here and can be restored within ${TTL_DAYS} days.`} />
+        <EmptyState icon={Trash2} title="Trash is empty" description="Deleted items appear here and can be restored anytime." />
       ) : (
         <>
           {/* Filters & sorting */}
@@ -138,13 +130,13 @@ export function TrashView() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Type</TableHead><TableHead>Item</TableHead><TableHead>Amount</TableHead>
-                  <TableHead>Deleted</TableHead><TableHead>Auto-deletes</TableHead>
+                  <TableHead>Deleted</TableHead>
                   <TableHead className={`text-right ${stickyActionsHead}`}>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {view.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="py-10 text-center text-muted-foreground">Nothing matches your filters.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="py-10 text-center text-muted-foreground">Nothing matches your filters.</TableCell></TableRow>
                 )}
                 {view.map((it) => (
                   <TableRow key={`${it.collection}_${it.id}`}>
@@ -152,7 +144,6 @@ export function TrashView() {
                     <TableCell className="font-medium">{it.label || "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{it.amount ? formatCurrency(it.amount * 100) : "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{formatDate(it.deletedAt.slice(0, 10))}</TableCell>
-                    <TableCell className="text-muted-foreground">in {daysLeft(it.deletedAt)} day{daysLeft(it.deletedAt) === 1 ? "" : "s"}</TableCell>
                     <TableCell className={`text-right ${stickyActionsCell}`}>
                       <div className="flex justify-end gap-1">
                         <Button size="sm" variant="outline" disabled={busy === it.id} onClick={() => onRestore(it)}>

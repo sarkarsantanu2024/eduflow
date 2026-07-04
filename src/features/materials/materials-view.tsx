@@ -263,7 +263,7 @@ export function MaterialsView() {
                         />
                         <ConfirmDialog
                           title={`Delete "${m.item}"?`}
-                          description={`Moves the ${m.item} record for ${m.studentName} and its Head Office cost to Trash — both can be restored within 30 days.`}
+                          description={`Moves the ${m.item} record for ${m.studentName} and its Head Office cost to Trash — both can be restored anytime.`}
                           confirmLabel="Delete" destructive
                           onConfirm={() => deleteMaterial(m)}
                           trigger={<Button size="icon" variant="ghost" aria-label="Delete"><Trash2 className="text-destructive" /></Button>}

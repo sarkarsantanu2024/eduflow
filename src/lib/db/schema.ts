@@ -48,8 +48,8 @@ const timestamps = {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 };
 
-// Soft-delete marker for core entities: null = live, timestamp = in Trash
-// (recoverable). Purged permanently 30 days after this time.
+// Soft-delete marker: null = live, timestamp = in Trash (recoverable). Rows stay
+// in Trash until the owner restores or permanently deletes them — no auto-expiry.
 const softDelete = {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 };

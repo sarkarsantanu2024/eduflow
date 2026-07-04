@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, isNull, isNotNull, lt } from "drizzle-orm";
+import { and, eq, isNull, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   institutes, students, courses, batches, templates, fees, payments, expenses,
@@ -48,8 +48,8 @@ const STRIP = new Set(["instituteId", "createdAt", "updatedAt", "deletedAt"]);
 
 // Every tenant collection supports soft delete (Trash): rows carry `deletedAt`,
 // normal reads filter it out, and anything deleted can be restored or purged.
+// Items stay in Trash until the owner acts — there is no automatic expiry.
 const SOFT_DELETE = new Set<CollectionName>(Object.keys(CONFIG) as CollectionName[]);
-const TRASH_TTL_DAYS = 30;
 
 /** Client item → DB insert/update values. */
 function toDb(collection: CollectionName, item: Record<string, unknown>): Record<string, unknown> {
@@ -210,11 +210,11 @@ function trashLabel(collection: CollectionName, r: Record<string, unknown>): str
   return (primary + detail).trim() || collection;
 }
 
-/** Everything currently in Trash for the active institute (purges expired first). */
+/** Everything currently in Trash for the active institute. Items stay here until
+ *  the owner restores or permanently deletes them — nothing is auto-removed. */
 export async function fetchTrash(): Promise<TrashItem[]> {
   const instituteId = await getActiveInstituteId();
   if (!instituteId) return [];
-  await purgeExpiredTrash();
 
   const out: TrashItem[] = [];
   await Promise.all(
@@ -237,20 +237,6 @@ export async function fetchTrash(): Promise<TrashItem[]> {
   );
   // Most-recently trashed first.
   return out.sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
-}
-
-/** Permanently delete rows trashed more than TRASH_TTL_DAYS ago. */
-export async function purgeExpiredTrash(): Promise<void> {
-  const instituteId = await getActiveInstituteId();
-  if (!instituteId) return;
-  const cutoff = new Date(Date.now() - TRASH_TTL_DAYS * 24 * 60 * 60 * 1000);
-  await Promise.all(
-    Array.from(SOFT_DELETE).map((name) => {
-      const t = CONFIG[name].table;
-      return db.delete(t).where(and(eq(t.instituteId, instituteId), isNotNull(t.deletedAt), lt(t.deletedAt, cutoff)))
-        .catch((err) => console.error(`[purgeExpiredTrash] failed for "${name}":`, err));
-    }),
-  );
 }
 
 const PROFILE_MAP: Record<keyof Profile, string> = {

@@ -293,7 +293,7 @@ export function StudentsView() {
                 <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
                 <ConfirmDialog
                   title={`Delete ${selected.size} ${members.toLowerCase()}?`}
-                  description="Moves the selected students to Trash — you can restore them within 30 days."
+                  description="Moves the selected students to Trash — you can restore them anytime from the Trash page."
                   confirmLabel="Delete selected" destructive
                   onConfirm={deleteSelected}
                   trigger={<Button size="sm" variant="destructive"><Trash2 /> Delete selected</Button>}
@@ -396,7 +396,7 @@ export function StudentsView() {
                         </Button>
                         <ConfirmDialog
                           title={`Delete ${s.firstName}?`}
-                          description="Moves the student to Trash — you can restore it within 30 days from the Trash page."
+                          description="Moves the student to Trash — you can restore it anytime from the Trash page."
                           confirmLabel="Delete" destructive
                           onConfirm={() => { removeItem("students", s.id); toast.success("Student deleted"); }}
                           trigger={<Button size="icon" variant="ghost" aria-label="Delete"><Trash2 className="text-destructive" /></Button>}
