@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/page-header";
+import { ExportData } from "@/components/export-data";
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
@@ -102,6 +103,14 @@ export function TrashView() {
       <PageHeader
         title="Trash"
         description="Anything you delete lands here and can be restored. Items stay in Trash until you permanently delete them — nothing is removed automatically."
+        actions={items && items.length > 0
+          ? <ExportData filename="trash" rows={view} columns={[
+              { header: "Type", value: (it) => TYPE_LABEL[it.collection] ?? it.collection },
+              { header: "Item", value: (it) => it.label },
+              { header: "Amount (₹)", value: (it) => it.amount || "" },
+              { header: "Deleted", value: (it) => it.deletedAt.slice(0, 10) },
+            ]} />
+          : undefined}
       />
 
       {items === null ? (

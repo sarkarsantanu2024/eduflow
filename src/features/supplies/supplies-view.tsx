@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/page-header";
+import { ExportData } from "@/components/export-data";
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
@@ -93,6 +94,19 @@ function AdTab({ addedBy, hydrated }: { addedBy: string; hydrated: boolean }) {
       {!hydrated ? null : rows.length === 0 ? (
         <EmptyState icon={Megaphone} title="No ad-material entries yet" description="Log banners, leaflets, posters and more as you receive or print them." />
       ) : (
+        <>
+        <div className="flex justify-end">
+          <ExportData filename="ad-materials" rows={rows} columns={[
+            { header: "Date", value: (r) => r.date },
+            { header: "Banner", value: (r) => r.banner || 0 },
+            { header: "Leaflet", value: (r) => r.leaflet || 0 },
+            { header: "Sun Pack", value: (r) => r.sunPack || 0 },
+            { header: "Poster", value: (r) => r.poster || 0 },
+            { header: "Voice", value: (r) => r.voice || 0 },
+            { header: "Other", value: (r) => r.other },
+            { header: "Added by", value: (r) => r.addedBy },
+          ]} />
+        </div>
         <Card className="overflow-hidden">
           <Table>
             <TableHeader>
@@ -126,6 +140,7 @@ function AdTab({ addedBy, hydrated }: { addedBy: string; hydrated: boolean }) {
             </TableBody>
           </Table>
         </Card>
+        </>
       )}
     </div>
   );
@@ -184,6 +199,16 @@ function StationeryTab({ addedBy, hydrated }: { addedBy: string; hydrated: boole
       {!hydrated ? null : rows.length === 0 ? (
         <EmptyState icon={Boxes} title="No stationery entries yet" description="Log stationery and gifts as you receive them." />
       ) : (
+        <>
+        <div className="flex justify-end">
+          <ExportData filename="stationery" rows={rows} columns={[
+            { header: "Date", value: (r) => r.date },
+            { header: "Stationery", value: (r) => r.stationery || 0 },
+            { header: "Gift", value: (r) => r.gift || 0 },
+            { header: "Other", value: (r) => r.other },
+            { header: "Added by", value: (r) => r.addedBy },
+          ]} />
+        </div>
         <Card className="overflow-hidden">
           <Table>
             <TableHeader>
@@ -213,6 +238,7 @@ function StationeryTab({ addedBy, hydrated }: { addedBy: string; hydrated: boole
             </TableBody>
           </Table>
         </Card>
+        </>
       )}
     </div>
   );

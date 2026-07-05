@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
+import { ExportData } from "@/components/export-data";
 import { EmptyState } from "@/components/empty-state";
 import { FormDialog } from "@/components/form-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -112,6 +113,16 @@ export function ExpensesView() {
     />
   );
 
+  const exportBtn = (
+    <ExportData filename="expenses" rows={rows} columns={[
+      { header: "Date", value: (e) => e.date },
+      { header: "Title", value: (e) => e.title },
+      { header: "Category", value: (e) => e.category },
+      { header: "Note", value: (e) => e.note },
+      { header: "Amount (₹)", value: (e) => e.amount },
+    ]} />
+  );
+
   if (hydrated && expenses.length === 0) {
     return (
       <div className="space-y-6">
@@ -131,7 +142,7 @@ export function ExpensesView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Expenses" description="Track your center's running costs — daily, monthly and yearly." actions={addBtn} />
+      <PageHeader title="Expenses" description="Track your center's running costs — daily, monthly and yearly." actions={<div className="flex gap-2">{exportBtn}{addBtn}</div>} />
 
       {/* Why costs appear here without being typed each month. */}
       <div className="flex items-start gap-2.5 rounded-xl border border-dashed bg-muted/30 p-3 text-sm text-muted-foreground">
