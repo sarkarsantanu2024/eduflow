@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/page-header";
+import { ExportData } from "@/components/export-data";
 import { EmptyState } from "@/components/empty-state";
 import { FormDialog } from "@/components/form-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -200,9 +201,19 @@ export function MaterialsView() {
 
   const issueBtn = <IssueMaterialDialog students={students} onIssue={onIssue} />;
 
+  const exportBtn = (
+    <ExportData filename="materials" rows={materials} columns={[
+      { header: "Date", value: (m) => m.date },
+      { header: "Student", value: (m) => m.studentName },
+      { header: "Item", value: (m) => m.item },
+      { header: "Amount (₹)", value: (m) => m.amount },
+      { header: "Status", value: (m) => (m.issued ? "Collected" : "Pending") },
+    ]} />
+  );
+
   return (
     <div className="space-y-6">
-      <PageHeader title="Materials & Kits" description="Buy kits/books from Head Office and sell to students with your margin — collect the charge like fees." actions={issueBtn} />
+      <PageHeader title="Materials & Kits" description="Buy kits/books from Head Office and sell to students with your margin — collect the charge like fees." actions={<div className="flex gap-2">{exportBtn}{issueBtn}</div>} />
 
       {!hydrated ? null : materials.length === 0 ? (
         <EmptyState

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
+import { ExportData } from "@/components/export-data";
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, stickyActionsHead, stickyActionsCell } from "@/components/ui/table";
@@ -31,7 +32,15 @@ export function StaffView({ data }: { data: StaffData }) {
       <PageHeader
         title="Staff Logins"
         description="Create login accounts for your teachers/staff. They sign in with their own username and password."
-        actions={<AddStaffDialog atLimit={atLimit} planName={data.planName} limit={data.limit} onDone={() => router.refresh()} />}
+        actions={<div className="flex gap-2">
+          <ExportData filename="staff-logins" rows={data.staff} columns={[
+            { header: "Name", value: (s) => s.fullName },
+            { header: "Username", value: (s) => s.username },
+            { header: "Email", value: (s) => s.email },
+            { header: "Status", value: (s) => (s.isActive ? "Active" : "Suspended") },
+          ]} />
+          <AddStaffDialog atLimit={atLimit} planName={data.planName} limit={data.limit} onDone={() => router.refresh()} />
+        </div>}
       />
 
       <Card>

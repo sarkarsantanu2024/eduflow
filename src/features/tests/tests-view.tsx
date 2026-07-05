@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
+import { ExportData } from "@/components/export-data";
 import { EmptyState } from "@/components/empty-state";
 import { FormDialog } from "@/components/form-dialog";
 import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
@@ -69,7 +70,17 @@ export function TestsView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Tests & Rank Lists" description="Record scores, auto-rank the batch, and send each parent a result card." actions={addBtn} />
+      <PageHeader title="Tests & Rank Lists" description="Record scores, auto-rank the batch, and send each parent a result card."
+        actions={<div className="flex gap-2">
+          <ExportData filename="test-scores" rows={scores} columns={[
+            { header: "Test", value: (s) => s.testName },
+            { header: "Date", value: (s) => s.date },
+            { header: "Student", value: (s) => s.studentName },
+            { header: "Score", value: (s) => s.score },
+            { header: "Out of", value: (s) => s.maxScore },
+          ]} />
+          {addBtn}
+        </div>} />
 
       {!hydrated ? null : scores.length === 0 ? (
         <EmptyState

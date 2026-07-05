@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/page-header";
+import { ExportData } from "@/components/export-data";
 import { EmptyState } from "@/components/empty-state";
 import { FormDialog } from "@/components/form-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -249,7 +250,17 @@ export function FeesView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Fees" description="Collect monthly fees, raise other charges, and track payments." />
+      <PageHeader title="Fees" description="Collect monthly fees, raise other charges, and track payments."
+        actions={<ExportData filename="fees" rows={fees} columns={[
+          { header: "Student", value: (f) => f.studentName },
+          { header: "Kind", value: (f) => f.kind },
+          { header: "Period", value: (f) => (f.period ? periodLabel(f.period) : "") },
+          { header: "Title", value: (f) => f.title },
+          { header: "Amount (₹)", value: (f) => f.amount },
+          { header: "Paid (₹)", value: (f) => f.amountPaid },
+          { header: "Status", value: (f) => f.status },
+          { header: "Due date", value: (f) => f.dueDate },
+        ]} />} />
 
       {/* summary */}
       <div className="grid gap-4 sm:grid-cols-3">
@@ -618,6 +629,17 @@ function HistoryTab({ payments, onReverse }: { payments: Payment[]; onReverse: (
     return <EmptyState icon={History} title="No payments yet" description="Collected payments from the Monthly and Other tabs appear here." />;
   }
   return (
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <ExportData filename="payments" rows={payments} columns={[
+          { header: "Student", value: (p) => p.studentName },
+          { header: "Amount (₹)", value: (p) => p.amount },
+          { header: "Method", value: (p) => p.method },
+          { header: "For", value: (p) => p.source },
+          { header: "Status", value: (p) => p.status },
+          { header: "Date", value: (p) => p.date },
+        ]} />
+      </div>
     <Card className="overflow-hidden">
       <Table>
         <TableHeader>
@@ -649,6 +671,7 @@ function HistoryTab({ payments, onReverse }: { payments: Payment[]; onReverse: (
         </TableBody>
       </Table>
     </Card>
+    </div>
   );
 }
 

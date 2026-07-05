@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Pencil, Trash2, Users, Upload, Download, FileText, CopyX, Cake, PartyPopper } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, Upload, Download, FileText, Cake, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { formatDate } from "@/lib/utils";
 import { downloadFile } from "@/lib/csv";
 import { studentTemplateCsv, type ImportedStudent } from "@/features/students/student-csv";
 import { ImportColumnsDialog } from "@/features/students/import-dialog";
+import { ExportData } from "@/components/export-data";
 import { PosterPackDialog } from "@/features/students/welcome-pack-dialog";
 import { extractStudentFromPdf } from "@/features/students/student-pdf";
 
@@ -176,17 +177,6 @@ export function StudentsView() {
   }
 
   // Remove duplicate students (same name + mobile), keeping the first of each.
-  function removeDuplicates() {
-    const seen = new Set<string>();
-    let removed = 0;
-    students.forEach((s) => {
-      const key = studentKey(s);
-      if (seen.has(key)) { removeItem("students", s.id); removed += 1; }
-      else seen.add(key);
-    });
-    toast[removed ? "success" : "info"](removed ? `Removed ${removed} duplicate${removed > 1 ? "s" : ""}` : "No duplicates found");
-  }
-
   const filtered = students.filter((s) => {
     if (status !== "all" && s.status !== status) return false;
     const term = search.trim().toLowerCase();
@@ -234,13 +224,21 @@ export function StudentsView() {
             <Button variant="outline" onClick={() => pdfRef.current?.click()}>
               <FileText /> Import PDF
             </Button>
-            <ConfirmDialog
-              title="Remove duplicate students?"
-              description="Removes students that share the same name and mobile number, keeping one of each. Duplicates go to Trash and can be restored."
-              confirmLabel="Remove duplicates" destructive
-              onConfirm={removeDuplicates}
-              trigger={<Button variant="outline"><CopyX /> Remove duplicates</Button>}
-            />
+            <ExportData filename="students" rows={filtered} columns={[
+              { header: "Student ID", value: (s) => s.code },
+              { header: "First name", value: (s) => s.firstName },
+              { header: "Last name", value: (s) => s.lastName },
+              { header: "Level", value: (s) => courseName(s.courseId) },
+              { header: "Gender", value: (s) => s.gender },
+              { header: "Date of birth", value: (s) => s.dob },
+              { header: "Admission date", value: (s) => s.admissionDate },
+              { header: "Parent", value: (s) => s.parentName || s.fatherName || s.motherName },
+              { header: "Mobile", value: (s) => s.parentMobile || s.fatherContact },
+              { header: "Address", value: (s) => s.address },
+              { header: "City", value: (s) => s.city },
+              { header: "Status", value: (s) => s.status },
+              { header: "Monthly fee", value: (s) => s.monthlyFee || 0 },
+            ]} />
             <Button asChild>
               <Link href="/students/new"><Plus /> Add {member.toLowerCase()}</Link>
             </Button>

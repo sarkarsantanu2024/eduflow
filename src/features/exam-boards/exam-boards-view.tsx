@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
+import { ExportData } from "@/components/export-data";
 import { EmptyState } from "@/components/empty-state";
 import { FormDialog } from "@/components/form-dialog";
 import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
@@ -77,7 +78,18 @@ export function ExamBoardsView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Exam Boards" description="External exam-board registrations, fees and result tracking." actions={addBtn} />
+      <PageHeader title="Exam Boards" description="External exam-board registrations, fees and result tracking."
+        actions={<div className="flex gap-2">
+          <ExportData filename="exam-registrations" rows={regs} columns={[
+            { header: "Student", value: (r) => r.studentName },
+            { header: "Board", value: (r) => r.board },
+            { header: "Tier", value: (r) => r.tier },
+            { header: "Exam date", value: (r) => r.examDate },
+            { header: "Fee (₹)", value: (r) => r.fee },
+            { header: "Status", value: (r) => STATUS_LABEL[r.status] },
+          ]} />
+          {addBtn}
+        </div>} />
 
       {!hydrated ? null : regs.length === 0 ? (
         <EmptyState
