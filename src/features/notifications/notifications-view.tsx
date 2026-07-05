@@ -5,8 +5,9 @@ import { Bell, IndianRupee, Users, GraduationCap, PartyPopper } from "lucide-rea
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useHydrated } from "@/lib/store/local-db";
-import { useNotifications, type NotificationCategory } from "@/lib/notifications";
+import { useNotifications, markNotificationsRead, type NotificationCategory } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types/database.types";
 
@@ -26,7 +27,8 @@ export function NotificationsView({ role }: { role: UserRole }) {
     <div className="space-y-6">
       <PageHeader
         title="Notifications"
-        description="Live updates from your data — fees, admissions, birthdays and upcoming dates. Nothing is stored; this always reflects the latest."
+        description="Live updates from your data — fees, collection, absentees, admissions, birthdays and upcoming dates. Always reflects the latest."
+        actions={unread > 0 ? <Button variant="outline" size="sm" onClick={() => markNotificationsRead(notifications.map((n) => n.id))}>Mark all read</Button> : undefined}
       />
 
       {hydrated && notifications.length === 0 ? (
@@ -60,9 +62,9 @@ export function NotificationsView({ role }: { role: UserRole }) {
               </div>
             );
             return n.href ? (
-              <Link key={n.id} href={n.href} className="block">{Row}</Link>
+              <Link key={n.id} href={n.href} className="block" onClick={() => markNotificationsRead([n.id])}>{Row}</Link>
             ) : (
-              <div key={n.id}>{Row}</div>
+              <button key={n.id} type="button" className="block w-full text-left" onClick={() => markNotificationsRead([n.id])}>{Row}</button>
             );
           })}
         </Card>
