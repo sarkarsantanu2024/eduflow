@@ -144,7 +144,6 @@ export async function fetchProfile(instituteIdArg?: string): Promise<Profile> {
     recurringCharges: inst.recurringCharges ?? [],
     website: inst.website ?? "",
     extraLink: inst.extraLink ?? "",
-    posters: inst.posters ?? {},
     upiId: inst.upiId ?? "",
     qrImage: inst.qrImageUrl ?? "",
     avatar: inst.avatarUrl ?? "",
@@ -241,10 +240,12 @@ export async function fetchTrash(): Promise<TrashItem[]> {
   return out.sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
 }
 
-const PROFILE_MAP: Record<keyof Profile, string> = {
+// Partial: any derived/read-only Profile field without a column is omitted here —
+// saveProfile skips any key that has no mapping.
+const PROFILE_MAP: Partial<Record<keyof Profile, string>> = {
   businessName: "name", businessType: "type", ownerName: "ownerName", email: "email",
   phone: "phone", gst: "gst", city: "city", address: "address", monthlyFee: "monthlyFee",
-  admissionFee: "admissionFee", reactivationFee: "reactivationFee", hoRoyaltyPerStudent: "hoRoyaltyPerStudent", hoRoyaltyPercent: "hoRoyaltyPercent", recurringCharges: "recurringCharges", website: "website", extraLink: "extraLink", posters: "posters", upiId: "upiId", qrImage: "qrImageUrl",
+  admissionFee: "admissionFee", reactivationFee: "reactivationFee", hoRoyaltyPerStudent: "hoRoyaltyPerStudent", hoRoyaltyPercent: "hoRoyaltyPercent", recurringCharges: "recurringCharges", website: "website", extraLink: "extraLink", upiId: "upiId", qrImage: "qrImageUrl",
   avatar: "avatarUrl", facebook: "facebook", instagram: "instagram", youtube: "youtube",
   whatsapp: "whatsapp", certImage: "certImageUrl", certLayout: "certLayout",
 };

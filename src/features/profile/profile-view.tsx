@@ -29,7 +29,6 @@ import { saveProfile as persistProfile } from "@/features/data/actions";
 import { uploadImageFile } from "@/features/uploads/upload-client";
 import { cropToQrCode } from "@/features/uploads/qr-crop";
 import { ChangePasswordCard } from "@/features/auth/change-password-card";
-import { PosterDesigner } from "@/features/profile/poster-designer";
 
 const selectClass =
   "h-10 w-full rounded-lg border border-input bg-card px-3 text-sm shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
@@ -449,35 +448,16 @@ export function ProfileView() {
                 placeholder="youtube.com/…"
               />
             </Field>
-            <Field label="Extra link" full>
+            <Field label="Website link" full>
               <Input
                 value={profile.extraLink}
                 onChange={(e) => set("extraLink", e.target.value)}
-                placeholder="Another website / booking / Google review link"
+                placeholder="https://your-website.com"
               />
             </Field>
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Poster templates</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-6 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Welcome poster</Label>
-              <p className="text-xs text-muted-foreground">Shown in a new student&apos;s Welcome pack. The student&apos;s photo &amp; name are added automatically.</p>
-              <PosterDesigner value={profile.posters?.welcome}
-                onChange={(d) => set("posters", { ...(profile.posters ?? {}), welcome: d })} sampleName="Aman Gupta" />
-            </div>
-            <div className="space-y-2">
-              <Label>Birthday poster</Label>
-              <p className="text-xs text-muted-foreground">Used for the birthday greeting. Same auto photo &amp; name placement.</p>
-              <PosterDesigner value={profile.posters?.birthday}
-                onChange={(d) => set("posters", { ...(profile.posters ?? {}), birthday: d })} sampleName="Aman Gupta" />
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Data controls */}
