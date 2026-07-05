@@ -262,25 +262,6 @@ export interface Teacher {
 /** New-admission handover checklist, tracked per student. */
 export type WelcomeKit = Partial<Record<"bag" | "tshirt" | "idCard" | "feesCard" | "books" | "welcomeFile", boolean>>;
 
-/**
- * A reusable poster template: the owner's uploaded artwork plus where the
- * student's photo (circular) and name are auto-composited. Positions are % of
- * the image; `name.size` is px at a 1000px-wide reference (scaled on render).
- */
-export interface PosterField { x: number; y: number; size: number }
-export interface PosterDesign {
-  image: string; // uploaded template URL
-  photo: PosterField; // circular photo: x/y = centre %, size = diameter % of width
-  name: { x: number; y: number; size: number; color: string };
-}
-export interface Posters { welcome?: PosterDesign; birthday?: PosterDesign }
-
-/** Sensible starting placement for a freshly uploaded template. */
-export const DEFAULT_POSTER_DESIGN = (image: string): PosterDesign => ({
-  image,
-  photo: { x: 50, y: 40, size: 34 },
-  name: { x: 50, y: 70, size: 60, color: "#ffffff" },
-});
 
 export function effectiveFee(student: { monthlyFee?: number }, centerFee: number): number {
   return student.monthlyFee && student.monthlyFee > 0 ? student.monthlyFee : centerFee;
@@ -346,7 +327,6 @@ export interface Profile {
   recurringCharges: RecurringCharge[];
   website: string;
   extraLink: string; // one extra link (booking / review / landing page) alongside socials
-  posters: Posters; // uploaded welcome & birthday poster templates
   upiId: string;
   qrImage: string; // data URL or Blob URL
   avatar: string;
@@ -387,7 +367,7 @@ export type CollectionName =
 
 export const EMPTY_PROFILE: Profile = {
   businessName: "", businessType: "abacus", ownerName: "", email: "", phone: "",
-  gst: "", city: "", address: "", monthlyFee: 0, admissionFee: 0, reactivationFee: 0, hoRoyaltyPerStudent: 0, hoRoyaltyPercent: 0, recurringCharges: [], website: "", extraLink: "", posters: {}, upiId: "", qrImage: "", avatar: "",
+  gst: "", city: "", address: "", monthlyFee: 0, admissionFee: 0, reactivationFee: 0, hoRoyaltyPerStudent: 0, hoRoyaltyPercent: 0, recurringCharges: [], website: "", extraLink: "", upiId: "", qrImage: "", avatar: "",
   facebook: "", instagram: "", youtube: "", whatsapp: "",
   certImage: "", certLayout: DEFAULT_CERT_LAYOUT,
 };

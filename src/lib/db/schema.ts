@@ -2,7 +2,7 @@ import {
   pgTable, pgEnum, uuid, text, integer, boolean, timestamp, date, jsonb,
   doublePrecision, uniqueIndex, index,
 } from "drizzle-orm/pg-core";
-import type { CertLayout, RecurringCharge, Posters } from "../store/types";
+import type { CertLayout, RecurringCharge } from "../store/types";
 
 /**
  * EduFlow database schema (Neon Postgres via Drizzle).
@@ -105,8 +105,6 @@ export const institutes = pgTable("institutes", {
   instagram: text("instagram"),
   youtube: text("youtube"),
   extraLink: text("extra_link"), // one more link (booking / review / landing page)
-  // Welcome & birthday poster templates (uploaded artwork + photo/name placement)
-  posters: jsonb("posters").$type<Posters>(),
   // Certificate template
   certImageUrl: text("cert_image_url"),
   certLayout: jsonb("cert_layout").$type<CertLayout>(),
