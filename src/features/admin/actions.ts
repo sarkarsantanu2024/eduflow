@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { and, count, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, count, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   institutes, users, students, payments, fees, subscriptions, subscriptionPlans,
@@ -11,7 +11,7 @@ import {
 import { requireSuperAdmin, getCurrentProfile } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
 import { ACTING_COOKIE } from "@/lib/tenant";
-import { DEMO_INSTITUTE_ID } from "@/lib/demo-tenant";
+import { DEMO_INSTITUTE_IDS } from "@/lib/demo-tenant";
 
 export type CustomerRow = {
   id: string;
@@ -34,8 +34,8 @@ export type CustomerRow = {
 export async function listCustomers(): Promise<CustomerRow[]> {
   await requireSuperAdmin();
 
-  // Exclude the isolated demo tenant so it never mixes with real customers.
-  const rows = await db.select().from(institutes).where(ne(institutes.id, DEMO_INSTITUTE_ID));
+  // Exclude the isolated demo tenants so they never mix with real customers.
+  const rows = await db.select().from(institutes).where(notInArray(institutes.id, DEMO_INSTITUTE_IDS));
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
 
@@ -150,8 +150,8 @@ export type PlatformMetrics = {
 export async function getPlatformMetrics(): Promise<PlatformMetrics> {
   await requireSuperAdmin();
 
-  // All aggregates exclude the isolated demo tenant so your real revenue is clean.
-  const notDemo = ne(subscriptions.instituteId, DEMO_INSTITUTE_ID);
+  // All aggregates exclude the isolated demo tenants so your real revenue is clean.
+  const notDemo = notInArray(subscriptions.instituteId, DEMO_INSTITUTE_IDS);
   const [subRows, collectedRow, pendingRow] = await Promise.all([
     db.select({
       status: subscriptions.status,
@@ -159,8 +159,8 @@ export async function getPlatformMetrics(): Promise<PlatformMetrics> {
       name: subscriptionPlans.name,
       price: subscriptionPlans.priceMonthly,
     }).from(subscriptions).innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id)).where(notDemo),
-    db.select({ total: sql<number>`coalesce(sum(${payments.amount}), 0)` }).from(payments).where(and(eq(payments.status, "success"), ne(payments.instituteId, DEMO_INSTITUTE_ID))),
-    db.select({ total: sql<number>`coalesce(sum(${fees.amount} - ${fees.amountPaid}), 0)` }).from(fees).where(and(inArray(fees.status, ["pending", "overdue", "partial"]), ne(fees.instituteId, DEMO_INSTITUTE_ID))),
+    db.select({ total: sql<number>`coalesce(sum(${payments.amount}), 0)` }).from(payments).where(and(eq(payments.status, "success"), notInArray(payments.instituteId, DEMO_INSTITUTE_IDS))),
+    db.select({ total: sql<number>`coalesce(sum(${fees.amount} - ${fees.amountPaid}), 0)` }).from(fees).where(and(inArray(fees.status, ["pending", "overdue", "partial"]), notInArray(fees.instituteId, DEMO_INSTITUTE_IDS))),
   ]);
 
   const billable = subRows.filter((s) => s.status === "active" || s.status === "past_due");

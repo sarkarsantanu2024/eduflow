@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { Building2, Plus, Pencil, UserPlus, Link2, ArrowLeft, KeyRound } from "lucide-react";
+import { Building2, Plus, Pencil, UserPlus, Link2, ArrowLeft, KeyRound, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, stickyActionsHead, stickyActionsCell } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
-  createOrganization, updateOrganization, createOrgAdmin, assignBranch,
+  createOrganization, updateOrganization, createOrgAdmin, assignBranch, deleteOrganization,
   type OrgRow, type AssignCenterRow,
 } from "@/features/admin/org-actions";
 import { resetOwnerPassword } from "@/features/admin/actions";
@@ -66,6 +66,7 @@ export function OrganizationsConsole({ orgs, centers }: { orgs: OrgRow[]; center
                       {o.adminUsername
                         ? <ResetOwnerDialog userId={o.adminUserId!} username={o.adminUsername} />
                         : <CreateOwnerDialog org={o} />}
+                      <DeleteOrgDialog org={o} />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -201,6 +202,45 @@ function CreateOwnerDialog({ org }: { org: OrgRow }) {
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={pending}>{pending ? "Creating…" : "Create login"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+// ── Delete an organization ───────────────────────────────────────────
+function DeleteOrgDialog({ org }: { org: OrgRow }) {
+  const [open, setOpen] = useState(false);
+  const [state, action, pending] = useActionState(
+    async (_p: { error?: string; ok?: boolean } | undefined, fd: FormData) => deleteOrganization(fd),
+    undefined,
+  );
+  if (state?.ok && open) setOpen(false);
+
+  return (
+    <>
+      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setOpen(true)}>
+        <Trash2 className="size-3.5" /> Delete
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete {org.name}?</DialogTitle>
+            <DialogDescription>
+              Removes this brand and its owner login.
+              {org.branches > 0
+                ? ` Its ${org.branches} branch${org.branches > 1 ? "es" : ""} become standalone centers — their data is kept.`
+                : " It has no branches."}
+            </DialogDescription>
+          </DialogHeader>
+          <form action={action} className="space-y-3">
+            <input type="hidden" name="orgId" value={org.id} />
+            {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit" variant="destructive" disabled={pending}>{pending ? "Deleting…" : "Delete organization"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

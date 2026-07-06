@@ -3,16 +3,20 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
-  institutes, courses, teachers, batches, students, fees, payments, expenses,
+  organizations, institutes, courses, teachers, batches, students, fees, payments, expenses,
   attendance, promotions, testScores, certificates, examRegs, performances,
-  materials, events, templates, subscriptions, subscriptionPlans,
+  materials, events, templates, users, subscriptions, subscriptionPlans,
 } from "@/lib/db/schema";
 import { requireSuperAdmin } from "@/lib/auth";
+import { hashPassword } from "@/lib/auth/password";
 import { ACTING_COOKIE } from "@/lib/tenant";
-import { DEMO_INSTITUTE_ID, DEMO_INSTITUTE_NAME as DEMO_NAME } from "@/lib/demo-tenant";
+import {
+  DEMO_ORG_ID, DEMO_INSTITUTE_ID, DEMO_BRANCH_2_ID, DEMO_INSTITUTE_IDS,
+  DEMO_INSTITUTE_NAME as DEMO_NAME, DEMO_ORG_NAME, DEMO_HO_USERNAME, DEMO_HO_PASSWORD,
+} from "@/lib/demo-tenant";
 
 /**
  * DEMO MODE — a real but isolated tenant the super-admin can drop into for
@@ -21,17 +25,35 @@ import { DEMO_INSTITUTE_ID, DEMO_INSTITUTE_NAME as DEMO_NAME } from "@/lib/demo-
  * populated so a demo walks through the whole product.
  */
 
-/** True if the demo tenant currently exists. */
+/** True if the demo tenant is fully seeded (org + main branch present). */
 async function demoExists(): Promise<boolean> {
-  const [row] = await db.select({ id: institutes.id }).from(institutes).where(eq(institutes.id, DEMO_INSTITUTE_ID)).limit(1);
-  return Boolean(row);
+  const [inst] = await db.select({ id: institutes.id }).from(institutes).where(eq(institutes.id, DEMO_INSTITUTE_ID)).limit(1);
+  const [org] = await db.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, DEMO_ORG_ID)).limit(1);
+  return Boolean(inst && org);
 }
 
-/** Build the demo tenant from scratch (assumes it does not already exist). */
+/** Build the demo franchise from scratch. Idempotent — clears any prior demo
+ *  rows first, so it's safe to call to rebuild the demo at any time. */
 async function seedDemo(): Promise<void> {
-  // ── Institute (branding + fees filled so every screen looks real) ──
+  // Clear any prior demo state (branches cascade their data; deleting the org
+  // removes the org-admin login via ON DELETE CASCADE).
+  await db.delete(institutes).where(inArray(institutes.id, DEMO_INSTITUTE_IDS));
+  await db.delete(organizations).where(eq(organizations.id, DEMO_ORG_ID));
+
+  // ── Head-Office organization (a franchise brand) ──
+  await db.insert(organizations).values({
+    id: DEMO_ORG_ID,
+    name: DEMO_ORG_NAME,
+    slug: "demo-bright-abacus-group",
+    ownerName: "Priya Menon",
+    partnerSharePercent: 20,
+    isActive: true,
+  });
+
+  // ── Main branch (branding + fees filled so every screen looks real) ──
   await db.insert(institutes).values({
     id: DEMO_INSTITUTE_ID,
+    organizationId: DEMO_ORG_ID,
     name: DEMO_NAME,
     slug: "demo-bright-abacus",
     type: "abacus",
@@ -222,6 +244,63 @@ async function seedDemo(): Promise<void> {
     { instituteId: DEMO_INSTITUTE_ID, name: "Birthday Wish", type: "birthday", channel: "whatsapp", body: "Happy Birthday {{student_name}}! 🎉 — Bright Abacus" },
     { instituteId: DEMO_INSTITUTE_ID, name: "Level Promotion", type: "promotion", body: "Congratulations! {{student_name}} is promoted to {{level}}. 🎉 — Bright Abacus" },
   ]);
+
+  // ── Second branch (so the Head-Office roll-up shows a real franchise) ──
+  await db.insert(institutes).values({
+    id: DEMO_BRANCH_2_ID,
+    organizationId: DEMO_ORG_ID,
+    name: "▶ Demo — Bright Abacus (Behala)",
+    slug: "demo-bright-abacus-behala",
+    type: "abacus",
+    ownerName: "Priya Menon",
+    city: "Kolkata",
+    monthlyFee: 800, admissionFee: 500, upiId: "brightabacus@upi",
+    onboarded: true, isActive: true,
+  });
+  const proPlan = await db.query.subscriptionPlans.findFirst({ where: eq(subscriptionPlans.code, "pro") });
+  if (proPlan) {
+    const end2 = new Date();
+    end2.setDate(end2.getDate() + 30);
+    await db.insert(subscriptions).values({ instituteId: DEMO_BRANCH_2_ID, planId: proPlan.id, status: "active", currentPeriodEnd: end2 });
+  }
+  const B2 = [
+    ["Rehan", "Sen", "Ashok Sen", "9812222201"],
+    ["Tara", "Bose", "Debashish Bose", "9812222202"],
+    ["Ivan", "Ghosh", "Partha Ghosh", "9812222203"],
+    ["Nyra", "Dutta", "Sanjay Dutta", "9812222204"],
+    ["Ojas", "Mitra", "Kaushik Mitra", "9812222205"],
+    ["Zara", "Sarkar", "Biswajit Sarkar", "9812222206"],
+  ] as const;
+  const b2 = await db.insert(students).values(
+    B2.map(([first, last, parent, mobile], i) => ({
+      instituteId: DEMO_BRANCH_2_ID, code: `BAB-${String(i + 1).padStart(4, "0")}`,
+      firstName: first, lastName: last, gender: (i % 2 === 0 ? "male" : "female") as "male" | "female",
+      admissionDate: "2026-02-01", parentName: parent, parentMobile: mobile, fatherName: parent, fatherContact: mobile,
+      city: "Kolkata", status: "active" as const,
+    })),
+  ).returning({ id: students.id, firstName: students.firstName, lastName: students.lastName, parentMobile: students.parentMobile });
+
+  const b2name = (r: { firstName: string; lastName: string }) => `${r.firstName} ${r.lastName}`.trim();
+  await db.insert(fees).values(
+    b2.map((s, i) => ({
+      instituteId: DEMO_BRANCH_2_ID, studentId: s.id, studentName: b2name(s), parentMobile: s.parentMobile,
+      kind: "monthly", period: "2026-06", title: "June 2026 Monthly Fee", type: "monthly",
+      amount: 800, amountPaid: i % 3 === 0 ? 0 : 800, status: (i % 3 === 0 ? "overdue" : "paid") as "overdue" | "paid", dueDate: "2026-06-05",
+    })),
+  );
+  await db.insert(payments).values(
+    b2.filter((_, i) => i % 3 !== 0).map((s) => ({
+      instituteId: DEMO_BRANCH_2_ID, studentId: s.id, studentName: b2name(s),
+      amount: 800, method: "upi" as const, status: "success" as const, source: "fee", date: "2026-06-03",
+    })),
+  );
+
+  // ── Franchise-owner (org_admin) login for demoing the Head-Office console ──
+  await db.insert(users).values({
+    organizationId: DEMO_ORG_ID, instituteId: null, role: "org_admin",
+    username: DEMO_HO_USERNAME, email: `${DEMO_HO_USERNAME}@noemail.eduflow.local`,
+    fullName: "Priya Menon (Head Office)", passwordHash: await hashPassword(DEMO_HO_PASSWORD),
+  });
 }
 
 /** Ensure the demo tenant exists (idempotent). Returns its id. */
@@ -240,11 +319,10 @@ export async function enterDemoMode() {
   redirect("/dashboard");
 }
 
-/** Wipe and rebuild the demo data (fresh start for the next demo). */
+/** Wipe and rebuild the demo data (fresh start for the next demo). seedDemo is
+ *  self-cleaning, so it clears the prior demo org + both branches first. */
 export async function resetDemoData(): Promise<{ ok?: boolean; error?: string }> {
   await requireSuperAdmin();
-  // Deleting the institute cascades to every child table (fees, students, …).
-  await db.delete(institutes).where(eq(institutes.id, DEMO_INSTITUTE_ID));
   await seedDemo();
   revalidatePath("/admin");
   return { ok: true };

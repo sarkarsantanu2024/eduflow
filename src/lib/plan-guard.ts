@@ -6,6 +6,7 @@ import { subscriptions, subscriptionPlans } from "@/lib/db/schema";
 import { getActiveInstituteId } from "@/lib/tenant";
 import { planAllowsModule } from "@/lib/plan-gating";
 import { FEATURES } from "@/lib/features";
+import { DEMO_INSTITUTE_ID } from "@/lib/demo-tenant";
 import type { ModuleKey } from "@/lib/sectors";
 
 /**
@@ -19,6 +20,7 @@ export async function requireModule(module: ModuleKey): Promise<void> {
 
   const activeId = await getActiveInstituteId();
   if (!activeId) return; // no active center (auth/onboarding guards handle this)
+  if (activeId === DEMO_INSTITUTE_ID) return; // demo shows every feature
 
   const [sub] = await db
     .select({ code: subscriptionPlans.code })
