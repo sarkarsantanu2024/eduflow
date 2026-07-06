@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, count, eq, isNull } from "drizzle-orm";
+import { count, eq, ne, notInArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { organizations, institutes, users } from "@/lib/db/schema";
 import { requireSuperAdmin } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
+import { DEMO_ORG_ID, DEMO_INSTITUTE_IDS } from "@/lib/demo-tenant";
 
 function slugify(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
@@ -36,7 +37,8 @@ export async function listOrganizations(): Promise<OrgRow[]> {
   await requireSuperAdmin();
 
   const [orgs, branchCounts, admins] = await Promise.all([
-    db.select().from(organizations),
+    // Exclude the demo organization from the real list.
+    db.select().from(organizations).where(ne(organizations.id, DEMO_ORG_ID)),
     db.select({ id: institutes.organizationId, n: count() }).from(institutes).groupBy(institutes.organizationId),
     db.select({ orgId: users.organizationId, userId: users.id, username: users.username, email: users.email }).from(users).where(eq(users.role, "org_admin")),
   ]);
@@ -63,7 +65,8 @@ export async function listCentersForAssign(): Promise<AssignCenterRow[]> {
   await requireSuperAdmin();
   const rows = await db
     .select({ id: institutes.id, name: institutes.name, organizationId: institutes.organizationId })
-    .from(institutes);
+    .from(institutes)
+    .where(notInArray(institutes.id, DEMO_INSTITUTE_IDS));
   return rows;
 }
 
@@ -74,8 +77,29 @@ export async function createOrganization(formData: FormData): Promise<{ error?: 
   const share = Math.max(0, Math.min(100, Number(formData.get("partnerSharePercent") ?? 0)));
   if (name.length < 2) return { error: "Enter an organization name" };
 
+  // Prevent duplicates — same name (case-insensitive) can't be created twice.
+  const [dup] = await db
+    .select({ id: organizations.id })
+    .from(organizations)
+    .where(sql`lower(${organizations.name}) = ${name.toLowerCase()}`)
+    .limit(1);
+  if (dup) return { error: "An organization with that name already exists" };
+
   const slug = `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`;
   await db.insert(organizations).values({ name, slug, partnerSharePercent: share });
+  revalidatePath("/admin/organizations");
+  return { ok: true };
+}
+
+/** Delete an organization (super-admin). Its branches are detached (kept as
+ *  standalone centers — data preserved); the owner login is removed. */
+export async function deleteOrganization(formData: FormData): Promise<{ error?: string; ok?: boolean }> {
+  await requireSuperAdmin();
+  const orgId = String(formData.get("orgId") ?? "");
+  if (!orgId) return { error: "Missing organization" };
+  if (orgId === DEMO_ORG_ID) return { error: "The demo organization can't be deleted here — use Reset on the Demo card." };
+
+  await db.delete(organizations).where(eq(organizations.id, orgId));
   revalidatePath("/admin/organizations");
   return { ok: true };
 }
@@ -88,6 +112,14 @@ export async function updateOrganization(formData: FormData): Promise<{ error?: 
   const share = Math.max(0, Math.min(100, Number(formData.get("partnerSharePercent") ?? 0)));
   if (!id) return { error: "Missing organization" };
   if (name.length < 2) return { error: "Enter an organization name" };
+
+  // No two organizations may share a name (case-insensitive).
+  const [dup] = await db
+    .select({ id: organizations.id })
+    .from(organizations)
+    .where(sql`lower(${organizations.name}) = ${name.toLowerCase()} and ${organizations.id} <> ${id}`)
+    .limit(1);
+  if (dup) return { error: "Another organization already has that name" };
 
   await db.update(organizations).set({ name, partnerSharePercent: share, updatedAt: new Date() }).where(eq(organizations.id, id));
   revalidatePath("/admin/organizations");

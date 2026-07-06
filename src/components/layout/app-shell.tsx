@@ -78,6 +78,7 @@ export function AppShell({
       <Sidebar
         role={navRole}
         planCode={planCode}
+        activeInstituteId={activeInstituteId}
         collapsed={collapsed}
         mobileOpen={mobileOpen}
         onNavigate={() => setMobileOpen(false)}
