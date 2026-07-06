@@ -35,6 +35,7 @@ export const DEMO_INSTITUTE = {
 export const demoProfile: ProfileRow = {
   id: "00000000-0000-0000-0000-0000000000aa",
   institute_id: DEMO_INSTITUTE.id,
+  organization_id: null,
   role: "institute_admin",
   full_name: "Demo Admin",
   username: "demo",

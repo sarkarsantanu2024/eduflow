@@ -5,16 +5,20 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
 import { NAV_ITEMS, getLabels, getSector } from "@/lib/constants";
+import { FEATURES } from "@/lib/features";
+import { planAllowsModule } from "@/lib/plan-gating";
 import { useProfile } from "@/lib/store/local-db";
 import type { UserRole } from "@/types/database.types";
 
 export function Sidebar({
   role,
+  planCode,
   collapsed = false,
   mobileOpen = false,
   onNavigate,
 }: {
   role: UserRole;
+  planCode?: string;
   collapsed?: boolean;
   mobileOpen?: boolean;
   onNavigate?: () => void;
@@ -26,7 +30,12 @@ export function Sidebar({
   const items = NAV_ITEMS.filter(
     (i) =>
       (i.roles.includes(role) || role === "super_admin") &&
-      (!i.module || enabledModules.includes(i.module)),
+      // sector gating
+      (!i.module || enabledModules.includes(i.module)) &&
+      // plan-tier gating (no-op unless the billing flag is on)
+      (!i.module || planAllowsModule(planCode, i.module)) &&
+      // feature-flag gating (e.g. Billing page only when billing is on)
+      (!i.feature || FEATURES[i.feature]),
   );
 
   return (

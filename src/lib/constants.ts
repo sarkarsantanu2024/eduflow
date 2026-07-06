@@ -19,6 +19,8 @@ export interface NavItem {
   labelKey?: "members" | "courses" | "batches";
   /** When set, the item only shows if the active sector enables this module. */
   module?: ModuleKey;
+  /** When set, the item only shows if this feature flag is enabled. */
+  feature?: "billing";
 }
 
 export const APP_NAME = "EduFlow";
@@ -54,35 +56,62 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Expenses", href: "/expenses", icon: Coins, roles: ["institute_admin"] },
   { title: "WhatsApp Reminders", href: "/reminders", icon: MessageSquare, roles: ["institute_admin"] },
   { title: "Trash", href: "/trash", icon: Trash2, roles: ["institute_admin"] },
-  // Billing & Plans hidden while the product is free. Re-add this line to restore it.
-  // { title: "Billing & Plans", href: "/billing", icon: Wallet, roles: ["institute_admin"] },
+  // Billing & Plans — shown only when the billing feature flag is on.
+  { title: "Billing & Plans", href: "/billing", icon: Wallet, roles: ["institute_admin"], feature: "billing" },
   { title: "Support", href: "/support", icon: LifeBuoy, roles: ["institute_admin", "teacher"] },
 ];
 
+// Full 6-tier lineup (matches the published pricing sheet). Priced by center
+// size; each tier unlocks more. Codes must match subscription_plans.code in the
+// DB (see src/lib/db/seed.ts) and the ranks in src/lib/plan-gating.ts.
 export const SUBSCRIPTION_PLANS = [
   {
     code: "starter",
     name: "Starter",
     price: 499,
-    students: "Up to 75 students",
+    students: "Up to 50 students",
     popular: false,
-    features: ["Students, batches & attendance", "Monthly fees + dues tracking", "UPI QR + payment links", "WhatsApp click-to-send (free)", "PDF receipts & certificates", "1 staff login · Email support"],
+    features: ["Students, batches & attendance", "Monthly + admission fees, UPI-QR", "WhatsApp click-to-send (free)", "Branded certificates & PDF receipts", "Materials & franchise P&L", "Data export & Trash · 1 staff login"],
   },
   {
     code: "growth",
     name: "Growth",
-    price: 1499,
-    students: "Up to 300 students",
+    price: 999,
+    students: "Up to 100 students",
     popular: true,
-    features: ["Everything in Starter", "Automatic WhatsApp reminders", "All sector modules (promotions, tests, certificates, exam boards…)", "Reports & analytics", "2,000 WhatsApp msgs / month", "Up to 3 staff logins", "Parent portal · Priority support"],
+    features: ["Everything in Starter", "Welcome & Birthday poster maker", "Tests, rank lists & result cards", "Automatic WhatsApp reminders", "Reports & analytics", "2,000 WhatsApp msgs / mo · 3 staff logins"],
   },
   {
-    code: "professional",
-    name: "Professional",
-    price: 2999,
-    students: "Up to 1,000 students",
+    code: "pro",
+    name: "Pro",
+    price: 1999,
+    students: "Up to 300 students",
     popular: false,
-    features: ["Everything in Growth", "Two-way WhatsApp 'Fees Due' bot", "Multi-batch & multi-teacher", "5,000 WhatsApp msgs / month", "Up to 10 staff logins", "API access · Dedicated support"],
+    features: ["Everything in Growth", "Welcome & Birthday video maker", "Exam boards & performance/competitions", "Advanced reports (half-yearly/yearly) + PDF", "Multi-batch & multi-teacher", "5,000 WhatsApp msgs / mo · 6 staff logins"],
+  },
+  {
+    code: "business",
+    name: "Business",
+    price: 3499,
+    students: "Up to 600 students",
+    popular: false,
+    features: ["Everything in Pro", "Custom branding", "Priority support", "8,000 WhatsApp msgs / mo", "Up to 10 staff logins"],
+  },
+  {
+    code: "premium",
+    name: "Premium",
+    price: 4999,
+    students: "Up to 900 students",
+    popular: false,
+    features: ["Everything in Business", "Dedicated onboarding & account manager", "12,000 WhatsApp msgs / mo", "Up to 15 staff logins"],
+  },
+  {
+    code: "enterprise",
+    name: "Enterprise",
+    price: 6499,
+    students: "Up to 1,200 students",
+    popular: false,
+    features: ["Everything in Premium", "WhatsApp auto-send — Meta Cloud API (rolling out)", "Multi-center / Head-Office console (rolling out)", "Unlimited staff logins", "Dedicated support"],
   },
 ] as const;
 
