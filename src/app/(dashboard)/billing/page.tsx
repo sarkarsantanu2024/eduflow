@@ -1,21 +1,37 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
 import { Check, MessageSquare, Sparkles, Building2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { ActionButton } from "@/components/action-button";
 import { SUBSCRIPTION_PLANS, CURRENT_PLAN_CODE, FRANCHISE_PLAN } from "@/lib/constants";
+import { FEATURES } from "@/lib/features";
+import { db } from "@/lib/db";
+import { subscriptions, subscriptionPlans } from "@/lib/db/schema";
+import { getActiveInstituteId } from "@/lib/tenant";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Billing & Plans" };
 
-// Billing is hidden while the product is free — block direct access to /billing too.
-// Delete this line (and restore the sidebar item in constants.ts) to bring it back.
-const BILLING_ENABLED = false;
+export default async function BillingPage() {
+  // Hidden unless the billing feature flag is on; block direct access too.
+  if (!FEATURES.billing) redirect("/dashboard");
 
-export default function BillingPage() {
-  if (!BILLING_ENABLED) redirect("/dashboard");
+  // Show the center's real current plan (falls back to the demo default).
+  const activeId = await getActiveInstituteId();
+  let currentPlanCode: string = CURRENT_PLAN_CODE;
+  if (activeId) {
+    const [sub] = await db
+      .select({ code: subscriptionPlans.code })
+      .from(subscriptions)
+      .innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id))
+      .where(eq(subscriptions.instituteId, activeId))
+      .limit(1);
+    if (sub?.code) currentPlanCode = sub.code;
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -25,7 +41,7 @@ export default function BillingPage() {
 
       <div className="grid gap-5 lg:grid-cols-3">
         {SUBSCRIPTION_PLANS.map((plan) => {
-          const current = plan.code === CURRENT_PLAN_CODE;
+          const current = plan.code === currentPlanCode;
           return (
             <Card
               key={plan.code}

@@ -33,6 +33,23 @@ export const registerSchema = z
     path: ["confirmPassword"],
   });
 
+// Self-serve signup for a multi-center brand (Head Office). Creates an
+// organization + its owner login; branches are added later from the HO console.
+export const registerOrgSchema = z
+  .object({
+    organizationName: z.string().min(2, "Brand / organization name is required"),
+    fullName: z.string().min(2, "Your name is required"),
+    username: usernameSchema,
+    email: z.string().email("Enter a valid email").optional().or(z.literal("")),
+    phone: z.string().trim().optional().or(z.literal("")),
+    password: z.string().min(8, "Use at least 8 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
 export const forgotPasswordSchema = z.object({
   email: z.string().email("Enter a valid email"),
 });

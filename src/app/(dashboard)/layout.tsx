@@ -13,10 +13,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   // A super-admin who isn't managing a center belongs in the platform console.
   if (profile.role === "super_admin" && !impersonating) redirect("/admin");
+  // A franchise owner who isn't managing a branch belongs in the Head-Office console.
+  if (profile.role === "org_admin" && !impersonating) redirect("/org");
 
   const activeId = await getActiveInstituteId();
   let instituteName: string | undefined;
   let planLabel = "EduFlow";
+  let planCode: string | undefined;
   let needsOnboarding = false;
 
   if (activeId) {
@@ -27,7 +30,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         columns: { name: true, onboarded: true, isActive: true },
       }),
       db
-        .select({ planName: subscriptionPlans.name })
+        .select({ planName: subscriptionPlans.name, planCode: subscriptionPlans.code })
         .from(subscriptions)
         .innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id))
         .where(eq(subscriptions.instituteId, activeId))
@@ -43,7 +46,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
     }
 
     needsOnboarding = profile.role === "institute_admin" && institute?.onboarded === false;
-    if (sub[0]) planLabel = `${sub[0].planName} plan`;
+    if (sub[0]) {
+      planLabel = `${sub[0].planName} plan`;
+      planCode = sub[0].planCode;
+    }
   }
 
   // When a super-admin opens a center, show the center's (institute_admin) menus.
@@ -56,6 +62,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       instituteName={instituteName}
       activeInstituteId={activeId ?? null}
       planLabel={planLabel}
+      planCode={planCode}
       needsOnboarding={needsOnboarding}
       impersonating={impersonating}
     >

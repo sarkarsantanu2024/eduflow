@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BUSINESS_TYPES } from "@/lib/constants";
+import { FEATURES } from "@/lib/features";
 import { signUp, type AuthState } from "@/features/auth/actions";
 
 export default function RegisterPage() {
@@ -17,6 +18,15 @@ export default function RegisterPage() {
         <h2 className="text-2xl font-bold">Create your institute</h2>
         <p className="text-sm text-muted-foreground">Start your 14-day free trial. No card required.</p>
       </div>
+
+      {FEATURES.headOffice && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm">
+          Running multiple branches or a franchise?{" "}
+          <Link href="/register/head-office" className="font-semibold text-primary hover:underline">
+            Register as a Head Office →
+          </Link>
+        </div>
+      )}
 
       <form action={formAction} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">

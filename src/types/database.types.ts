@@ -4,7 +4,7 @@
  * (Neon Postgres); these hand-authored types mirror the shapes the client uses.
  */
 
-export type UserRole = "super_admin" | "institute_admin" | "teacher" | "parent";
+export type UserRole = "super_admin" | "org_admin" | "institute_admin" | "teacher" | "parent";
 export type Gender = "male" | "female" | "other";
 export type StudentStatus = "active" | "inactive" | "graduated" | "dropped";
 export type FeeType = "monthly" | "admission" | "exam" | "other";
@@ -30,6 +30,7 @@ type Audit = {
 export type ProfileRow = Audit & {
   id: string;
   institute_id: string | null;
+  organization_id: string | null;
   role: UserRole;
   full_name: string;
   username: string;
@@ -40,8 +41,21 @@ export type ProfileRow = Audit & {
   last_login_at: string | null;
 }
 
+export type OrganizationRow = Audit & {
+  id: string;
+  name: string;
+  slug: string;
+  owner_name: string;
+  email: string | null;
+  phone: string | null;
+  logo_url: string | null;
+  partner_share_percent: number;
+  is_active: boolean;
+};
+
 export type InstituteRow = Audit & {
   id: string;
+  organization_id: string | null;
   name: string;
   slug: string;
   type: InstituteType;

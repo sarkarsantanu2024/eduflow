@@ -21,6 +21,7 @@ export function AppShell({
   instituteName,
   activeInstituteId = null,
   planLabel,
+  planCode,
   needsOnboarding = false,
   impersonating = false,
   children,
@@ -30,6 +31,7 @@ export function AppShell({
   instituteName?: string;
   activeInstituteId?: string | null;
   planLabel?: string;
+  planCode?: string;
   needsOnboarding?: boolean;
   impersonating?: boolean;
   children: React.ReactNode;
@@ -75,6 +77,7 @@ export function AppShell({
 
       <Sidebar
         role={navRole}
+        planCode={planCode}
         collapsed={collapsed}
         mobileOpen={mobileOpen}
         onNavigate={() => setMobileOpen(false)}
@@ -91,14 +94,16 @@ export function AppShell({
           <div className="flex items-center justify-between gap-3 border-b bg-amber-100 px-4 py-2 text-sm text-amber-900 sm:px-6">
             <span>
               You are managing <strong>{instituteName ?? "this center"}</strong>{" "}
-              as platform admin. Changes affect the customer&apos;s live data.
+              as {profile.role === "org_admin" ? "Head Office" : "platform admin"}.
+              Changes affect this center&apos;s live data.
             </span>
             <form action={exitCenter}>
               <button
                 type="submit"
                 className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-medium hover:bg-amber-200"
               >
-                <LogOut className="size-3.5" /> Exit to admin
+                <LogOut className="size-3.5" />{" "}
+                {profile.role === "org_admin" ? "Exit to Head Office" : "Exit to admin"}
               </button>
             </form>
           </div>

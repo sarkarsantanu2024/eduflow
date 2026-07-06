@@ -44,6 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.sub = dbUser.id;
           token.role = dbUser.role;
           token.instituteId = dbUser.instituteId;
+          token.organizationId = dbUser.organizationId;
           try {
             await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, dbUser.id));
           } catch {

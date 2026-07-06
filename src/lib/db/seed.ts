@@ -25,17 +25,30 @@ async function main() {
   const db = drizzle(neon(url), { schema, casing: "snake_case" });
 
   // ── 1) Subscription plans (global) ─────────────────────────────────
+  // Full 6-tier lineup — keep in sync with SUBSCRIPTION_PLANS in src/lib/constants.ts.
   const plans: Array<typeof subscriptionPlans.$inferInsert> = [
-    { code: "starter", name: "Starter", priceMonthly: 499, maxStudents: 75, maxStaff: 1, whatsappQuota: 0, sortOrder: 1,
-      features: { reports: false, bulk_import: true, parent_portal: false } },
-    { code: "growth", name: "Growth", priceMonthly: 1499, maxStudents: 300, maxStaff: 3, whatsappQuota: 2000, sortOrder: 2,
-      features: { reports: true, bulk_import: true, parent_portal: true } },
-    { code: "professional", name: "Professional", priceMonthly: 2999, maxStudents: 1000, maxStaff: 10, whatsappQuota: 5000, sortOrder: 3,
-      features: { reports: true, bulk_import: true, parent_portal: true, api_access: true } },
+    { code: "starter", name: "Starter", priceMonthly: 499, maxStudents: 50, maxStaff: 1, whatsappQuota: 0, sortOrder: 1,
+      features: { reports: true, bulk_import: true, parent_portal: false } },
+    { code: "growth", name: "Growth", priceMonthly: 999, maxStudents: 100, maxStaff: 3, whatsappQuota: 2000, sortOrder: 2,
+      features: { reports: true, bulk_import: true, parent_portal: true, posters: true, tests: true } },
+    { code: "pro", name: "Pro", priceMonthly: 1999, maxStudents: 300, maxStaff: 6, whatsappQuota: 5000, sortOrder: 3,
+      features: { reports: true, bulk_import: true, parent_portal: true, posters: true, tests: true, videos: true, exam_boards: true } },
+    { code: "business", name: "Business", priceMonthly: 3499, maxStudents: 600, maxStaff: 10, whatsappQuota: 8000, sortOrder: 4,
+      features: { custom_branding: true, priority_support: true } },
+    { code: "premium", name: "Premium", priceMonthly: 4999, maxStudents: 900, maxStaff: 15, whatsappQuota: 12000, sortOrder: 5,
+      features: { custom_branding: true, dedicated_onboarding: true } },
+    { code: "enterprise", name: "Enterprise", priceMonthly: 6499, maxStudents: 1200, maxStaff: null, whatsappQuota: 20000, sortOrder: 6,
+      features: { whatsapp_api: true, head_office: true, unlimited_staff: true } },
   ];
   for (const p of plans) {
-    await db.insert(subscriptionPlans).values(p).onConflictDoNothing({ target: subscriptionPlans.code });
+    // Upsert by code so re-running updates prices/caps for the whole lineup.
+    await db.insert(subscriptionPlans).values(p).onConflictDoUpdate({
+      target: subscriptionPlans.code,
+      set: { name: p.name, priceMonthly: p.priceMonthly, maxStudents: p.maxStudents, maxStaff: p.maxStaff, whatsappQuota: p.whatsappQuota, sortOrder: p.sortOrder, features: p.features, isActive: true },
+    });
   }
+  // Retire the old 3-tier "professional" code (replaced by "pro").
+  await db.update(subscriptionPlans).set({ isActive: false }).where(eq(subscriptionPlans.code, "professional"));
   console.log(`✓ ${plans.length} subscription plans ensured`);
 
   // ── 2) Platform super-admin ────────────────────────────────────────

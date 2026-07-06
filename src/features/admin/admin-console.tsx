@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Building2, Users, IndianRupee, AlertCircle, LogIn, KeyRound, Ban, CheckCircle2, Trash2 } from "lucide-react";
+import { Building2, Users, IndianRupee, AlertCircle, LogIn, KeyRound, Ban, CheckCircle2, Trash2, CreditCard } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,12 +14,12 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { BUSINESS_TYPES } from "@/lib/constants";
-import { openCenter, resetOwnerPassword, setCenterActive, deleteCenter, type CustomerRow } from "@/features/admin/actions";
+import { openCenter, resetOwnerPassword, setCenterActive, deleteCenter, setCenterPlan, type CustomerRow, type PlanOption } from "@/features/admin/actions";
 
 const rupees = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 const typeLabel = (t: string) => BUSINESS_TYPES.find((b) => b.value === t)?.label ?? t;
 
-export function AdminConsole({ customers }: { customers: CustomerRow[] }) {
+export function AdminConsole({ customers, plans = [] }: { customers: CustomerRow[]; plans?: PlanOption[] }) {
   const totals = customers.reduce(
     (a, c) => ({ students: a.students + c.students, revenue: a.revenue + c.revenue, pending: a.pending + c.pending }),
     { students: 0, revenue: 0, pending: 0 },
@@ -75,6 +75,7 @@ export function AdminConsole({ customers }: { customers: CustomerRow[] }) {
                         <input type="hidden" name="instituteId" value={c.id} />
                         <Button size="sm" variant="outline" type="submit"><LogIn className="size-3.5" /> Open</Button>
                       </form>
+                      {plans.length > 0 && <PlanDialog instituteId={c.id} name={c.name} currentPlan={c.plan} currentStatus={c.planStatus} plans={plans} />}
                       {c.ownerId && <ResetPasswordDialog ownerId={c.ownerId} email={c.ownerEmail ?? ""} />}
                       <form action={setCenterActive}>
                         <input type="hidden" name="instituteId" value={c.id} />
@@ -109,6 +110,60 @@ function Stat({ icon: Icon, label, value }: { icon: typeof Building2; label: str
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function PlanDialog({
+  instituteId, name, currentPlan, currentStatus, plans,
+}: {
+  instituteId: string; name: string; currentPlan: string; currentStatus: string; plans: PlanOption[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [state, action, pending] = useActionState(
+    async (_prev: { error?: string; ok?: boolean } | undefined, formData: FormData) => setCenterPlan(formData),
+    undefined,
+  );
+  if (state?.ok && open) setOpen(false);
+  const currentId = plans.find((p) => p.name === currentPlan)?.id ?? plans[0]?.id;
+
+  return (
+    <>
+      <Button size="sm" variant="ghost" onClick={() => setOpen(true)}><CreditCard className="size-3.5" /> Plan</Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Change plan — {name}</DialogTitle>
+            <DialogDescription>Override this center&apos;s subscription plan and status.</DialogDescription>
+          </DialogHeader>
+          <form action={action} className="space-y-3">
+            <input type="hidden" name="instituteId" value={instituteId} />
+            <div className="space-y-1.5">
+              <Label htmlFor={`plan-${instituteId}`}>Plan</Label>
+              <select id={`plan-${instituteId}`} name="planId" defaultValue={currentId} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                {plans.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name} — ₹{p.price}/mo</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor={`status-${instituteId}`}>Status</Label>
+              <select id={`status-${instituteId}`} name="status" defaultValue={["trialing", "active", "past_due", "canceled", "expired"].includes(currentStatus) ? currentStatus : "active"} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                <option value="trialing">Trialing</option>
+                <option value="active">Active</option>
+                <option value="past_due">Past due</option>
+                <option value="canceled">Canceled</option>
+                <option value="expired">Expired</option>
+              </select>
+            </div>
+            {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save plan"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

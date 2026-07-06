@@ -16,7 +16,9 @@ import type { CertLayout, RecurringCharge } from "../store/types";
 
 // ── Enums ────────────────────────────────────────────────────────────
 export const userRole = pgEnum("user_role", [
-  "super_admin", "institute_admin", "teacher", "parent",
+  // NOTE: "org_admin" is appended last on purpose — Postgres `ALTER TYPE ... ADD
+  // VALUE` appends, so the enum order here matches the additive migration.
+  "super_admin", "institute_admin", "teacher", "parent", "org_admin",
 ]);
 export const genderEnum = pgEnum("gender", ["male", "female", "other"]);
 export const studentStatus = pgEnum("student_status", [
@@ -69,11 +71,32 @@ export const subscriptionPlans = pgTable("subscription_plans", {
   ...timestamps,
 });
 
+// ── Organizations (HEAD-OFFICE / franchise group) ────────────────────
+// A brand that owns several branches. A standalone center has no organization
+// (organization_id = null). An org_admin (franchise owner) is bound to one of
+// these instead of to a single institute. `partnerSharePercent` is the channel
+// commission the org owner earns on each of its branches' subscriptions.
+export const organizations = pgTable("organizations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  ownerName: text("owner_name").notNull().default(""),
+  email: text("email"),
+  phone: text("phone"),
+  logoUrl: text("logo_url"),
+  // Partner rebate: % of each branch's subscription the org owner earns (0–100).
+  partnerSharePercent: integer("partner_share_percent").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  ...timestamps,
+});
+
 // ── Institutes (TENANT ROOT) ─────────────────────────────────────────
 // Combines the SQL `institutes` table with the rich per-center profile
 // fields the UI keeps (branding, fees, UPI, socials, certificate template).
 export const institutes = pgTable("institutes", {
   id: uuid("id").primaryKey().defaultRandom(),
+  // Null = standalone center. Set = this center is a branch of an organization.
+  organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: "set null" }),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   type: instituteType("type").notNull().default("abacus"),
@@ -112,13 +135,18 @@ export const institutes = pgTable("institutes", {
   // False until the owner completes their profile setup (drives onboarding gate).
   onboarded: boolean("onboarded").notNull().default(false),
   ...timestamps,
-});
+}, (t) => ({
+  byOrganization: index("institutes_organization_idx").on(t.organizationId),
+}));
 
 // ── Users (Auth.js identities + tenant binding + role) ───────────────
 // A super_admin has institute_id = null and operates across tenants.
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   instituteId: uuid("institute_id").references(() => institutes.id, { onDelete: "cascade" }),
+  // Set for an org_admin (franchise owner) — they operate over an organization,
+  // not a single institute (institute_id stays null for them).
+  organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: "cascade" }),
   role: userRole("role").notNull().default("institute_admin"),
   // Login identity — what the user types on the sign-in screen.
   username: text("username").notNull().unique(),
@@ -132,6 +160,7 @@ export const users = pgTable("users", {
   ...timestamps,
 }, (t) => ({
   byInstitute: index("users_institute_idx").on(t.instituteId),
+  byOrganization: index("users_organization_idx").on(t.organizationId),
 }));
 
 // ── Subscriptions (one active per institute) ─────────────────────────

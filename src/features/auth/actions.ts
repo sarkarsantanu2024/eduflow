@@ -7,11 +7,12 @@ import { eq } from "drizzle-orm";
 import { signIn as nextSignIn, signOut as nextSignOut } from "@/auth";
 // (Google OAuth removed — email/password only.)
 import { db } from "@/lib/db";
-import { institutes, users, subscriptions, subscriptionPlans, templates, courses } from "@/lib/db/schema";
+import { institutes, organizations, users, subscriptions, subscriptionPlans, templates, courses } from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { getCurrentProfile } from "@/lib/auth";
 import { getSector } from "@/lib/sectors";
-import { loginSchema, registerSchema, forgotPasswordSchema } from "./schema";
+import { FEATURES } from "@/lib/features";
+import { loginSchema, registerSchema, registerOrgSchema, forgotPasswordSchema } from "./schema";
 
 export type AuthState = { error?: string } | undefined;
 export type PasswordState = { error?: string; ok?: boolean } | undefined;
@@ -109,6 +110,57 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
 
   revalidatePath("/", "layout");
   redirect("/dashboard");
+}
+
+/**
+ * Self-serve signup for a multi-center brand (Head Office). Creates the
+ * organization + its owner (org_admin) login, signs in, and lands on the
+ * Head-Office console where the owner creates their branches. Gated by the
+ * Head-Office feature flag.
+ */
+export async function signUpOrganization(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  if (!FEATURES.headOffice) return { error: "Multi-center signup isn't available right now." };
+
+  const parsed = registerOrgSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
+  const { organizationName, fullName, username, email, phone, password } = parsed.data;
+
+  const lowerUsername = username.toLowerCase();
+  const lowerEmail = (email ?? "").toLowerCase();
+
+  const existingUsername = await db.query.users.findFirst({ where: eq(users.username, lowerUsername) });
+  if (existingUsername) return { error: "That username is already taken" };
+  if (lowerEmail) {
+    const existingEmail = await db.query.users.findFirst({ where: eq(users.email, lowerEmail) });
+    if (existingEmail) return { error: "An account with this email already exists" };
+  }
+
+  const slug = `${slugify(organizationName)}-${Math.random().toString(36).slice(2, 6)}`;
+  const [org] = await db
+    .insert(organizations)
+    .values({ name: organizationName, slug, ownerName: fullName, email: lowerEmail || null, phone: phone || null })
+    .returning({ id: organizations.id });
+  if (!org) return { error: "Could not create the organization" };
+
+  // Email is optional (username is the login) — synthesize a unique placeholder.
+  await db.insert(users).values({
+    organizationId: org.id,
+    instituteId: null,
+    role: "org_admin",
+    username: lowerUsername,
+    email: lowerEmail || `${lowerUsername}@noemail.eduflow.local`,
+    phone: phone || null,
+    fullName,
+    passwordHash: await hashPassword(password),
+  });
+
+  try {
+    await nextSignIn("credentials", { username: lowerUsername, password, redirect: false });
+  } catch {
+    redirect("/login");
+  }
+  revalidatePath("/", "layout");
+  redirect("/org");
 }
 
 export async function requestPasswordReset(_prev: AuthState, formData: FormData): Promise<AuthState> {

@@ -8,12 +8,14 @@ declare module "next-auth" {
     // Populated from the DB in the jwt callback, so optional on the provider User.
     role?: UserRole;
     instituteId?: string | null;
+    organizationId?: string | null;
   }
   interface Session {
     user: {
       id: string;
       role: UserRole;
       instituteId: string | null;
+      organizationId: string | null;
       name?: string | null;
       email?: string | null;
       image?: string | null;
@@ -25,5 +27,6 @@ declare module "next-auth/jwt" {
   interface JWT {
     role: UserRole;
     instituteId: string | null;
+    organizationId: string | null;
   }
 }

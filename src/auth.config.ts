@@ -22,6 +22,7 @@ export const authConfig = {
       if (user) {
         if (user.role) token.role = user.role;
         token.instituteId = user.instituteId ?? null;
+        token.organizationId = user.organizationId ?? null;
       }
       return token;
     },
@@ -30,6 +31,7 @@ export const authConfig = {
         session.user.id = token.sub as string;
         session.user.role = token.role;
         session.user.instituteId = token.instituteId ?? null;
+        session.user.organizationId = token.organizationId ?? null;
       }
       return session;
     },
@@ -45,6 +47,15 @@ export const authConfig = {
 
       // The super-admin console is restricted to platform owners.
       if (pathname.startsWith("/admin") && auth!.user.role !== "super_admin") {
+        return Response.redirect(new URL("/dashboard", request.nextUrl));
+      }
+      // The Head-Office console is restricted to franchise owners (org_admin)
+      // and the platform owner (super_admin can view any HO).
+      if (
+        pathname.startsWith("/org") &&
+        auth!.user.role !== "org_admin" &&
+        auth!.user.role !== "super_admin"
+      ) {
         return Response.redirect(new URL("/dashboard", request.nextUrl));
       }
       return true;

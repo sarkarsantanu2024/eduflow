@@ -11,6 +11,7 @@ function toProfile(u: typeof users.$inferSelect): ProfileRow {
   return {
     id: u.id,
     institute_id: u.instituteId,
+    organization_id: u.organizationId,
     role: u.role,
     full_name: u.fullName,
     username: u.username,
@@ -73,4 +74,12 @@ export async function requireSuperAdmin(): Promise<ProfileRow> {
   const profile = await requireProfile();
   if (profile.role !== "super_admin") redirect("/dashboard");
   return profile;
+}
+
+/** Convenience guard for the Head-Office console. Requires an org_admin bound
+ *  to an organization. A super_admin is allowed through (they can view any HO). */
+export async function requireOrgAdmin(): Promise<ProfileRow & { organization_id: string }> {
+  const profile = await requireProfile();
+  if (profile.role !== "org_admin" || !profile.organization_id) redirect("/dashboard");
+  return profile as ProfileRow & { organization_id: string };
 }
