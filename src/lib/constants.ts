@@ -61,71 +61,102 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Support", href: "/support", icon: LifeBuoy, roles: ["institute_admin", "teacher"] },
 ];
 
-// Full 6-tier lineup (matches the published pricing sheet). Priced by center
-// size; each tier unlocks more. Codes must match subscription_plans.code in the
-// DB (see src/lib/db/seed.ts) and the ranks in src/lib/plan-gating.ts.
+// Full lineup (matches the published pricing sheet). Priced by center size.
+// Codes must match subscription_plans.code in the DB (see src/lib/db/seed.ts)
+// and the ranks in src/lib/plan-gating.ts.
+//
+// PRICING RULES WE HOLD TO (see sales/01-PRICING-REVIEW-AND-GAPS.md):
+//  1. Every tier gets every *daily workflow* module — attendance, fees, tests,
+//     certificates, exam boards, promotions, materials, events. We only charge
+//     for SIZE (students, staff logins) and EXTRAS (posters, videos, branding,
+//     onboarding, multi-center). Never gate what a center needs to run its day.
+//  2. WhatsApp click-to-send is FREE AND UNLIMITED on every tier, because it
+//     goes from the owner's own number and costs us nothing. There are no
+//     per-tier message quotas. Fully-automated sending via the Meta Cloud API
+//     is Enterprise-only and has NOT shipped yet — never imply otherwise.
+//
+// Five tiers only. Fewer plans = less hesitation at the point of sale.
 export const SUBSCRIPTION_PLANS = [
+  {
+    code: "free",
+    name: "Free",
+    price: 0,
+    priceLabel: "₹0",
+    launchPrice: 0,
+    students: "Up to 15 students · 1 staff login",
+    maxStudents: 15,
+    popular: false,
+    features: ["Student management & admissions", "Attendance & batches", "Monthly fee generation", "UPI-QR payment", "Unlimited free WhatsApp reminders", "PDF receipts & Excel export"],
+  },
   {
     code: "starter",
     name: "Starter",
     price: 499,
-    students: "Up to 50 students",
+    priceLabel: "₹499",
+    launchPrice: 299,
+    students: "Up to 75 students · 1 staff login",
+    maxStudents: 75,
     popular: false,
-    features: ["Students, batches & attendance", "Monthly + admission fees, UPI-QR", "WhatsApp click-to-send (free)", "Branded certificates & PDF receipts", "Materials & franchise P&L", "Data export & Trash · 1 staff login"],
+    features: ["Everything in Free", "Tests & rank lists", "Certificates with QR verify", "Exam management", "Expense tracking & profit reports", "Student promotion & materials"],
   },
   {
     code: "growth",
     name: "Growth",
     price: 999,
-    students: "Up to 100 students",
+    priceLabel: "₹999",
+    launchPrice: 699,
+    students: "Up to 200 students · 3 staff logins",
+    maxStudents: 200,
     popular: true,
-    features: ["Everything in Starter", "Welcome & Birthday poster maker", "Tests, rank lists & result cards", "Automatic WhatsApp reminders", "Reports & analytics", "2,000 WhatsApp msgs / mo · 3 staff logins"],
-  },
-  {
-    code: "pro",
-    name: "Pro",
-    price: 1999,
-    students: "Up to 300 students",
-    popular: false,
-    features: ["Everything in Growth", "Welcome & Birthday video maker", "Exam boards & performance/competitions", "Advanced reports (half-yearly/yearly) + PDF", "Multi-batch & multi-teacher", "5,000 WhatsApp msgs / mo · 6 staff logins"],
+    features: ["Everything in Starter", "Welcome & birthday poster maker", "Half-yearly & annual reports", "Multi-staff login & roles", "Teacher & staff management"],
   },
   {
     code: "business",
     name: "Business",
-    price: 3499,
-    students: "Up to 600 students",
+    price: 1999,
+    priceLabel: "₹1,999",
+    launchPrice: 1499,
+    students: "Up to 500 students · 10 staff logins",
+    maxStudents: 500,
     popular: false,
-    features: ["Everything in Pro", "Custom branding", "Priority support", "8,000 WhatsApp msgs / mo", "Up to 10 staff logins"],
-  },
-  {
-    code: "premium",
-    name: "Premium",
-    price: 4999,
-    students: "Up to 900 students",
-    popular: false,
-    features: ["Everything in Business", "Dedicated onboarding & account manager", "12,000 WhatsApp msgs / mo", "Up to 15 staff logins"],
+    features: ["Everything in Growth", "Animated video maker", "Advanced reports & analytics", "Custom branding", "Priority support", "Multiple activities in one center"],
   },
   {
     code: "enterprise",
     name: "Enterprise",
-    price: 6499,
-    students: "Up to 1,200 students",
+    price: 0,
+    priceLabel: "Contact Sales",
+    launchPrice: 0,
+    students: "Unlimited students & staff logins",
+    maxStudents: null,
     popular: false,
-    features: ["Everything in Premium", "WhatsApp auto-send — Meta Cloud API (rolling out)", "Multi-center / Head-Office console (rolling out)", "Unlimited staff logins", "Dedicated support"],
+    features: ["Everything in Business", "Dedicated account manager", "Priority onboarding", "Enterprise security & backups", "Multi-branch & head-office console (not yet released)", "API access & integrations (not yet released)"],
   },
 ] as const;
 
-/** Separate tier for franchises / multi-center brands (per-branch pricing). */
+/** Shown under every price. Decide once, print everywhere. */
+export const PRICE_NOTE = "Prices in INR, exclusive of 18% GST. Cross your student limit and nothing switches off — you stay on the same plan at ₹8 per extra student per month, and move up only when the next plan works out cheaper.";
+
+/** Paid add-ons, priced per month. */
+export const ADD_ONS = {
+  extraStudent: 8,
+  extraBranch: 399,
+} as const;
+
+/** Annual billing discount, shown as "Save 20%". */
+export const ANNUAL_DISCOUNT_PERCENT = 20;
+
+/** Franchise / multi-branch add-on, sold on top of any paid plan. */
 export const FRANCHISE_PLAN = {
   code: "franchise",
-  name: "Franchise / Multi-center",
-  priceLabel: "Custom",
-  blurb: "For brands running multiple branches across a city or state.",
+  name: "Franchise / Multi-branch",
+  priceLabel: "₹399 per extra branch / month",
+  blurb: "For brands running several branches across a city or state — added on top of your plan, no need to jump to Enterprise.",
   features: [
-    "Head-office dashboard across all branches",
+    "Each branch keeps its own students, fees and staff",
     "Push shared courses, templates & certificate designs to every branch",
     "Central certificate issue & verification",
-    "Per-branch billing · franchise-owner & branch-admin roles",
+    "Head-office dashboard across all branches (not yet released)",
   ],
 } as const;
 

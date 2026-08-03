@@ -5,33 +5,38 @@
  * (NEXT_PUBLIC_FEATURE_BILLING=true). While off, `planAllowsModule` returns
  * true for everything, so nothing changes for existing centers.
  *
- * Aligned with the published tier sheet:
- *   - attendance, promotions, materials, certificates, events → all tiers
- *   - tests / rank lists            → Growth and above
- *   - exam boards, performance      → Professional
+ * PRICING RULE: we charge for SIZE (students, staff logins) and EXTRAS
+ * (posters, videos, custom branding, onboarding, multi-center) — never for a
+ * center's daily workflow. So every *paid* tier gets every module; the Free
+ * tier is limited to the core (students, fees, WhatsApp, attendance) so there
+ * is a real reason to move up to Starter.
+ *
  * Unknown / unmapped plan codes are treated as unlimited (fail-open), so a
  * mis-set plan never hides a paying customer's features.
  */
 import type { ModuleKey } from "@/lib/sectors";
 import { FEATURES } from "@/lib/features";
 
-/** Rank of the 6 tiers we ship in-app (matches subscription_plans.code). */
+/** Rank of the tiers we ship in-app (matches subscription_plans.code). */
 const PLAN_RANK: Record<string, number> = {
+  free: 0,
   starter: 1,
   growth: 2,
+  business: 3,
+  enterprise: 4,
+  // Legacy codes from the old 6-tier lineup — kept so existing records keep
+  // every capability they already had. Retired in src/lib/db/seed.ts.
   pro: 3,
-  business: 4,
-  premium: 5,
-  enterprise: 6,
-  professional: 3, // legacy alias for older records still on "professional"
+  premium: 3,
+  professional: 2,
 };
 
 /** Minimum tier rank required to use each optional module. */
 const MODULE_MIN_RANK: Partial<Record<ModuleKey, number>> = {
-  tests: 2, // Growth+
-  examBoards: 3, // Pro+
-  performance: 3, // Pro+
-  // attendance, promotions, materials, certificates, events default to 1 (all tiers)
+  attendance: 0, // Free+ — a center can't run a day without it
+  // Everything else defaults to 1 = every PAID tier, from Starter up. A ₹499
+  // tuition center gets tests; a ₹499 dance school gets exam boards. Both are
+  // daily work, not a premium feature.
 };
 
 /** True if a center on `planCode` may use `module`. Fail-open when gating is off. */

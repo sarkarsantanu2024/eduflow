@@ -6,7 +6,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { ActionButton } from "@/components/action-button";
-import { SUBSCRIPTION_PLANS, CURRENT_PLAN_CODE, FRANCHISE_PLAN } from "@/lib/constants";
+import {
+  SUBSCRIPTION_PLANS, CURRENT_PLAN_CODE, FRANCHISE_PLAN,
+  PRICE_NOTE, ADD_ONS, ANNUAL_DISCOUNT_PERCENT,
+} from "@/lib/constants";
 import { FEATURES } from "@/lib/features";
 import { db } from "@/lib/db";
 import { subscriptions, subscriptionPlans } from "@/lib/db/schema";
@@ -62,9 +65,14 @@ export default async function BillingPage() {
                     {current && <Badge variant="success">Current</Badge>}
                   </div>
                   <p className="mt-2">
-                    <span className="text-3xl font-extrabold tracking-tight">₹{plan.price}</span>
-                    <span className="text-sm text-muted-foreground">/month</span>
+                    <span className="text-3xl font-extrabold tracking-tight">{plan.priceLabel}</span>
+                    {plan.price > 0 && <span className="text-sm text-muted-foreground">/month</span>}
                   </p>
+                  {plan.launchPrice > 0 && plan.launchPrice < plan.price && (
+                    <p className="text-xs font-bold text-emerald-600">
+                      Launch offer — ₹{plan.launchPrice}/mo for your first month
+                    </p>
+                  )}
                   <p className="mt-1 text-sm font-medium text-muted-foreground">{plan.students}</p>
                 </div>
 
@@ -88,7 +96,7 @@ export default async function BillingPage() {
                     toastDescription="Our team will help you upgrade."
                     className="w-full"
                   >
-                    Choose {plan.name}
+                    {plan.price === 0 && plan.code !== "free" ? "Talk to sales" : `Choose ${plan.name}`}
                   </ActionButton>
                 )}
               </CardContent>
@@ -96,6 +104,13 @@ export default async function BillingPage() {
           );
         })}
       </div>
+
+      <p className="text-sm text-muted-foreground">{PRICE_NOTE}</p>
+      <p className="text-sm text-muted-foreground">
+        Add-ons: <strong>₹{ADD_ONS.extraStudent}</strong> per extra student / month ·{" "}
+        <strong>₹{ADD_ONS.extraBranch}</strong> per extra branch / month · annual billing{" "}
+        <strong>saves {ANNUAL_DISCOUNT_PERCENT}%</strong>.
+      </p>
 
       {/* Franchise / multi-center tier */}
       <Card className="border-primary/30">
@@ -123,27 +138,25 @@ export default async function BillingPage() {
         </CardContent>
       </Card>
 
-      {/* Add-on */}
+      {/* WhatsApp — free on every plan, no quota, no top-up to sell */}
       <Card>
         <CardContent className="flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center">
           <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
             <MessageSquare className="size-6" />
           </span>
           <div className="flex-1">
-            <h3 className="font-bold">WhatsApp add-on</h3>
+            <h3 className="font-bold">WhatsApp reminders — free on every plan</h3>
             <p className="text-sm text-muted-foreground">
-              Each plan includes a monthly WhatsApp quota. Extra messages are billed as a top-up
-              (utility messages ≈ ₹0.15 each). Buy top-ups any time as you grow.
+              Reminders open ready-written in your own WhatsApp with the parent&apos;s name, the amount
+              and your UPI QR filled in — you just press send. Unlimited, from your own number, at no
+              cost. There are no message quotas and nothing to top up.
             </p>
           </div>
-          <ActionButton variant="outline" toastMessage="Top-up added" toastDescription="1,000 WhatsApp messages added.">
-            Buy top-up
-          </ActionButton>
         </CardContent>
       </Card>
 
       <p className="text-center text-xs text-muted-foreground">
-        Prices exclude GST. Pay monthly or yearly via UPI / cards. Cancel anytime.
+        Prices exclude 18% GST. Pay monthly, or yearly and save {ANNUAL_DISCOUNT_PERCENT}%. Cancel anytime.
       </p>
     </div>
   );

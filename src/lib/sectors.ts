@@ -236,6 +236,42 @@ export const SECTORS: SectorConfig[] = [
     ],
   },
   {
+    value: "activity",
+    label: "Multi-Activity Center",
+    tagline: "Many activities under one roof — abacus, computer, yoga, dance, drawing, music & more.",
+    member: "Student", members: "Students", courses: "Activities", batches: "Batches",
+    // A full activity center does a bit of everything, so every module is on.
+    modules: ALL_MODULES,
+    seedCourses: [
+      { name: "Abacus & Mental Maths", description: "Basic → Level 8 · graded, with speed tests" },
+      { name: "Vedic Maths", description: "Fast calculation · Level 1–3" },
+      { name: "Computer Basics (DCA/MS Office)", description: "Diploma & office skills · certificate course" },
+      { name: "Coding for Kids", description: "Scratch & Python · ages 8–15" },
+      { name: "Yoga & Fitness", description: "Morning & evening batches · all ages" },
+      { name: "Dance (Classical & Bollywood)", description: "Kathak, Bharatanatyam & freestyle · graded" },
+      { name: "Drawing & Painting", description: "Sketching, watercolour · Elementary/Intermediate exam prep" },
+      { name: "Music (Vocal & Keyboard)", description: "Graded · exam-board ready" },
+      { name: "Karate / Self-defence", description: "Belt-wise grading · yellow → black" },
+      { name: "Spoken English & Personality", description: "Foundation → Mastery" },
+      { name: "Handwriting Improvement", description: "Short course · 6 weeks" },
+      { name: "Hobby & Craft", description: "Clay, origami, art & craft · weekend batch" },
+    ],
+    seedTemplates: [
+      ...COMMON_TEMPLATES,
+      { name: "New Activity Launch", type: "announcement", body: "Dear Parent, we are happy to announce that {{business}} is starting a new {{activity}} batch from {{date}}. Existing students get a special discount. Kindly contact us to enrol {{student_name}}. — {{business}}" },
+      { name: "Multi-Activity Discount", type: "offer", body: "Dear Parent, {{student_name}} is enrolled in {{activity}}. Add a second activity this month and get {{discount}}% off the second activity's fee. — {{business}}" },
+      { name: "Level / Belt Promotion", type: "promotion", body: "Dear Parent, congratulations! {{student_name}} has cleared the {{activity}} assessment and is promoted to {{level}}. 🎉 We are proud of this progress. — {{business}}" },
+      { name: "Test / Assessment Result", type: "result", body: "Dear Parent, {{student_name}} scored {{score}} in the {{activity}} assessment and secured Rank {{rank}} in the batch. Well done! — {{business}}" },
+      { name: "Exam Registration", type: "exam", body: "Dear Parent, registration for the {{board}} {{activity}} examination closes on {{date}}. The fee is ₹{{amount}}. Kindly complete it at the earliest. — {{business}}" },
+      { name: "Competition Notice", type: "competition", body: "Dear Parent, {{student_name}} has been selected to participate in the {{event}} on {{date}}. The entry fee is ₹{{amount}}. — {{business}}" },
+      { name: "Certificate Ready", type: "certificate", body: "Dear Parent, {{student_name}}'s {{activity}} certificate is ready for collection from the center. Congratulations! — {{business}}" },
+      { name: "Kit / Material Issued", type: "material", body: "Dear Parent, the {{item}} for {{student_name}}'s {{activity}} class has been issued. Kindly ensure it is brought to every class. — {{business}}" },
+      { name: "Annual Function Invite", type: "event", body: "Dear Parent, you are cordially invited to our Annual Function on {{date}} at {{venue}}, where {{student_name}} will be performing. We would be delighted to have you there. — {{business}}" },
+      { name: "Free Trial Class", type: "demo", body: "Dear Parent, {{business}} is holding free trial classes for {{activity}} on {{date}}. You are welcome to bring {{student_name}} along — no charge, no obligation. — {{business}}" },
+      { name: "Batch Timing Change", type: "reschedule", body: "Dear Parent, please note that the {{activity}} batch timing has changed to {{time}} from {{date}}. We regret any inconvenience. — {{business}}" },
+    ],
+  },
+  {
     value: "other",
     label: "Other / General",
     tagline: "A flexible setup for any small institute.",
@@ -293,6 +329,13 @@ const SECTOR_FAQS: Record<string, Faq[]> = {
   tuition: [
     { q: "How do I share test marks with parents?", a: "Use Tests & Ranks to record marks and send each parent a result on WhatsApp." },
     { q: "Can a student take multiple subjects?", a: "Yes. Create a batch per subject and assign students and tutors to each." },
+  ],
+  activity: [
+    { q: "Can one center run many different activities?", a: "Yes — that's exactly what this setup is for. Add each activity (abacus, yoga, dance, computer, drawing, music, karate…) under Activities, then create batches under each one with its own timing and instructor." },
+    { q: "How do I charge different fees for different activities?", a: "Set your center's standard monthly fee in Profile, then override the amount on a student's fee when an activity costs more — or add a one-off charge for kits, exams and events." },
+    { q: "Can a student join more than one activity?", a: "Today each student is assigned to one activity batch at a time; to enrol them in a second activity, add the extra activity's fee as a separate charge on that student. Full multi-activity enrolment per student is on the roadmap." },
+    { q: "Which modules do I get?", a: "All of them. A multi-activity center gets attendance, level/belt promotions, tests & rank lists, certificates, exam-board registration, competitions, materials & kits, and events — because at some point you'll run every one of them." },
+    { q: "How do I promote a second activity to existing parents?", a: "Use the 'Multi-Activity Discount' and 'New Activity Launch' WhatsApp templates — your existing parents are the cheapest admissions you'll ever get." },
   ],
 };
 

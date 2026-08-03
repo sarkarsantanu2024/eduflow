@@ -93,6 +93,14 @@ burden, no float liability, much easier trust pitch.
 
 ### Recommended price ladder (INR) — tuned for tier-2/3/rural
 
+> **SUPERSEDED (Aug 2026).** The ladder below was an early exploration. The live
+> pricing is **Free ₹0 (15 students) · Starter ₹499 (75) · Growth ₹999 (200) ·
+> Business ₹1,999 (500) · Enterprise on request**, with ₹8/extra student,
+> ₹399/extra branch, 20% off annual, and 18% GST extra. WhatsApp reminders are
+> unlimited and free on every plan (click-to-send from the owner's own number) —
+> there are no message quotas. Source of truth: `src/lib/constants.ts`. The
+> reasoning below is kept because the cost analysis is still useful.
+
 | Plan | Monthly | **Annual (recommended)** | Members | WhatsApp/mo | Online collection | Locations |
 |------|--------:|-------------------------:|--------:|------------:|-------------------|----------:|
 | **Free** | ₹0 | ₹0 | up to 30 | 0 (manual only) | manual cash/UPI record | 1 |
