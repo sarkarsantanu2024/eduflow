@@ -10,9 +10,10 @@ export const { auth: middleware } = NextAuth(authConfig);
 export const config = {
   matcher: [
     /*
-     * Match all paths except static assets, image optimisation files, and
-     * the auth API (which Auth.js handles itself).
+     * Match all paths except static assets, image optimisation files, the
+     * static marketing pages in public/ (*.html), and the auth API (which
+     * Auth.js handles itself).
      */
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html)$).*)",
   ],
 };

@@ -8,15 +8,15 @@
 <meta name="keywords" content="coaching class software India, abacus center software, activity center software, yoga class management software, dance academy software, computer institute software, tuition center software, preschool management software, fee management software India, WhatsApp fee reminder" />
 <meta name="theme-color" content="#EA580C" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23EA580C'/%3E%3Cg stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M27.5 13.7 16.6 8.9a1.5 1.5 0 0 0-1.2 0L4.5 13.7l10.9 4.9c.4.2.8.2 1.2 0z'/%3E%3Cpath d='M28 14v4'/%3E%3Cpath d='M9 16.4V20c0 2.2 3.1 4 7 4s7-1.8 7-4v-3.6'/%3E%3C/g%3E%3C/svg%3E" />
-<link rel="canonical" href="https://www.eduflow.in/" />
+<link rel="canonical" href="https://eduflow.nexvoratechnologies.co.in/" />
 
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="EduFlow" />
 <meta property="og:title" content="EduFlow — Run Your Coaching or Activity Center on Autopilot" />
 <meta property="og:description" content="Admissions, fees, UPI-QR collection, WhatsApp reminders, attendance and reports in one place. Free up to 15 students, then from ₹299/month." />
-<meta property="og:image" content="https://www.eduflow.in/og-cover.png" />
+<meta property="og:image" content="https://eduflow.nexvoratechnologies.co.in/og-cover.png" />
 <meta property="og:image:alt" content="The EduFlow dashboard showing student count, fees collected and pending dues." />
-<meta property="og:url" content="https://www.eduflow.in/" />
+<meta property="og:url" content="https://eduflow.nexvoratechnologies.co.in/" />
 <meta property="og:locale" content="en_IN" />
 <meta name="twitter:card" content="summary_large_image" />
 
@@ -110,7 +110,7 @@
     </nav>
     <div class="flex items-center gap-2">
       <a href="#pricing" class="hidden rounded-lg border border-ink-200 px-3.5 py-2 text-sm font-semibold text-ink-800 transition hover:border-brand-500 hover:text-brand-600 lg:block">See pricing</a>
-      <a id="loginBtn" href="https://eduflow-topaz-six.vercel.app/login" class="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3.5 py-2 text-sm font-bold text-ink-800 transition hover:border-brand-500 hover:bg-brand-50 hover:text-brand-600">
+      <a id="loginBtn" href="/login" class="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3.5 py-2 text-sm font-bold text-ink-800 transition hover:border-brand-500 hover:bg-brand-50 hover:text-brand-600">
         <span class="material-symbols-rounded text-[18px]" aria-hidden="true">login</span> Login
       </a>
       <a href="#contact" class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-brand-700">
@@ -743,7 +743,7 @@
           <li><a class="transition hover:text-brand-400" href="#who">Who it's for</a></li>
           <li><a class="transition hover:text-brand-400" href="#pricing">Pricing</a></li>
           <li><a class="transition hover:text-brand-400" href="#compare">Compare plans</a></li>
-          <li><a id="loginFoot" class="transition hover:text-brand-400" href="https://eduflow-topaz-six.vercel.app/login">Login to EduFlow</a></li>
+          <li><a id="loginFoot" class="transition hover:text-brand-400" href="/login">Login to EduFlow</a></li>
         </ul>
       </nav>
       <nav aria-label="Company">
@@ -751,8 +751,8 @@
         <ul class="mt-2 space-y-1 text-[13.5px]">
           <li><a class="transition hover:text-brand-400" href="#contact">Book a demo</a></li>
           <li><a class="transition hover:text-brand-400" href="#faq">FAQ</a></li>
-          <li><a class="transition hover:text-brand-400" href="privacy.html">Privacy policy</a></li>
-          <li><a class="transition hover:text-brand-400" href="terms.html">Terms of service</a></li>
+          <li><a class="transition hover:text-brand-400" href="/privacy.html">Privacy policy</a></li>
+          <li><a class="transition hover:text-brand-400" href="/terms.html">Terms of service</a></li>
         </ul>
       </nav>
       <nav aria-label="Follow us">
@@ -800,21 +800,21 @@ var DEFAULT_MSG = "Hi! I run a center and I'd like a free EduFlow demo.";
 });
 
 /* ═══════════════════════════════════════════════════════════════════
-   Your EduFlow application's address — e.g. "https://app.eduflow.in"
-   or "https://eduflow-saas.vercel.app". It does two things:
+   Your EduFlow application's address. Leave it EMPTY — this page is
+   served by the app itself (public/site.html, rewritten to "/"), so
+   /login and /api/leads are on the very same origin. It does two things:
      • the Login button points at <APP_URL>/login
      • the demo form saves each enquiry to <APP_URL>/api/leads, which
        shows up under Admin → Leads inside the app
-   If you move the app to your own domain, change this one line — every
-   Login link and the lead form follow it automatically.
+   Only set an absolute URL here if you ever host this page somewhere
+   else (a separate Vercel project, S3, a WordPress site).
    ═══════════════════════════════════════════════════════════════════ */
-var APP_URL = "https://eduflow-topaz-six.vercel.app";
+var APP_URL = "";
 
 var API_BASE = APP_URL;
 
 /* Point every Login link at APP_URL, so changing that one line is enough. */
 (function(){
-  if (!APP_URL) return;
   var href = APP_URL.replace(/\/$/, "") + "/login";
   ["loginBtn", "loginFoot"].forEach(function(id){
     var el = document.getElementById(id);
@@ -862,8 +862,6 @@ document.getElementById("leadForm").addEventListener("submit", function(e){
     if (btn){ btn.disabled = false; btn.classList.remove("opacity-60"); }
     window.open(waLink(msg), "_blank", "noopener");
   }
-
-  if (!API_BASE) return done(false);
 
   if (btn){ btn.disabled = true; btn.classList.add("opacity-60"); }
   fetch(API_BASE.replace(/\/$/, "") + "/api/leads", {

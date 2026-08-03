@@ -1,7 +1,15 @@
 # EduFlow marketing site
 
-Three pages — `index.html`, `privacy.html`, `terms.html`. No build step, no bundler, no framework.
-All the logic (comparison table, ROI calculator, lead form) is inline JavaScript.
+Three pages, now living in **`public/`** at the repo root and served by the app itself:
+
+| File | Public URL |
+| --- | --- |
+| `public/site.html` | `/` (via the `beforeFiles` rewrite in `next.config.ts`) |
+| `public/privacy.html` | `/privacy.html` |
+| `public/terms.html` | `/terms.html` |
+
+No build step, no bundler, no framework — all the logic (comparison table, ROI calculator, lead form)
+is inline JavaScript. They deploy with the app, so there is nothing separate to publish.
 
 **Built with:** Tailwind CSS (CDN), Google Fonts — Plus Jakarta Sans for headings, Inter for body —
 and Material Symbols Rounded for icons. The EduFlow logo is inline SVG (the same orange rounded square
@@ -11,64 +19,60 @@ and graduation cap the app uses), so there is no image file to manage and it sta
 
 ## What is my website link?
 
-This is the address people type or click to reach your site. You have two options.
+**`https://eduflow.nexvoratechnologies.co.in`** — one hostname for both the website and the product:
 
-### Option A — free, ready in 10 minutes
+```text
+/                 marketing site   (public/site.html)
+/login            sign in
+/dashboard        the product, after login
+/privacy.html     privacy policy
+/terms.html       terms of service
+```
 
-Deploy the folder and use the address the host gives you:
+The old `eduflow-topaz-six.vercel.app` address keeps working as well — Vercel serves every hostname
+attached to the project — so it stays available as a rollback.
 
-- **Vercel** → `eduflow.vercel.app` (or `eduflow-abc123.vercel.app` if the name is taken)
-- **Netlify** → `eduflow.netlify.app`
+### If you ever change the domain again
 
-This is a real, working, HTTPS website. It costs nothing and you can start putting it on Facebook and
-LinkedIn the same day. You can add your own domain later without losing anything.
+Search `public/*.html` for `nexvoratechnologies` and update:
 
-### Option B — your own domain, ~₹800–1,200 a year
+- `<link rel="canonical" … />` on all three pages
+- `<meta property="og:url" … />` and `<meta property="og:image" … />` in `site.html`
 
-Buy `eduflow.in` (or `eduflowindia.com`, `myeduflow.in` …) from GoDaddy, Hostinger, BigRock or
-Namecheap, then point it at Vercel/Netlify in their dashboard. It looks more serious on a visiting
-card and in a Facebook ad, and it is worth the money once you have a few customers.
+Then set `NEXT_PUBLIC_APP_URL` in Vercel to the new address and **redeploy** (it builds the
+password-reset links). Nothing else is hard-coded: every in-page link is relative.
 
-**Recommendation:** launch on the free `.vercel.app` address today, buy the `.in` domain this month.
-
-### If you buy a domain, update these lines
-
-Search `index.html`, `privacy.html` and `terms.html` for `eduflow.in` and replace it in:
-
-- `<link rel="canonical" href="https://www.eduflow.in/" />`
-- `<meta property="og:url" content="https://www.eduflow.in/" />`
-- `<meta property="og:image" content="https://www.eduflow.in/og-cover.png" />`
-- the email addresses `privacy@eduflow.in` and `support@eduflow.in`
-
-Until then, those tags are harmless — they only affect Google and link previews, not whether the site
-works.
+The email addresses `privacy@eduflow.in` / `support@eduflow.in` in the legal pages are separate —
+change them only when you have real mailboxes.
 
 ---
 
 ## Before you publish — the edits you must make
 
-1. **Your WhatsApp number.** In `index.html`:
+1. **Your WhatsApp number.** In `public/site.html`:
+
    ```js
    var WHATSAPP_NUMBER = "919804243159";
    ```
+
    Country code + number, digits only, no `+` and no spaces. This powers the floating chat button,
    the "WhatsApp us now" button, the sticky mobile bar and the demo form.
 
-2. **Your app's address.** Also in `index.html`:
+2. **Your app's address.** Also in `public/site.html`:
 
    ```js
    var APP_URL = "";
    ```
 
-   Set this to where the EduFlow application itself is hosted — e.g. `"https://app.eduflow.in"` or
-   `"https://eduflow-saas.vercel.app"`. One setting, two jobs:
+   **Leave this empty.** The page is now served by the app itself, so `/login` and `/api/leads` are
+   already on the same origin. Empty means:
 
-   - the **Login** button in the header points at `<APP_URL>/login`
-   - the demo form saves each enquiry to `<APP_URL>/api/leads`, which appears under
-     **Admin → Leads** inside the app
+   - the **Login** button in the header points at `/login`
+   - the demo form saves each enquiry to `/api/leads`, which appears under **Admin → Leads**
 
-   Leave it `""` and the Login button simply stays hidden (so it can never 404) while the form still
-   works — it just opens WhatsApp without saving anything.
+   Only set an absolute URL (e.g. `"https://eduflow.nexvoratechnologies.co.in"`) if you ever host
+   this page somewhere else — a separate Vercel project, S3, a WordPress site. Cross-origin lead
+   posts then need `/api/leads` to allow that origin.
 
 3. **Your phone number** — search for `tel:+919804243159` and replace it (it appears on the contact
    section and in both legal pages).
@@ -81,7 +85,7 @@ works.
    addresses. Have a CA or lawyer review them before you take money at scale. **Facebook will not
    approve a lead-generation ad without a reachable privacy policy**, which is why they exist.
 
-Optional: add an `og-cover.png` (1200×630) to this folder — a screenshot of the dashboard with the
+Optional: add an `og-cover.png` (1200×630) to `public/` (the `og:image` tag already points at `/og-cover.png`) — a screenshot of the dashboard with the
 headline across it. It becomes the preview image when the link is shared on Facebook, LinkedIn or
 WhatsApp, and a good one materially increases clicks.
 
@@ -90,7 +94,7 @@ WhatsApp, and a good one materially increases clicks.
 ## Collecting leads (how it fits together)
 
 ```
-Website form  →  POST <APP_URL>/api/leads  →  leads table  →  Admin → Leads
+Website form  →  POST /api/leads            →  leads table  →  Admin → Leads
      │                                                              │
      └── also opens WhatsApp with the details pre-filled            └── call / WhatsApp / notes / status / export
 ```
@@ -99,7 +103,7 @@ Website form  →  POST <APP_URL>/api/leads  →  leads table  →  Admin → Le
 
 1. Apply the migration in the app: `psql "$DATABASE_URL" -f drizzle/0004_leads.sql`
    (or `npm run db:push`).
-2. Deploy the app, then set `APP_URL` in `index.html` to the app's address.
+2. Deploy the app — the form posts to `/api/leads` on the same origin, nothing to configure.
 3. Sign in as super-admin → the **Leads** card on the admin home → **Open leads**.
 
 Every enquiry shows name, center, type, student count and phone, with one-tap **Call** and
@@ -111,21 +115,12 @@ lead: if the API is unreachable, WhatsApp still opens so you don't lose the pers
 
 ---
 
-## Publish it free
+## Publishing
 
-**Vercel (easiest)**
+Nothing to do — the pages live in `public/`, so they ship with every deploy of the app. Push to
+`main`, Vercel builds, and `https://eduflow.nexvoratechnologies.co.in/` serves the new copy.
 
-1. vercel.com → *Add New → Project → Deploy without Git*, drag this `marketing-site` folder in.
-2. Add your domain under *Settings → Domains*.
-
-**Netlify**
-
-1. netlify.com → *Sites → Add new site → Deploy manually*, drag the folder in.
-2. *Domain settings → Add custom domain*.
-
-**GitHub Pages** — push this folder to a repo and enable Pages on it.
-
-All three are free for a static site and give you HTTPS automatically.
+To preview locally: `npm run dev`, then open `http://localhost:3000/`.
 
 ---
 
@@ -140,7 +135,7 @@ off any public repository.
 ## After launch
 
 - Add the **Facebook Pixel** snippet (Events Manager → copy the base code) just before `</head>` on
-  `index.html` — do it on day one so your retargeting audience builds while you're still posting
+  `public/site.html` — do it on day one so your retargeting audience builds while you're still posting
   organically.
 - Add **Vercel Analytics** or Google Analytics to see which posts actually send traffic.
 - **Before heavy traffic or ads:** the Tailwind CDN compiles styles in the browser, which is fine for
