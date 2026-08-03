@@ -8,7 +8,7 @@ import { NAV_ITEMS, getLabels, getSector } from "@/lib/constants";
 import { ALL_MODULES } from "@/lib/sectors";
 import { FEATURES } from "@/lib/features";
 import { planAllowsModule } from "@/lib/plan-gating";
-import { DEMO_INSTITUTE_ID } from "@/lib/demo-tenant";
+import { DEMO_INSTITUTE_ID, DEMO_INSTITUTE_IDS } from "@/lib/demo-tenant";
 import { useProfile } from "@/lib/store/local-db";
 import type { UserRole } from "@/types/database.types";
 
@@ -30,9 +30,12 @@ export function Sidebar({
   const pathname = usePathname();
   const { businessType } = useProfile();
   const labels = getLabels(businessType);
-  // Demo tenant shows EVERY module so a demo walks the whole product, ignoring
-  // both sector limits and plan-tier gating.
+  // The flagship (abacus) demo shows EVERY module so a demo can walk the whole
+  // product. The per-sector demo centers deliberately show only their own
+  // sector's modules — a dance school should look like a dance school. Plan-tier
+  // gating is skipped for all demo tenants.
   const isDemo = activeInstituteId === DEMO_INSTITUTE_ID;
+  const isDemoTenant = DEMO_INSTITUTE_IDS.includes(activeInstituteId ?? "");
   const enabledModules = isDemo ? ALL_MODULES : getSector(businessType).modules;
   const items = NAV_ITEMS.filter(
     (i) =>
@@ -40,7 +43,7 @@ export function Sidebar({
       // sector gating (all modules on for the demo)
       (!i.module || enabledModules.includes(i.module)) &&
       // plan-tier gating (no-op unless billing flag is on; skipped for the demo)
-      (!i.module || isDemo || planAllowsModule(planCode, i.module)) &&
+      (!i.module || isDemoTenant || planAllowsModule(planCode, i.module)) &&
       // feature-flag gating (e.g. Billing page only when billing is on)
       (!i.feature || FEATURES[i.feature]),
   );

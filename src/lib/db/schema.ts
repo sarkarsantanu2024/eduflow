@@ -35,7 +35,7 @@ export const paymentStatus = pgEnum("payment_status", ["success", "pending"]);
 // schema pushes stay non-destructive; `music`/`computer_training` are unused.)
 export const instituteType = pgEnum("institute_type", [
   "abacus", "coaching", "computer", "computer_training", "dance", "drawing",
-  "music", "spoken_english", "tuition", "other",
+  "music", "spoken_english", "tuition", "activity", "other",
 ]);
 export const subscriptionStatus = pgEnum("subscription_status", [
   "trialing", "active", "past_due", "canceled", "expired",
@@ -509,3 +509,27 @@ export const activityLogs = pgTable("activity_logs", {
   metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({ byInstitute: index("activity_logs_institute_idx").on(t.instituteId) }));
+
+// ── Leads (GLOBAL, not tenant-scoped) ────────────────────────────────
+// Enquiries captured by the public marketing site's "Book your free demo"
+// form (POST /api/leads). Visible to the super-admin only — this is the sales
+// pipeline, not customer data.
+export const leads = pgTable("leads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  centerName: text("center_name").notNull().default(""),
+  centerType: text("center_type").notNull().default(""),
+  students: integer("students"),
+  phone: text("phone").notNull(),
+  email: text("email"),
+  city: text("city"),
+  message: text("message").notNull().default(""),
+  /** Where it came from: website, facebook, linkedin, walk-in, referral… */
+  source: text("source").notNull().default("website"),
+  /** new | contacted | demo_booked | won | lost */
+  status: text("status").notNull().default("new"),
+  /** Private sales notes. */
+  notes: text("notes").notNull().default(""),
+  ...softDelete,
+  ...timestamps,
+}, (t) => ({ byCreated: index("leads_created_idx").on(t.createdAt) }));

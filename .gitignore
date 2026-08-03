@@ -43,3 +43,6 @@ yarn-error.log*
 
 # Generated client documents (PPT / cost / marketing)
 deliverables/
+
+# Production build output when building alongside a running dev server
+.next-build

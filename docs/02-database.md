@@ -49,7 +49,7 @@ erDiagram
 
 | Table                | Purpose                                            | Tenant col |
 |----------------------|----------------------------------------------------|-----------|
-| `subscription_plans` | Global pricing tiers (Starter/Growth/Professional) | — (global)|
+| `subscription_plans` | Global pricing tiers (Free/Starter/Growth/Business/Enterprise) | — (global)|
 | `institutes`         | **Tenant root** — institute profile                | `id`      |
 | `subscriptions`      | Active plan + billing window per institute          | `institute_id` |
 | `profiles`           | 1:1 with `auth.users`; holds tenant + role         | `institute_id` |

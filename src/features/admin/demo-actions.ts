@@ -14,9 +14,11 @@ import { requireSuperAdmin } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
 import { ACTING_COOKIE } from "@/lib/tenant";
 import {
-  DEMO_ORG_ID, DEMO_INSTITUTE_ID, DEMO_BRANCH_2_ID, DEMO_INSTITUTE_IDS,
+  DEMO_ORG_ID, DEMO_INSTITUTE_ID, DEMO_BRANCH_2_ID, DEMO_ABACUS_IDS,
+  DEMO_CENTERS, getDemoCenter, type DemoCenter, DEMO_CENTER_PASSWORD, demoCenterUsername,
   DEMO_INSTITUTE_NAME as DEMO_NAME, DEMO_ORG_NAME, DEMO_HO_USERNAME, DEMO_HO_PASSWORD,
 } from "@/lib/demo-tenant";
+import { getSector } from "@/lib/sectors";
 
 /**
  * DEMO MODE — a real but isolated tenant the super-admin can drop into for
@@ -37,7 +39,7 @@ async function demoExists(): Promise<boolean> {
 async function seedDemo(): Promise<void> {
   // Clear any prior demo state (branches cascade their data; deleting the org
   // removes the org-admin login via ON DELETE CASCADE).
-  await db.delete(institutes).where(inArray(institutes.id, DEMO_INSTITUTE_IDS));
+  await db.delete(institutes).where(inArray(institutes.id, DEMO_ABACUS_IDS));
   await db.delete(organizations).where(eq(organizations.id, DEMO_ORG_ID));
 
   // ── Head-Office organization (a franchise brand) ──
@@ -257,7 +259,7 @@ async function seedDemo(): Promise<void> {
     monthlyFee: 800, admissionFee: 500, upiId: "brightabacus@upi",
     onboarded: true, isActive: true,
   });
-  const proPlan = await db.query.subscriptionPlans.findFirst({ where: eq(subscriptionPlans.code, "pro") });
+  const proPlan = await db.query.subscriptionPlans.findFirst({ where: eq(subscriptionPlans.code, "business") });
   if (proPlan) {
     const end2 = new Date();
     end2.setDate(end2.getDate() + 30);
@@ -324,6 +326,408 @@ export async function enterDemoMode() {
 export async function resetDemoData(): Promise<{ ok?: boolean; error?: string }> {
   await requireSuperAdmin();
   await seedDemo();
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * SECTOR DEMO CENTERS
+ * One standalone demo center per other business type (coaching, computer,
+ * dance, drawing, spoken English, tuition, general). Each is built from that
+ * sector's config in @/lib/sectors — its own courses, WhatsApp templates and
+ * only the modules that sector switches on — so a prospect sees their own kind
+ * of institute, not an abacus center with the words changed.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** Sample families, reused across sectors (names only — no real people). */
+const DEMO_PEOPLE = [
+  { first: "Aarav", last: "Sharma", parent: "Rohit Sharma", dob: "2012-07-06" },
+  { first: "Diya", last: "Gupta", parent: "Anil Gupta", dob: "2011-03-22" },
+  { first: "Vivaan", last: "Singh", parent: "Manoj Singh", dob: "2010-11-02" },
+  { first: "Ananya", last: "Roy", parent: "Sourav Roy", dob: "2012-07-09" },
+  { first: "Kabir", last: "Khan", parent: "Imran Khan", dob: "2009-05-18" },
+  { first: "Isha", last: "Patel", parent: "Nikhil Patel", dob: "2011-09-30" },
+  { first: "Reyansh", last: "Das", parent: "Subir Das", dob: "2010-01-12" },
+  { first: "Myra", last: "Nair", parent: "Vinod Nair", dob: "2008-08-25" },
+  { first: "Arjun", last: "Iyer", parent: "Suresh Iyer", dob: "2011-12-05" },
+  { first: "Sara", last: "Ali", parent: "Feroz Ali", dob: "2012-04-19" },
+  { first: "Vihaan", last: "Bose", parent: "Amit Bose", dob: "2010-06-14" },
+  { first: "Aditi", last: "Kapoor", parent: "Rajesh Kapoor", dob: "2009-10-08" },
+  { first: "Ayaan", last: "Mondal", parent: "Prasenjit Mondal", dob: "2011-02-27" },
+  { first: "Riya", last: "Chowdhury", parent: "Tapan Chowdhury", dob: "2012-11-16" },
+  { first: "Dhruv", last: "Saxena", parent: "Alok Saxena", dob: "2010-08-03" },
+  { first: "Kiara", last: "Menon", parent: "Hari Menon", dob: "2013-01-29" },
+  { first: "Rudra", last: "Pal", parent: "Bikash Pal", dob: "2009-04-11" },
+  { first: "Anvi", last: "Rathore", parent: "Devendra Rathore", dob: "2012-09-21" },
+] as const;
+
+/** Trainers per sector, named to fit the subject. */
+const DEFAULT_STAFF: [string, string][] = [["Joseph Fernandes", "Senior Instructor"], ["Alisha Pereira", "Junior Instructor"]];
+const DEMO_STAFF: Record<string, [string, string][]> = {
+  coaching: [["Dr. Subhankar Bose", "Physics & Mathematics"], ["Nandita Sen", "Chemistry & Biology"]],
+  computer: [["Vikas Kulkarni", "Programming & O-Level"], ["Sneha Joshi", "Tally, GST & DTP"]],
+  dance: [["Meera Chatterjee", "Kathak (Senior Guru)"], ["Ritu Panda", "Bharatanatyam & Odissi"]],
+  drawing: [["Kavita Desai", "Watercolour & Sketching"], ["Imran Shaikh", "Acrylic & Exam prep"]],
+  spoken_english: [["Arun Nambiar", "Fluency & Accent"], ["Grace Thomas", "Kids & Personality Dev."]],
+  tuition: [["Ramesh Yadav", "Mathematics & Science"], ["Pooja Mishra", "English & Accountancy"]],
+  // A full activity center runs one specialist per activity.
+  activity: [
+    ["Neha Agarwal", "Abacus & Vedic Maths"],
+    ["Sourav Banerjee", "Computer & Coding"],
+    ["Yogesh Rawat", "Yoga & Fitness"],
+    ["Meera Chatterjee", "Dance (Kathak & Bollywood)"],
+    ["Kavita Desai", "Drawing & Painting"],
+    ["Ritwik Sen", "Music (Vocal & Keyboard)"],
+    ["Sensei Rahul Thapa", "Karate / Self-defence"],
+    ["Grace Thomas", "Spoken English & Handwriting"],
+  ],
+  other: DEFAULT_STAFF,
+};
+
+/** True if this sector demo center is already seeded. */
+async function centerExists(id: string): Promise<boolean> {
+  const [row] = await db.select({ id: institutes.id }).from(institutes).where(eq(institutes.id, id)).limit(1);
+  return Boolean(row);
+}
+
+/** Build one sector demo center from scratch. Idempotent — clears itself first. */
+async function seedCenter(center: DemoCenter): Promise<void> {
+  const sector = getSector(center.sector);
+  const has = (m: (typeof sector.modules)[number]) => sector.modules.includes(m);
+  const iid = center.id;
+  // Distinct (but obviously fake) phone series per demo center.
+  const series = DEMO_CENTERS.findIndex((c) => c.id === center.id) + 1;
+
+  await db.delete(institutes).where(eq(institutes.id, iid));
+
+  // ── Institute ──
+  await db.insert(institutes).values({
+    id: iid,
+    name: center.name,
+    slug: center.slug,
+    type: center.sector,
+    ownerName: center.ownerName,
+    email: `${center.slug}@eduflow.app`,
+    phone: "9800000000",
+    whatsapp: "9800000000",
+    city: center.city,
+    address: `Main Road, ${center.city}`,
+    monthlyFee: center.monthlyFee,
+    admissionFee: center.admissionFee,
+    reactivationFee: 200,
+    upiId: center.upiId,
+    onboarded: true,
+    isActive: true,
+    recurringCharges: [{ id: "rc1", name: "Room rent", basis: "fixed", amount: 6000, category: "Rent" }],
+  });
+
+  // ── Owner login, so a prospect can sign in and drive it themselves ──
+  await db.insert(users).values({
+    instituteId: iid,
+    role: "institute_admin",
+    username: demoCenterUsername(center.sector),
+    email: `${demoCenterUsername(center.sector)}@noemail.eduflow.local`,
+    fullName: `${center.ownerName} (Demo)`,
+    passwordHash: await hashPassword(DEMO_CENTER_PASSWORD),
+  });
+
+  // ── Subscription ──
+  const plan = await db.query.subscriptionPlans.findFirst({ where: eq(subscriptionPlans.code, center.planCode) });
+  if (plan) {
+    const end = new Date();
+    end.setDate(end.getDate() + 30);
+    await db.insert(subscriptions).values({ instituteId: iid, planId: plan.id, status: "active", currentPeriodEnd: end });
+  }
+
+  // ── Courses — this sector's own curriculum (a multi-activity center gets
+  // its full activity list, so the demo shows the whole roster) ──
+  const seedCourses = sector.seedCourses.slice(0, 12);
+  const courseRows = await db.insert(courses).values(
+    seedCourses.map((c) => ({ instituteId: iid, name: c.name, description: c.description })),
+  ).returning({ id: courses.id, name: courses.name });
+
+  // ── Teachers ──
+  const staff = DEMO_STAFF[center.sector] ?? DEFAULT_STAFF;
+  const leadTeacher = staff[0]?.[0] ?? "Senior Instructor";
+  const teacherRows = await db.insert(teachers).values(
+    staff.map(([name, specialization], i) => ({
+      instituteId: iid, name, phone: `9${series}${String(i + 1).padStart(2, "0")}000000`,
+      specialization, salary: i === 0 ? 18000 : 12000, joinDate: i === 0 ? "2024-06-01" : "2025-01-15", rating: 5 - i,
+    })),
+  ).returning({ id: teachers.id });
+
+  // ── Batches — one per activity/course (capped at 8), instructors round-robin.
+  // A multi-activity center therefore gets a real timetable: abacus in the
+  // evening, yoga in the morning, dance on the weekend… ──
+  const SLOTS: [string, string][] = [
+    ["5:00 PM – 6:30 PM", "Mon, Wed, Fri"],
+    ["7:00 AM – 8:30 AM", "Tue, Thu, Sat"],
+    ["6:30 PM – 8:00 PM", "Mon, Thu"],
+    ["6:00 AM – 7:00 AM", "Mon–Sat"],
+    ["4:00 PM – 5:30 PM", "Tue, Fri"],
+    ["11:00 AM – 12:30 PM", "Sat, Sun"],
+    ["3:30 PM – 5:00 PM", "Wed, Sat"],
+    ["8:00 AM – 9:30 AM", "Sun"],
+  ];
+  const batchRows = await db.insert(batches).values(
+    courseRows.slice(0, 8).map((c, i) => ({
+      instituteId: iid,
+      courseId: c.id,
+      teacherId: teacherRows[i % Math.max(teacherRows.length, 1)]?.id ?? null,
+      name: c.name,
+      timing: SLOTS[i % SLOTS.length]?.[0] ?? "5:00 PM – 6:30 PM",
+      days: SLOTS[i % SLOTS.length]?.[1] ?? "Mon, Wed, Fri",
+      capacity: "20",
+    })),
+  ).returning({ id: batches.id });
+  const batchA = batchRows[0]?.id ?? null;
+
+  // ── Students (mixed statuses so every filter has something to show), spread
+  // across every activity so each batch has real enrolment ──
+  const count = Math.min(center.studentCount ?? 10, DEMO_PEOPLE.length);
+  const people = DEMO_PEOPLE.slice(0, count);
+  const statusOf = (i: number) => (i === 4 ? "inactive" : i === 7 ? "graduated" : "active") as "active" | "inactive" | "graduated";
+  const studentRows = await db.insert(students).values(
+    people.map((p, i) => {
+      const slot = i % Math.max(batchRows.length, 1);
+      return {
+        instituteId: iid,
+        code: `${center.prefix}-${String(i + 1).padStart(4, "0")}`,
+        firstName: p.first, lastName: p.last,
+        gender: (i % 2 === 0 ? "male" : "female") as "male" | "female",
+        dob: p.dob, admissionDate: "2026-01-15",
+        courseId: courseRows[slot]?.id ?? null,
+        batchId: batchRows[slot]?.id ?? null,
+        parentName: p.parent, parentMobile: `9${series}${String(i + 11).padStart(2, "0")}111111`,
+        fatherName: p.parent, city: center.city, address: `${center.city}, India`,
+        status: statusOf(i),
+      };
+    }),
+  ).returning({ id: students.id, firstName: students.firstName, lastName: students.lastName, parentMobile: students.parentMobile, batchId: students.batchId });
+
+  const name = (r: { firstName: string; lastName: string }) => `${r.firstName} ${r.lastName}`.trim();
+  const active = studentRows.filter((_, i) => statusOf(i) === "active");
+  const fee = center.monthlyFee;
+
+  // ── Fees (June paid/overdue mix + July pending) & payments ──
+  const feeValues: (typeof fees.$inferInsert)[] = [];
+  active.forEach((s, i) => {
+    const paid = i % 4 !== 0;
+    feeValues.push({
+      instituteId: iid, studentId: s.id, studentName: name(s), parentMobile: s.parentMobile,
+      kind: "monthly", period: "2026-06", title: "June 2026 Monthly Fee", type: "monthly",
+      amount: fee, amountPaid: paid ? fee : 0, status: paid ? "paid" : "overdue", dueDate: "2026-06-05",
+    });
+    feeValues.push({
+      instituteId: iid, studentId: s.id, studentName: name(s), parentMobile: s.parentMobile,
+      kind: "monthly", period: "2026-07", title: "July 2026 Monthly Fee", type: "monthly",
+      amount: fee, amountPaid: 0, status: "pending", dueDate: "2026-07-05",
+    });
+  });
+
+  // A multi-activity center's real money story: parents who add a second
+  // activity, plus the extras such a center actually charges for.
+  if (center.sector === "activity") {
+    const second = ["Yoga & Fitness", "Drawing & Painting", "Music (Vocal & Keyboard)", "Karate / Self-defence"];
+    active.slice(0, 4).forEach((s, i) => {
+      feeValues.push({
+        instituteId: iid, studentId: s.id, studentName: name(s), parentMobile: s.parentMobile,
+        kind: "other", period: "2026-07", title: `Second activity — ${second[i % second.length]}`,
+        type: "activity", amount: 600, amountPaid: i % 2 === 0 ? 600 : 0,
+        status: i % 2 === 0 ? "paid" : "pending", dueDate: "2026-07-10",
+      });
+    });
+    active.slice(4, 7).forEach((s, i) => {
+      feeValues.push({
+        instituteId: iid, studentId: s.id, studentName: name(s), parentMobile: s.parentMobile,
+        kind: "other", period: "2026-07",
+        title: ["Annual function costume", "Exam board fee", "Activity kit"][i % 3] ?? "Extra charge",
+        type: "other", amount: [500, 600, 350][i % 3] ?? 500,
+        amountPaid: 0, status: "pending", dueDate: "2026-07-20",
+      });
+    });
+  }
+
+  await db.insert(fees).values(feeValues);
+  await db.insert(payments).values(
+    active.filter((_, i) => i % 4 !== 0).map((s, i) => ({
+      instituteId: iid, studentId: s.id, studentName: name(s),
+      amount: fee, method: (["upi", "cash", "razorpay"] as const)[i % 3], status: "success" as const,
+      source: "fee", date: "2026-06-03",
+    })),
+  );
+
+  // ── Expenses ──
+  await db.insert(expenses).values([
+    { instituteId: iid, title: "Room rent — June", category: "Rent", amount: 6000, date: "2026-06-01" },
+    { instituteId: iid, title: `Salary — ${leadTeacher}`, category: "Salary", amount: 18000, date: "2026-06-01" },
+    { instituteId: iid, title: "Electricity", category: "Utilities", amount: 1200, date: "2026-06-05" },
+    { instituteId: iid, title: "Leaflets & banner", category: "Marketing", amount: 900, date: "2026-06-10" },
+    // A multi-activity center pays several specialists, not one teacher.
+    ...(center.sector === "activity"
+      ? staff.slice(1, 5).map(([n], i) => ({
+          instituteId: iid, title: `Salary — ${n}`, category: "Salary",
+          amount: [9000, 8000, 10000, 7500][i] ?? 8000, date: "2026-06-01",
+        }))
+      : []),
+  ]);
+
+  // ── WhatsApp templates — this sector's own wording ──
+  await db.insert(templates).values(
+    sector.seedTemplates.slice(0, 8).map((t) => ({
+      instituteId: iid, name: t.name, type: t.type, channel: "whatsapp",
+      body: t.body.replaceAll("{{business}}", center.name.replace("▶ Demo — ", "")),
+    })),
+  );
+
+  // ── Module-specific sample data (only what this sector switches on) ──
+  if (has("attendance")) {
+    // Today's register for every batch, so a multi-activity center shows a full day.
+    await db.insert(attendance).values(
+      active.map((s, i) => ({
+        instituteId: iid, date: "2026-07-06", batchId: s.batchId ?? batchA, studentId: s.id,
+        studentName: name(s), parentMobile: s.parentMobile, present: i % 5 !== 0,
+      })),
+    );
+  }
+  if (has("promotions") && courseRows.length > 1) {
+    // An activity center promotes within an activity (level / belt / grade),
+    // not from one activity to another.
+    const ladders: [string, string][] = center.sector === "activity"
+      ? [["Abacus Level 2", "Abacus Level 3"], ["Karate Yellow Belt", "Karate Orange Belt"], ["Dance Grade 1", "Dance Grade 2"]]
+      : [[courseRows[0]?.name ?? "Level 1", courseRows[1]?.name ?? "Level 2"]];
+    await db.insert(promotions).values(
+      active.slice(0, 3).map((s, i) => ({
+        instituteId: iid, studentId: s.id, studentName: name(s), parentMobile: s.parentMobile,
+        fromLevel: ladders[i % ladders.length]?.[0] ?? "Level 1",
+        toLevel: ladders[i % ladders.length]?.[1] ?? "Level 2",
+        score: "92", date: "2026-06-20", notified: true,
+      })),
+    );
+  }
+  if (has("tests")) {
+    await db.insert(testScores).values(
+      active.map((s, i) => ({
+        instituteId: iid, testName: "June Monthly Assessment", date: "2026-06-25", batchId: s.batchId,
+        studentId: s.id, studentName: name(s), parentMobile: s.parentMobile,
+        score: 70 + ((i * 7) % 30), maxScore: 100,
+      })),
+    );
+  }
+  const isActivity = center.sector === "activity";
+
+  if (has("certificates")) {
+    // An activity center issues certificates across several activities at once.
+    const certCourses = isActivity
+      ? ["Abacus & Mental Maths", "Computer Basics (DCA/MS Office)", "Drawing & Painting", "Spoken English & Personality"]
+      : [courseRows[0]?.name ?? "Course"];
+    await db.insert(certificates).values(
+      active.slice(0, isActivity ? 4 : 2).map((s, i) => {
+        const course = certCourses[i % certCourses.length] ?? "Course";
+        return {
+          instituteId: iid, serial: `${center.prefix}-CERT-${1000 + i}`, studentId: s.id, studentName: name(s),
+          title: `${course} Completion Certificate`, course, issueDate: "2026-06-28",
+        };
+      }),
+    );
+  }
+  if (has("examBoards")) {
+    const boards: Record<string, string> = { coaching: "WBCHSE", computer: "NIELIT", dance: "Prayag Sangit Samiti", drawing: "Govt. Elementary Exam" };
+    // One center, many boards — the reality of a multi-activity center.
+    const activityBoards: [string, string][] = [
+      ["UCMAS (Abacus)", "Level 3"],
+      ["NIELIT (Computer)", "CCC"],
+      ["Prayag Sangit Samiti (Dance)", "Grade 2"],
+      ["Govt. Elementary Exam (Drawing)", "Elementary"],
+      ["Karate Association (Belt)", "Orange Belt"],
+    ];
+    await db.insert(examRegs).values(
+      active.slice(0, isActivity ? 5 : 3).map((s, i) => ({
+        instituteId: iid, studentId: s.id, studentName: name(s), parentMobile: s.parentMobile,
+        board: isActivity ? (activityBoards[i]?.[0] ?? "State Board") : (boards[center.sector] ?? "State Board"),
+        tier: isActivity ? (activityBoards[i]?.[1] ?? "Level 1") : (courseRows[0]?.name ?? "Level 1"),
+        examDate: "2026-08-15", fee: 600, status: "registered",
+      })),
+    );
+  }
+  if (has("performance")) {
+    const eventNames: Record<string, string> = { dance: "State Dance Festival", drawing: "All-India Art Contest" };
+    const activityEvents = ["State Abacus Championship", "Inter-school Dance Festival", "All-India Art Contest", "District Karate Tournament"];
+    await db.insert(performances).values(
+      active.slice(0, isActivity ? 4 : 2).map((s, i) => ({
+        instituteId: iid, studentId: s.id, studentName: name(s), parentMobile: s.parentMobile,
+        event: isActivity ? (activityEvents[i % activityEvents.length] ?? "State Championship") : (eventNames[center.sector] ?? "State Championship"),
+        level: i % 2 === 0 ? "State" : "District",
+        result: i === 0 ? "1st Place" : i === 1 ? "2nd Place" : "Participation", date: "2026-05-30",
+      })),
+    );
+  }
+  if (has("materials")) {
+    const kits: Record<string, string[]> = { dance: ["Costume set", "Ghungroo"], drawing: ["Colour box", "Sketch pad"], computer: ["Course book", "Practice CD"] };
+    const activityKits: [string, number][] = [
+      ["Abacus kit", 350], ["Computer course book", 250], ["Yoga mat", 450],
+      ["Dance costume set", 900], ["Drawing colour box", 300], ["Karate uniform (Gi)", 800],
+    ];
+    const kit = kits[center.sector] ?? ["Course kit", "Workbook set"];
+    await db.insert(materials).values(
+      active.slice(0, isActivity ? 6 : 4).map((s, i) => ({
+        instituteId: iid, studentId: s.id, studentName: name(s),
+        item: isActivity ? (activityKits[i]?.[0] ?? "Activity kit") : (kit[i % 2] ?? "Course kit"),
+        amount: isActivity ? (activityKits[i]?.[1] ?? 300) : (i % 2 === 0 ? 350 : 150),
+        issued: i % 3 !== 0, date: "2026-01-20",
+      })),
+    );
+  }
+  if (has("events")) {
+    const titles: Record<string, string> = { dance: "Annual Recital 2026", drawing: "Students' Art Exhibition 2026" };
+    const rows = isActivity
+      ? [
+          { title: "Annual Function 2026 — all activities", date: "2026-12-20", venue: "City Auditorium", note: "Dance, music & karate performances + prize distribution" },
+          { title: "Art & Craft Exhibition", date: "2026-09-14", venue: "Center hall", note: "Drawing and hobby-craft students' work on display" },
+          { title: "International Yoga Day", date: "2026-06-21", venue: "Community Park", note: "Free open session — good admission funnel" },
+          { title: "Free Trial Week — all activities", date: "2026-07-15", venue: "Center", note: "Open house for new admissions" },
+        ]
+      : [
+          { title: titles[center.sector] ?? "Annual Function 2026", date: "2026-12-20", venue: "City Auditorium", note: "Prize distribution + performances" },
+          { title: "Free Demo Class", date: "2026-07-15", venue: "Center", note: "Open house for new admissions" },
+        ];
+    await db.insert(events).values(rows.map((r) => ({ instituteId: iid, ...r })));
+  }
+}
+
+/** Which demo centers are seeded — drives the "Ready / Not seeded" badges. */
+export async function listDemoCenters(): Promise<{ sector: string; seeded: boolean }[]> {
+  await requireSuperAdmin();
+  const ids = DEMO_CENTERS.map((c) => c.id);
+  const rows = await db.select({ id: institutes.id }).from(institutes).where(inArray(institutes.id, ids));
+  const live = new Set(rows.map((r) => r.id));
+  return DEMO_CENTERS.map((c) => ({ sector: c.sector, seeded: live.has(c.id) }));
+}
+
+/** Enter a sector demo center: seed on first use, then "open" it. */
+export async function enterSectorDemo(formData: FormData) {
+  await requireSuperAdmin();
+  const center = getDemoCenter(String(formData.get("sector") ?? ""));
+  if (!center) return;
+  if (!(await centerExists(center.id))) await seedCenter(center);
+  const store = await cookies();
+  store.set(ACTING_COOKIE, center.id, { httpOnly: true, sameSite: "lax", path: "/" });
+  redirect("/dashboard");
+}
+
+/** Wipe and rebuild one sector demo center. */
+export async function resetSectorDemo(formData: FormData): Promise<void> {
+  await requireSuperAdmin();
+  const center = getDemoCenter(String(formData.get("sector") ?? ""));
+  if (!center) return;
+  await seedCenter(center);
+  revalidatePath("/admin");
+}
+
+/** Build (or rebuild) every sector demo center in one go. */
+export async function seedAllSectorDemos(): Promise<{ ok?: boolean; error?: string }> {
+  await requireSuperAdmin();
+  for (const center of DEMO_CENTERS) await seedCenter(center);
   revalidatePath("/admin");
   return { ok: true };
 }

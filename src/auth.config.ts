@@ -6,7 +6,12 @@ import type { NextAuthConfig } from "next-auth";
  * needs the DB + bcrypt) is added in `src/auth.ts`, used by the Node API route.
  */
 
-const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/auth", "/pricing", "/verify"];
+const PUBLIC_PATHS = [
+  "/login", "/register", "/forgot-password", "/auth", "/pricing", "/verify",
+  // Lead capture from the public marketing site — write-only, no session.
+  // See src/app/api/leads/route.ts.
+  "/api/leads",
+];
 
 function isPublicPath(pathname: string): boolean {
   if (pathname === "/") return true;

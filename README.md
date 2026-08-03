@@ -96,11 +96,23 @@ To add Courses/Batches/Fees: clone this folder, swap the table + fields.
 
 ## Subscription plans
 
-| Plan | Price (₹/mo) | Students |
-|------|--------------|----------|
-| Starter | 499 | up to 100 |
-| Growth | 999 | up to 500 |
-| Professional | 1999 | unlimited |
+Source of truth: `SUBSCRIPTION_PLANS` in `src/lib/constants.ts`, mirrored into the
+`subscription_plans` table by `src/lib/db/seed.ts`.
+
+| Plan | Price (₹/mo) | Launch offer (1st month) | Students | Staff logins |
+|------|-------------:|-------------------------:|---------:|-------------:|
+| Free | 0 | — | up to 15 | 1 |
+| Starter | 499 | 299 | up to 75 | 1 |
+| Growth ★ | 999 | 699 | up to 200 | 3 |
+| Business | 1,999 | 1,499 | up to 500 | 10 |
+| Enterprise | Contact Sales | — | unlimited | unlimited |
+
+Add-ons: ₹8 per extra student/month · ₹399 per extra branch/month · annual billing
+saves 20%. All prices exclude 18% GST.
+
+Plans limit **capacity, not features**: every paid tier gets the full daily
+workflow (tests, exam management, certificates, promotions, materials, reports).
+Only Free is restricted to the core — see `src/lib/plan-gating.ts`.
 
 ## Status
 
