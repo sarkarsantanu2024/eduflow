@@ -26,6 +26,8 @@ import { formatDate } from "@/lib/utils";
 import { downloadFile } from "@/lib/csv";
 import { studentTemplateCsv, type ImportedStudent } from "@/features/students/student-csv";
 import { ImportColumnsDialog } from "@/features/students/import-dialog";
+import { checkStudentCapacityAction } from "@/features/data/actions";
+import { SeatMeter } from "@/features/capacity/seat-meter";
 import { ExportData } from "@/components/export-data";
 import { PosterPackDialog } from "@/features/students/welcome-pack-dialog";
 import { extractStudentFromPdf } from "@/features/students/student-pdf";
@@ -85,6 +87,12 @@ export function StudentsView() {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    const capacity = await checkStudentCapacityAction(1);
+    if (!capacity.ok) {
+      toast.error("Student limit reached", { description: capacity.reason, duration: 10000 });
+      router.push("/students/new");   // shows the seat-pack screen
+      return;
+    }
     const tId = toast.loading("Extracting from PDF…");
     try {
       const { data, photo, rawText } = await extractStudentFromPdf(file);
@@ -136,7 +144,10 @@ export function StudentsView() {
   }
 
   // Apply the confirmed mapping: resolve Level→course, auto-code, skip duplicates.
-  function importStudents(records: ImportedStudent[]) {
+  // Capacity is checked for the WHOLE batch first: a half-imported file leaves
+  // the owner guessing which rows landed, so we refuse it outright and say
+  // exactly how many slots are free.
+  async function importStudents(records: ImportedStudent[]) {
     const prefix = (profile.businessName || "STU").split(/\s+/).map((w) => w[0]).join("").replace(/[^A-Za-z]/g, "").slice(0, 4).toUpperCase() || "STU";
     const courseByName = new Map(courses.map((c) => [c.name.trim().toLowerCase(), c.id]));
     // A student is a duplicate if the same name + mobile already exists.
@@ -144,6 +155,22 @@ export function StudentsView() {
     const seen = new Set<string>();
     let n = students.length;
     let imported = 0, skipped = 0;
+
+    // Count only the rows that would actually be created (duplicates are free).
+    const fresh = new Set<string>();
+    records.forEach((r) => {
+      const { _course: _ignored, ...rest } = r;
+      const key = studentKey(rest);
+      if (!existingKeys.has(key) && !fresh.has(key)) fresh.add(key);
+    });
+    if (fresh.size > 0) {
+      const check = await checkStudentCapacityAction(fresh.size);
+      if (!check.ok) {
+        setImportData(null);
+        toast.error("Not enough student seats", { description: check.reason, duration: 12000 });
+        return;
+      }
+    }
 
     records.forEach((r) => {
       const { _course, ...rest } = r;
@@ -245,6 +272,8 @@ export function StudentsView() {
           </div>
         }
       />
+
+      <SeatMeter />
 
       {importData && (
         <ImportColumnsDialog

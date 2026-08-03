@@ -93,13 +93,25 @@ burden, no float liability, much easier trust pitch.
 
 ### Recommended price ladder (INR) — tuned for tier-2/3/rural
 
-> **SUPERSEDED (Aug 2026).** The ladder below was an early exploration. The live
-> pricing is **Free ₹0 (15 students) · Starter ₹499 (75) · Growth ₹999 (200) ·
-> Business ₹1,999 (500) · Enterprise on request**, with ₹8/extra student,
-> ₹399/extra branch, 20% off annual, and 18% GST extra. WhatsApp reminders are
-> unlimited and free on every plan (click-to-send from the owner's own number) —
-> there are no message quotas. Source of truth: `src/lib/constants.ts`. The
-> reasoning below is kept because the cost analysis is still useful.
+> **CURRENT (Aug 2026).** The live ladder is now very close to the exploration
+> below — we came back to it after the ₹499/₹999/₹1,999 lineup proved too
+> feature-gated to explain. Live pricing:
+>
+> **Free ₹0 (20 students, 1 staff) · Starter ₹399 / ₹3,999yr (100, 3 staff) ·
+> Growth ₹799 / ₹7,999yr (300, 8 staff) · Business ₹1,499 / ₹14,999yr (1,000,
+> unlimited staff) · Enterprise on request**, with ₹8/extra student,
+> ₹399/extra branch and 18% GST extra.
+>
+> Two deliberate differences from the table below:
+> - **Annual is 10 months for 12 (~17% off), permanent** — not a launch offer,
+>   so there is never an awkward moment when the discount is withdrawn.
+> - **No WhatsApp quotas on any plan, including Free.** Click-to-send goes from
+>   the owner's own number and costs us nothing, so metering it would only
+>   weaken our strongest differentiator. The quota column below assumed the
+>   Meta Cloud API, which has not shipped.
+>
+> Source of truth: `src/lib/constants.ts` → `src/lib/db/seed.ts`. The cost
+> analysis below is still useful and is kept as-is.
 
 | Plan | Monthly | **Annual (recommended)** | Members | WhatsApp/mo | Online collection | Locations |
 |------|--------:|-------------------------:|--------:|------------:|-------------------|----------:|

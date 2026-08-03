@@ -21,6 +21,14 @@
 </script>
 <style>
   html{scroll-behavior:smooth}
+  /* Nothing may push the page sideways at any width. */
+  html,body{max-width:100%;overflow-x:clip}
+  h1,h2,h3,p,li,td,th{overflow-wrap:break-word}
+  /* Wide tables scroll inside their own box instead of widening the page.
+     `contain:paint` stops the table's intrinsic width leaking into the
+     document's scroll width, which would trigger mobile shrink-to-fit. */
+  .doc .table-wrap{max-width:100%;overflow-x:auto;contain:paint;margin:.75rem 0}
+  .doc .table-wrap table{margin:0}
   :focus-visible{outline:3px solid #EA580C;outline-offset:2px;border-radius:6px}
   .doc h2{font-family:'Plus Jakarta Sans',Inter,sans-serif;font-weight:800;font-size:1.15rem;color:#0F172A;margin:1.75rem 0 .5rem;scroll-margin-top:5rem}
   .doc h3{font-family:'Plus Jakarta Sans',Inter,sans-serif;font-weight:700;font-size:1rem;color:#0F172A;margin:1.15rem 0 .35rem}

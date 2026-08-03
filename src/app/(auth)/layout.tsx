@@ -4,7 +4,7 @@ import { APP_NAME } from "@/lib/constants";
 const features = [
   { icon: Users, label: "Manage students, batches & levels" },
   { icon: IndianRupee, label: "Collect fees online — UPI & cards" },
-  { icon: MessageCircle, label: "Automatic WhatsApp fee reminders" },
+  { icon: MessageCircle, label: "One-click WhatsApp fee reminders" },
 ];
 
 // Free stock hero (Unsplash) — children learning, fits a coaching center.

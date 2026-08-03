@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { and, count, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
-  institutes, users, students, payments, fees, subscriptions, subscriptionPlans,
+  institutes, users, students, payments, fees, subscriptions, subscriptionPlans, capacityEvents,
 } from "@/lib/db/schema";
 import { requireSuperAdmin, getCurrentProfile } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
@@ -217,7 +217,8 @@ export async function setCenterPlan(formData: FormData): Promise<{ error?: strin
   const periodEnd = new Date();
   periodEnd.setDate(periodEnd.getDate() + (status === "trialing" ? 14 : 30));
 
-  const [existing] = await db.select({ id: subscriptions.id }).from(subscriptions).where(eq(subscriptions.instituteId, instituteId)).limit(1);
+  const [existing] = await db.select({ id: subscriptions.id, extraStudents: subscriptions.extraStudents })
+    .from(subscriptions).where(eq(subscriptions.instituteId, instituteId)).limit(1);
   if (existing) {
     await db.update(subscriptions)
       .set({ planId, status, currentPeriodStart: new Date(), currentPeriodEnd: periodEnd, updatedAt: new Date() })
@@ -225,6 +226,24 @@ export async function setCenterPlan(formData: FormData): Promise<{ error?: strin
   } else {
     await db.insert(subscriptions).values({ instituteId, planId, status, currentPeriodEnd: periodEnd });
   }
+
+  // Record it in the capacity history so "why do I have this limit?" always has
+  // an answer — a plan change moves the cap just as much as buying seats does.
+  const [full] = await db
+    .select({ code: subscriptionPlans.code, name: subscriptionPlans.name, maxStudents: subscriptionPlans.maxStudents })
+    .from(subscriptionPlans).where(eq(subscriptionPlans.id, planId)).limit(1);
+  const extra = existing?.extraStudents ?? 0;
+  await db.insert(capacityEvents).values({
+    instituteId,
+    action: existing ? "plan_changed" : "plan_set",
+    delta: 0,
+    resultingCap: full?.maxStudents == null ? null : full.maxStudents + extra,
+    planCode: full?.code ?? "",
+    actor: "admin",
+    actorName: "Super admin",
+    notes: `${full?.name ?? "Plan"} plan · ${status}`,
+  });
+
   revalidatePath("/admin");
   return { ok: true };
 }

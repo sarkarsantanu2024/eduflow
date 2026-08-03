@@ -62,6 +62,7 @@ export const subscriptionPlans = pgTable("subscription_plans", {
   code: text("code").notNull().unique(), // 'starter' | 'growth' | 'professional'
   name: text("name").notNull(),
   priceMonthly: integer("price_monthly").notNull(), // rupees
+  priceAnnual: integer("price_annual").notNull().default(0), // rupees, 0 = not sold yearly
   maxStudents: integer("max_students"), // null = unlimited
   maxStaff: integer("max_staff"),
   whatsappQuota: integer("whatsapp_quota"),
@@ -169,6 +170,13 @@ export const subscriptions = pgTable("subscriptions", {
   instituteId: uuid("institute_id").notNull().references(() => institutes.id, { onDelete: "cascade" }),
   planId: uuid("plan_id").notNull().references(() => subscriptionPlans.id),
   status: subscriptionStatus("status").notNull().default("trialing"),
+  // 'monthly' | 'annual' — annual is billed at 10 months for 12.
+  billingCycle: text("billing_cycle").notNull().default("monthly"),
+  // Extra student slots PAID FOR on top of the plan cap, at ADD_ONS.extraStudent
+  // per slot per month. Capacity is prepaid: a center cannot add a student
+  // beyond (plan cap + these) until the slots have been paid for and a
+  // super-admin has recorded them here. See src/lib/plan-limits.ts.
+  extraStudents: integer("extra_students").notNull().default(0),
   currentPeriodStart: timestamp("current_period_start", { withTimezone: true }).notNull().defaultNow(),
   currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
   trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
@@ -533,3 +541,56 @@ export const leads = pgTable("leads", {
   ...softDelete,
   ...timestamps,
 }, (t) => ({ byCreated: index("leads_created_idx").on(t.createdAt) }));
+
+// ── Capacity requests (GLOBAL — the super-admin's upgrade queue) ──────
+// A center that hits its student limit taps a seat pack; that logs a request
+// here AND opens WhatsApp pre-filled. The queue exists so requests don't live
+// only in a chat thread — once you have a few hundred centers, WhatsApp alone
+// stops being a system of record.
+//
+// Lifecycle: pending → payment_received → approved (capacity applied)
+//            pending → declined (with a reason)
+export const capacityRequests = pgTable("capacity_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  instituteId: uuid("institute_id").notNull().references(() => institutes.id, { onDelete: "cascade" }),
+  /** Seats asked for (25 / 50 / 100 — see SEAT_PACKS). */
+  seats: integer("seats").notNull(),
+  /** pending | payment_received | approved | declined */
+  status: text("status").notNull().default("pending"),
+  /** Snapshot at request time, so the queue reads correctly months later. */
+  planCode: text("plan_code").notNull().default(""),
+  planName: text("plan_name").notNull().default(""),
+  activeStudents: integer("active_students").notNull().default(0),
+  capAtRequest: integer("cap_at_request").notNull().default(0),
+  /** Set when we advise a plan upgrade instead of another pack. */
+  suggestedPlanCode: text("suggested_plan_code").notNull().default(""),
+  notes: text("notes").notNull().default(""),
+  handledBy: text("handled_by").notNull().default(""),
+  handledAt: timestamp("handled_at", { withTimezone: true }),
+  ...timestamps,
+}, (t) => ({
+  byCreated: index("capacity_requests_created_idx").on(t.createdAt),
+  byInstitute: index("capacity_requests_institute_idx").on(t.instituteId),
+}));
+
+// ── Capacity audit log (GLOBAL) ──────────────────────────────────────
+// Every change to a center's effective student capacity, so "why do I have
+// 250 seats?" always has an answer. Append-only: never update or delete a row.
+export const capacityEvents = pgTable("capacity_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  instituteId: uuid("institute_id").notNull().references(() => institutes.id, { onDelete: "cascade" }),
+  /** plan_set | seats_added | seats_removed | plan_changed */
+  action: text("action").notNull(),
+  /** Seats added (+) or removed (−) by this event. 0 for a plain plan change. */
+  delta: integer("delta").notNull().default(0),
+  /** Effective cap AFTER this event. null = unlimited. */
+  resultingCap: integer("resulting_cap"),
+  planCode: text("plan_code").notNull().default(""),
+  /** system | admin | owner */
+  actor: text("actor").notNull().default("admin"),
+  actorName: text("actor_name").notNull().default(""),
+  notes: text("notes").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  byInstitute: index("capacity_events_institute_idx").on(t.instituteId, t.createdAt),
+}));

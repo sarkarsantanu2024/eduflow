@@ -14,6 +14,8 @@ import { FEATURES } from "@/lib/features";
 import { db } from "@/lib/db";
 import { subscriptions, subscriptionPlans } from "@/lib/db/schema";
 import { getActiveInstituteId } from "@/lib/tenant";
+import { SeatMeter } from "@/features/capacity/seat-meter";
+import { CapacityHistory } from "@/features/capacity/capacity-history";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Billing & Plans" };
@@ -35,12 +37,21 @@ export default async function BillingPage() {
     if (sub?.code) currentPlanCode = sub.code;
   }
 
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Billing & Plans"
         description="Simple, transparent pricing for institutes of every size."
       />
+
+      {/* Live seat capacity + the history behind it. Seats, never a per-student rate. */}
+      <Card>
+        <CardContent className="space-y-5 p-6">
+          <SeatMeter always className="border-0 p-0" />
+          <CapacityHistory />
+        </CardContent>
+      </Card>
 
       <div className="grid gap-5 lg:grid-cols-3">
         {SUBSCRIPTION_PLANS.map((plan) => {
@@ -68,9 +79,9 @@ export default async function BillingPage() {
                     <span className="text-3xl font-extrabold tracking-tight">{plan.priceLabel}</span>
                     {plan.price > 0 && <span className="text-sm text-muted-foreground">/month</span>}
                   </p>
-                  {plan.launchPrice > 0 && plan.launchPrice < plan.price && (
+                  {plan.annualPrice > 0 && (
                     <p className="text-xs font-bold text-emerald-600">
-                      Launch offer — ₹{plan.launchPrice}/mo for your first month
+                      or {plan.annualLabel}/year — 2 months free
                     </p>
                   )}
                   <p className="mt-1 text-sm font-medium text-muted-foreground">{plan.students}</p>
@@ -107,8 +118,9 @@ export default async function BillingPage() {
 
       <p className="text-sm text-muted-foreground">{PRICE_NOTE}</p>
       <p className="text-sm text-muted-foreground">
-        Add-ons: <strong>₹{ADD_ONS.extraStudent}</strong> per extra student / month ·{" "}
-        <strong>₹{ADD_ONS.extraBranch}</strong> per extra branch / month · annual billing{" "}
+        Need more students than your plan covers? Add a seat pack — <strong>+25</strong>,{" "}
+        <strong>+50</strong> or <strong>+100</strong> students — from the capacity panel above.
+        Extra branches are <strong>₹{ADD_ONS.extraBranch}</strong> per branch / month. Annual billing{" "}
         <strong>saves {ANNUAL_DISCOUNT_PERCENT}%</strong>.
       </p>
 

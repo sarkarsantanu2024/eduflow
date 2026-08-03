@@ -21,6 +21,14 @@
 </script>
 <style>
   html{scroll-behavior:smooth}
+  /* Nothing may push the page sideways at any width. */
+  html,body{max-width:100%;overflow-x:clip}
+  h1,h2,h3,p,li,td,th{overflow-wrap:break-word}
+  /* Wide tables scroll inside their own box instead of widening the page.
+     `contain:paint` stops the table's intrinsic width leaking into the
+     document's scroll width, which would trigger mobile shrink-to-fit. */
+  .doc .table-wrap{max-width:100%;overflow-x:auto;contain:paint;margin:.75rem 0}
+  .doc .table-wrap table{margin:0}
   :focus-visible{outline:3px solid #EA580C;outline-offset:2px;border-radius:6px}
   .doc h2{font-family:'Plus Jakarta Sans',Inter,sans-serif;font-weight:800;font-size:1.15rem;color:#0F172A;margin:1.75rem 0 .5rem;scroll-margin-top:5rem}
   .doc h3{font-family:'Plus Jakarta Sans',Inter,sans-serif;font-weight:700;font-size:1rem;color:#0F172A;margin:1.15rem 0 .35rem}
@@ -103,21 +111,31 @@
     </ul>
 
     <h2 id="plans">4. Plans, limits &amp; add-ons</h2>
-    <table>
+    <div class="table-wrap"><table>
       <thead><tr><th>Plan</th><th>Students</th><th>Staff logins</th><th>Price / month</th></tr></thead>
       <tbody>
-        <tr><td>Free</td><td>Up to 15</td><td>1</td><td>₹0</td></tr>
-        <tr><td>Starter</td><td>Up to 75</td><td>1</td><td>₹499</td></tr>
-        <tr><td>Growth</td><td>Up to 200</td><td>3</td><td>₹999</td></tr>
-        <tr><td>Business</td><td>Up to 500</td><td>10</td><td>₹1,999</td></tr>
+        <tr><td>Free</td><td>Up to 20</td><td>1</td><td>₹0</td></tr>
+        <tr><td>Starter</td><td>Up to 100</td><td>3</td><td>₹399 (₹3,999 / year)</td></tr>
+        <tr><td>Growth</td><td>Up to 300</td><td>8</td><td>₹799 (₹7,999 / year)</td></tr>
+        <tr><td>Business</td><td>Up to 1,000</td><td>Unlimited</td><td>₹1,499 (₹14,999 / year)</td></tr>
         <tr><td>Enterprise</td><td>Unlimited</td><td>Unlimited</td><td>By agreement</td></tr>
       </tbody>
-    </table>
-    <p><strong>Crossing your student limit does not switch anything off.</strong> You continue on the same plan and are
-    billed <strong>₹8 per extra student per month</strong>. You may move to the next plan whenever it works out cheaper;
-    we will not move you automatically without telling you.</p>
-    <p><strong>Extra branches</strong> are ₹399 per branch per month. Launch pricing (a lower rate for the first three
-    months) applies to new paid subscriptions and is stated at the time you subscribe.</p>
+    </table></div>
+    <p><strong>Student capacity is prepaid.</strong> Your plan's student limit is the number of students you may have in
+    the account at one time. <strong>Everything already in your account keeps working</strong> when you reach the limit
+    &mdash; no data is removed and no feature is switched off &mdash; but a <strong>new student can only be added once you have
+    capacity for them</strong>. You can get that capacity in either of two ways:</p>
+    <ul>
+      <li>A <strong>seat pack</strong> — an extra 25, 50 or 100 students added to your existing plan. The price of each pack is quoted to you before you pay; or</li>
+      <li><strong>Moving up a plan</strong>, which is usually cheaper once you need many more students.</li>
+    </ul>
+    <p>Extra capacity is switched on once payment is received. On a monthly subscription it is charged with your next
+    monthly payment; on an annual subscription it is charged for the remainder of your paid term, pro-rated to the
+    months left. We will never move you to a different plan without telling you first, and we show your remaining
+    student slots inside the app before you run out.</p>
+    <p><strong>Extra branches</strong> are ₹399 per branch per month. <strong>Annual billing</strong> is charged at ten
+    months' price for twelve months of service (about 17% less than paying monthly); the yearly amount for each plan is
+    shown in the table above and is stated again at the time you subscribe.</p>
     <p>We may change prices. Existing subscribers will be told at least <strong>30 days</strong> before a change applies
     to them, and you may cancel before it takes effect.</p>
 
@@ -134,7 +152,7 @@
     </ul>
 
     <h2 id="free">6. The Free plan</h2>
-    <p>The Free plan is genuinely free and is not a time-limited trial. It is limited to 15 students and 1 staff login,
+    <p>The Free plan is genuinely free and is not a time-limited trial. It is limited to 20 students and 1 staff login,
     excludes the features listed as paid on our pricing page, and may carry a small EduFlow mark on generated posters.
     We may change what the Free plan includes with reasonable notice, and we may suspend a free account that is dormant
     for a long period — we will email you first and give you a chance to export.</p>
@@ -172,7 +190,7 @@
     <p>We work to keep EduFlow available at all times but do not guarantee uninterrupted service. Maintenance,
     third-party outages and factors beyond our control can cause downtime. We will give notice of planned maintenance
     where we reasonably can.</p>
-    <p>Support is provided by WhatsApp and email during business hours. Priority support is included on the Business
+    <p>Support is provided by WhatsApp and email during business hours. Priority support is included on the Growth
     plan and above.</p>
 
     <h2 id="ip">11. Intellectual property</h2>

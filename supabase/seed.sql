@@ -8,15 +8,26 @@
 -- ════════════════════════════════════════════════════════════════════
 
 -- ── Subscription plans (global) ─────────────────────────────────────
+-- Mirrors SUBSCRIPTION_PLANS in src/lib/constants.ts and src/lib/db/seed.ts.
+-- NOTE: price_monthly here is in PAISE (this legacy schema's unit); the live
+-- Drizzle schema stores whole rupees. whatsapp_quota is null on every tier:
+-- click-to-send goes from the owner's own number, so it is free and unlimited.
 insert into public.subscription_plans (code, name, price_monthly, max_students, max_staff, whatsapp_quota, sort_order, features)
 values
-  ('starter',      'Starter',      49900,  100,   3,  500,  1,
-    '{"reports":false,"bulk_import":true,"parent_portal":false}'),
-  ('growth',       'Growth',       99900,  500,   10, 2000, 2,
-    '{"reports":true,"bulk_import":true,"parent_portal":true}'),
-  ('professional', 'Professional', 199900, null,  null, null, 3,
-    '{"reports":true,"bulk_import":true,"parent_portal":true,"api_access":true}')
+  ('free',       'Free',       0,      20,   1,    null, 0,
+    '{"reports":true,"watermark":true}'),
+  ('starter',    'Starter',    39900,  100,  3,    null, 1,
+    '{"reports":true,"certificates":true,"id_cards":true,"export":true}'),
+  ('growth',     'Growth',     79900,  300,  8,    null, 2,
+    '{"reports":true,"certificates":true,"id_cards":true,"export":true,"tests":true,"exam_boards":true,"expenses":true,"salary":true,"roles":true,"promotions":true,"materials":true,"bulk_import":true,"custom_fees":true,"advanced_reports":true,"priority_support":true}'),
+  ('business',   'Business',   149900, 1000, null, null, 3,
+    '{"reports":true,"certificates":true,"id_cards":true,"export":true,"tests":true,"exam_boards":true,"expenses":true,"salary":true,"roles":true,"promotions":true,"materials":true,"bulk_import":true,"custom_fees":true,"advanced_reports":true,"priority_support":true,"posters":true,"videos":true,"custom_branding":true,"multi_activity":true,"analytics":true,"data_backup":true,"unlimited_staff":true}'),
+  ('enterprise', 'Enterprise', 0,      null, null, null, 4,
+    '{"custom_pricing":true,"account_manager":true,"custom_development":true,"training":true,"migration":true,"dedicated_server":true,"unlimited_staff":true}')
 on conflict (code) do nothing;
+
+-- Retire the codes from the earlier 3-tier lineup.
+update public.subscription_plans set is_active = false where code = 'professional';
 
 -- ── Demo institute (tenant) ─────────────────────────────────────────
 insert into public.institutes (id, name, slug, type, phone, email, city, state, gst_number)

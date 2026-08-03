@@ -8,6 +8,7 @@ import {
   materials, adMaterials, stationery, events, teachers,
 } from "@/lib/db/schema";
 import { getActiveInstituteId, requireActiveInstituteId } from "@/lib/tenant";
+import { checkStudentCapacity, getStudentUsage, type StudentUsage } from "@/lib/plan-limits";
 import {
   EMPTY_DB, EMPTY_PROFILE, DEFAULT_CERT_LAYOUT,
   type Db, type Profile, type CollectionName,
@@ -160,7 +161,38 @@ export async function fetchProfile(instituteIdArg?: string): Promise<Profile> {
 
 export async function createRow(collection: CollectionName, item: Record<string, unknown>): Promise<void> {
   const instituteId = await requireActiveInstituteId();
+  // Student capacity is prepaid and enforced here — the one write path every
+  // add and every bulk import goes through, so it cannot be bypassed from the
+  // client. The UI checks first (see checkStudentCapacityAction) to show a
+  // helpful dialog; this is the backstop.
+  if (collection === "students") {
+    const check = await checkStudentCapacity(instituteId, 1);
+    if (!check.ok) throw new Error(check.reason);
+  }
   await db.insert(CONFIG[collection].table).values({ ...toDb(collection, item), instituteId });
+}
+
+/** Student usage + capacity for the active center (for meters and warnings). */
+export async function getStudentUsageAction(): Promise<StudentUsage | null> {
+  const instituteId = await getActiveInstituteId();
+  if (!instituteId) return null;
+  return getStudentUsage(instituteId);
+}
+
+/**
+ * Pre-flight capacity check for the active center. The UI calls this before
+ * adding one student or importing a batch, so the owner gets a clear dialog
+ * instead of a silently reverted optimistic write.
+ */
+export async function checkStudentCapacityAction(
+  wanted = 1,
+): Promise<{ ok: boolean; reason?: string; usage: StudentUsage | null }> {
+  const instituteId = await getActiveInstituteId();
+  if (!instituteId) return { ok: true, usage: null };
+  const check = await checkStudentCapacity(instituteId, wanted);
+  return check.ok
+    ? { ok: true, usage: check.usage }
+    : { ok: false, reason: check.reason, usage: check.usage };
 }
 
 export async function updateRow(collection: CollectionName, id: string, patch: Record<string, unknown>): Promise<void> {
