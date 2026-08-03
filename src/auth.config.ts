@@ -15,6 +15,9 @@ const PUBLIC_PATHS = [
 
 function isPublicPath(pathname: string): boolean {
   if (pathname === "/") return true;
+  // Static marketing pages in public/ — site.html (served at "/"), privacy,
+  // terms. Reached by anyone, logged in or not.
+  if (pathname.endsWith(".html")) return true;
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
