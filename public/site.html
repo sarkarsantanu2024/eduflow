@@ -6,7 +6,19 @@
 <title>EduFlow — Run Your Coaching or Activity Center on Autopilot | From ₹0/month</title>
 <meta name="description" content="India's most affordable software for coaching classes, abacus, yoga, dance, computer, drawing, music, tuition, preschool and multi-activity centers. Admissions, fees, UPI-QR, WhatsApp reminders, attendance and reports. Free up to 15 students." />
 <meta name="keywords" content="coaching class software India, abacus center software, activity center software, yoga class management software, dance academy software, computer institute software, tuition center software, preschool management software, fee management software India, WhatsApp fee reminder" />
-<meta name="theme-color" content="#EA580C" />
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFFFFF" />
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0F172A" />
+<script>
+  /* Runs before first paint so the correct theme is already on <html> — no flash. */
+  (function () {
+    try {
+      var saved = localStorage.getItem('eduflow-theme');
+      var dark = saved ? saved === 'dark'
+                       : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.classList.toggle('dark', dark);
+    } catch (e) {}
+  })();
+</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23EA580C'/%3E%3Cg stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M27.5 13.7 16.6 8.9a1.5 1.5 0 0 0-1.2 0L4.5 13.7l10.9 4.9c.4.2.8.2 1.2 0z'/%3E%3Cpath d='M28 14v4'/%3E%3Cpath d='M9 16.4V20c0 2.2 3.1 4 7 4s7-1.8 7-4v-3.6'/%3E%3C/g%3E%3C/svg%3E" />
 <link rel="canonical" href="https://eduflow.nexvoratechnologies.co.in/" />
 
@@ -30,8 +42,29 @@
     theme: {
       extend: {
         colors: {
-          brand: { 50:'#FFF7ED',100:'#FFEDD5',200:'#FED7AA',300:'#FDBA74',400:'#FB923C',500:'#F97316',600:'#EA580C',700:'#C2410C',800:'#9A3412',900:'#7C2D12' },
-          ink: { 50:'#F8FAFC',100:'#F1F5F9',200:'#E2E8F0',300:'#CBD5E1',400:'#94A3B8',500:'#64748B',600:'#475569',700:'#334155',800:'#1E293B',900:'#0F172A' },
+          // Every shade reads from a CSS variable, so flipping :root.dark
+          // re-themes every existing bg-/text-/border- utility on the page.
+          brand: {
+            50:'rgb(var(--brand-50) / <alpha-value>)',   100:'rgb(var(--brand-100) / <alpha-value>)',
+            200:'rgb(var(--brand-200) / <alpha-value>)', 300:'rgb(var(--brand-300) / <alpha-value>)',
+            400:'rgb(var(--brand-400) / <alpha-value>)', 500:'rgb(var(--brand-500) / <alpha-value>)',
+            600:'rgb(var(--brand-600) / <alpha-value>)', 700:'rgb(var(--brand-700) / <alpha-value>)',
+            800:'rgb(var(--brand-800) / <alpha-value>)', 900:'rgb(var(--brand-900) / <alpha-value>)',
+          },
+          ink: {
+            50:'rgb(var(--ink-50) / <alpha-value>)',   100:'rgb(var(--ink-100) / <alpha-value>)',
+            200:'rgb(var(--ink-200) / <alpha-value>)', 300:'rgb(var(--ink-300) / <alpha-value>)',
+            400:'rgb(var(--ink-400) / <alpha-value>)', 500:'rgb(var(--ink-500) / <alpha-value>)',
+            600:'rgb(var(--ink-600) / <alpha-value>)', 700:'rgb(var(--ink-700) / <alpha-value>)',
+            800:'rgb(var(--ink-800) / <alpha-value>)', 900:'rgb(var(--ink-900) / <alpha-value>)',
+          },
+          emerald: {
+            50:'rgb(var(--em-50) / <alpha-value>)',   200:'rgb(var(--em-200) / <alpha-value>)',
+            600:'rgb(var(--em-600) / <alpha-value>)', 700:'rgb(var(--em-700) / <alpha-value>)',
+            800:'rgb(var(--em-800) / <alpha-value>)',
+          },
+          rose: { 500:'rgb(var(--rose-500) / <alpha-value>)', 600:'rgb(var(--rose-600) / <alpha-value>)' },
+          surface: 'rgb(var(--surface) / <alpha-value>)',
         },
         fontFamily: {
           sans: ['Inter','ui-sans-serif','system-ui','Segoe UI','Roboto','sans-serif'],
@@ -80,11 +113,131 @@
 }
 </script>
 <style>
-  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
-  body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  /* ── Theme tokens ────────────────────────────────────────────────
+     Light is the default. `.dark` on <html> swaps the neutral ramp end
+     for end (ink-50 becomes the darkest surface, ink-900 the lightest
+     text) so every existing ink-* utility re-themes with no markup
+     change. Values are chosen so body text clears WCAG AA (4.5:1) and
+     muted text clears 4.5:1 against the surface it sits on. */
+  :root {
+    --brand-50:255 247 237;  --brand-100:255 237 213; --brand-200:254 215 170;
+    --brand-300:253 186 116; --brand-400:251 146 60;  --brand-500:249 115 22;
+    --brand-600:194 65 12;   --brand-700:154 52 18;   --brand-800:124 45 18;
+    --brand-900:124 45 18;
+    --ink-50:248 250 252;  --ink-100:241 245 249; --ink-200:226 232 240;
+    --ink-300:203 213 225; --ink-400:100 116 139; --ink-500:90 105 128;
+    --ink-600:71 85 105;   --ink-700:51 65 85;    --ink-800:30 41 59;
+    --ink-900:15 23 42;
+    --em-50:236 253 245; --em-200:167 243 208; --em-600:4 120 87;
+    --em-700:4 108 78;   --em-800:6 95 70;
+    --rose-500:190 32 60; --rose-600:190 18 60;
+    --surface:255 255 255;
+    --page:255 255 255;
+    --hairline:226 232 240;
+    --focus:194 65 12;
+    color-scheme: light;
+  }
+  :root.dark {
+    --brand-50:47 24 8;     --brand-100:62 30 10;   --brand-200:110 51 17;
+    --brand-300:154 72 24;  --brand-400:251 146 60; --brand-500:249 115 22;
+    --brand-600:198 67 12;  --brand-700:253 186 116; --brand-800:254 215 170;
+    --brand-900:255 237 213;
+    --ink-50:19 28 48;     --ink-100:22 32 54;    --ink-200:47 60 84;
+    --ink-300:71 87 115;   --ink-400:157 172 194; --ink-500:176 190 210;
+    --ink-600:203 214 230; --ink-700:224 232 242; --ink-800:240 245 250;
+    --ink-900:248 250 252;
+    --em-50:5 46 34;  --em-200:14 90 66;  --em-600:52 211 153;
+    --em-700:110 231 183; --em-800:167 243 208;
+    --rose-500:253 164 175; --rose-600:253 164 175;
+    --surface:22 32 54;
+    --page:15 23 42;
+    --hairline:47 60 84;
+    --focus:251 146 60;
+    color-scheme: dark;
+  }
+
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; background-color: rgb(var(--page)); }
+  body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; font-size: 16px; }
+  /* Readability floor — nothing on the page renders below 16px. */
+  body, p, li, dd, dt, td, th, label, input, select, textarea, button, summary, a { font-size: inherit; }
+
+  /* `bg-white` means "the raised surface", not literally white — remap it
+     in dark mode. `text-white` is left alone: it stays white on brand fills. */
+  .dark .bg-white { background-color: rgb(var(--surface)); }
+  .dark .bg-white\/90 { background-color: rgb(var(--page) / .9); }
+  .dark .bg-white\/95 { background-color: rgb(var(--page) / .95); }
+  .dark .hover\:bg-brand-50:hover { background-color: rgb(var(--brand-50)); }
+  /* Brand as *text* needs to lighten in dark mode; brand as a *fill* must not. */
+  .dark .text-brand-600, .dark .text-brand-700,
+  .dark .hover\:text-brand-600:hover, .dark .hover\:text-brand-400:hover { color: rgb(var(--brand-400)); }
+  .dark .bg-gradient-to-b.from-brand-50 { --tw-gradient-from: rgb(var(--brand-50)) var(--tw-gradient-from-position); }
+  .dark .to-white { --tw-gradient-to: rgb(var(--page)) var(--tw-gradient-to-position); }
+  .dark .shadow-soft { box-shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6); }
+  /* Panels that are deliberately dark in *both* themes (footer, Enterprise
+     card, WhatsApp pill). They opt out of the ramp inversion and carry their
+     own AA-checked colours. */
+  .panel-invert { background-color: #0B1220; color: #C7D2E0; }
+  .dark .panel-invert { background-color: #080E1B; }
+  .panel-invert.text-ink-200, .panel-invert .text-ink-200,
+  .panel-invert.text-ink-300, .panel-invert .text-ink-300 { color: #DCE4EF; }
+  .panel-invert.text-ink-400, .panel-invert .text-ink-400,
+  .panel-invert.text-ink-500, .panel-invert .text-ink-500 { color: #A9B6C9; }
+  .panel-invert .text-white { color: #FFFFFF; }
+  .panel-invert .text-brand-300, .panel-invert .text-brand-400 { color: #FDBA74; }
+  .panel-invert .hover\:text-brand-400:hover { color: #FDBA74; }
+  .panel-invert .border-ink-700, .panel-invert .border-ink-800 { border-color: #27354F; }
+  .panel-invert .bg-ink-800 { background-color: #27354F; }
+
+  /* Orange CTA band. Both stops are dark enough for white body text to clear
+     AA (4.5:1); the old brand-500 stop only reached 2.9:1. */
+  .cta-band { background-image: linear-gradient(to bottom right, #B23F0B, #9A3412); }
+  .dark .cta-band { background-image: linear-gradient(to bottom right, #8F350C, #7C2D12); }
+
+  /* Phones: buttons drop to 14px so long labels stay on one line. Reading
+     copy keeps its 16px floor. */
+  @media (max-width: 639.98px) {
+    button,
+    a[class*="rounded-lg"], a[class*="rounded-xl"], a[class*="rounded-full"] { font-size: 14px; }
+  }
+
+  /* Denser type in the three scan-and-compare surfaces — plan cards, the
+     comparison table and the footer. Reading copy elsewhere stays at 16px. */
+  #pricing, #compare, footer { font-size: 14px; }
+  #pricing [class*="text-[16px]"],
+  #compare [class*="text-[16px]"],
+  footer  [class*="text-[16px]"] { font-size: 14px; }
+
+  /* Off-screen honeypot that cannot widen the page. */
+  .hp-trap { position: absolute; width: 1px; height: 1px; overflow: hidden;
+             clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+  /* Nothing may push the page sideways — no horizontal scrollbar at any width.
+     `clip` (not `hidden`) so the sticky header keeps working. */
+  html, body { max-width: 100%; overflow-x: clip; }
+  img, svg, video, canvas, iframe { max-width: 100%; }
+  /* A horizontally scrolling panel must not add to the *document's* scroll
+     width. Without `contain`, the comparison table's 760px intrinsic width
+     leaks out (documentElement.scrollWidth became 724 at a 375px viewport),
+     and mobile Chrome then shrink-to-fits the whole page. */
+  .overflow-x-auto { max-width: 100%; contain: paint; }
+
+  /* Frozen first column of the comparison table. Its cells use `bg-inherit`,
+     so every row needs an OPAQUE background — with a translucent zebra stripe
+     the scrolled columns showed straight through the frozen column. */
+  #compare tbody tr { background-color: rgb(var(--surface)); }
+  #compare tbody tr:nth-child(even) { background-color: rgb(var(--ink-50)); }
+  #compare th[class*="sticky"] { box-shadow: 1px 0 0 rgb(var(--ink-200)); }
+  /* Long words / numbers wrap instead of stretching their box. */
+  h1, h2, h3, p, li, dd, summary, label { overflow-wrap: break-word; }
   .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24; line-height: 1; }
+  /* Until the icon font is ready (or if it never arrives) the ligature name
+     would render as literal text and stretch its row — clamp and hide it so
+     the layout never breaks on a slow or blocked font. */
+  html:not(.icons-ready) .material-symbols-rounded {
+    display: inline-block; width: 1em; max-width: 1em; overflow: hidden;
+    visibility: hidden; white-space: nowrap;
+  }
   .ms-fill { font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24; }
-  :focus-visible { outline: 3px solid #EA580C; outline-offset: 2px; border-radius: 6px; }
+  :focus-visible { outline: 3px solid rgb(var(--focus)); outline-offset: 2px; border-radius: 6px; }
   details > summary { list-style: none; }
   details > summary::-webkit-details-marker { display: none; }
   details[open] .faq-chev { transform: rotate(180deg); }
@@ -92,28 +245,31 @@
 </style>
 </head>
 
-<body class="bg-white font-sans text-[15px] leading-relaxed text-ink-700 pb-16 md:pb-0">
+<body class="bg-white font-sans text-[16px] leading-relaxed text-ink-700 pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
 
 <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-lg focus:bg-brand-600 focus:px-4 focus:py-2 focus:font-semibold focus:text-white">Skip to content</a>
 
 <!-- ══════════════ HEADER ══════════════ -->
 <header class="sticky top-0 z-50 border-b border-ink-200 bg-white/90 backdrop-blur-md">
-  <div class="mx-auto flex h-16 max-w-[1720px] items-center justify-between gap-4 px-6 lg:px-14">
-    <a href="#" class="flex items-center gap-2.5" aria-label="EduFlow home"><span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg></span><span class="font-display text-xl font-extrabold tracking-tight text-ink-900">Edu<span class="text-brand-600">Flow</span></span></a>
-    <nav class="hidden items-center gap-6 md:flex" aria-label="Main">
-      <a href="#features" class="text-sm font-semibold text-ink-600 transition hover:text-brand-600">Features</a>
-      <a href="#who" class="text-sm font-semibold text-ink-600 transition hover:text-brand-600">Who it's for</a>
-      <a href="#pricing" class="text-sm font-semibold text-ink-600 transition hover:text-brand-600">Pricing</a>
-      <a href="#compare" class="text-sm font-semibold text-ink-600 transition hover:text-brand-600">Compare</a>
-      <a href="#roi" class="text-sm font-semibold text-ink-600 transition hover:text-brand-600">ROI</a>
-      <a href="#faq" class="text-sm font-semibold text-ink-600 transition hover:text-brand-600">FAQ</a>
+  <div class="mx-auto flex h-16 max-w-[1720px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-14">
+    <a href="#" class="flex shrink-0 items-center gap-2.5" aria-label="EduFlow home"><span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg></span><span class="font-display text-xl font-extrabold tracking-tight text-ink-900">Edu<span class="text-brand-600">Flow</span></span></a>
+    <nav class="hidden items-center gap-5 lg:flex xl:gap-6" aria-label="Main">
+      <a href="#features" class="whitespace-nowrap text-[16px] font-semibold text-ink-600 transition hover:text-brand-600">Features</a>
+      <a href="#who" class="whitespace-nowrap text-[16px] font-semibold text-ink-600 transition hover:text-brand-600">Who it's for</a>
+      <a href="#pricing" class="whitespace-nowrap text-[16px] font-semibold text-ink-600 transition hover:text-brand-600">Pricing</a>
+      <a href="#compare" class="whitespace-nowrap text-[16px] font-semibold text-ink-600 transition hover:text-brand-600">Compare</a>
+      <a href="#roi" class="whitespace-nowrap text-[16px] font-semibold text-ink-600 transition hover:text-brand-600">ROI</a>
+      <a href="#faq" class="whitespace-nowrap text-[16px] font-semibold text-ink-600 transition hover:text-brand-600">FAQ</a>
     </nav>
-    <div class="flex items-center gap-2">
-      <a href="#pricing" class="hidden rounded-lg border border-ink-200 px-3.5 py-2 text-sm font-semibold text-ink-800 transition hover:border-brand-500 hover:text-brand-600 lg:block">See pricing</a>
-      <a id="loginBtn" href="/login" class="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3.5 py-2 text-sm font-bold text-ink-800 transition hover:border-brand-500 hover:bg-brand-50 hover:text-brand-600">
+    <div class="flex shrink-0 items-center gap-2">
+      <button id="themeToggle" type="button" class="inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-ink-300 text-ink-700 transition hover:border-brand-500 hover:text-brand-600" aria-label="Switch theme" aria-pressed="false">
+        <span id="themeIcon" class="material-symbols-rounded text-[20px]" aria-hidden="true">dark_mode</span>
+      </button>
+      <a id="loginBtn" href="/login" class="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-ink-300 px-3 py-2 text-[16px] font-bold text-ink-800 transition hover:border-brand-500 hover:bg-brand-50 hover:text-brand-600 sm:px-3.5">
         <span class="material-symbols-rounded text-[18px]" aria-hidden="true">login</span> Login
       </a>
-      <a href="#contact" class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-brand-700">
+      <!-- Below md the fixed bottom bar carries this CTA — never two demo buttons at once. -->
+      <a href="#contact" class="hidden shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-brand-600 px-4 py-2 text-[16px] font-bold text-white shadow-sm transition hover:bg-brand-700 md:inline-flex">
         <span class="material-symbols-rounded text-[18px]" aria-hidden="true">bolt</span> Book free demo
       </a>
     </div>
@@ -127,8 +283,8 @@
   <div class="mx-auto max-w-[1720px] px-6 lg:px-14 py-12 md:py-16">
     <div class="grid items-center gap-10 lg:grid-cols-[1.05fr_.95fr]">
       <div class="animate-rise">
-        <span class="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1 text-xs font-bold uppercase tracking-wider text-brand-700">
-          <span class="material-symbols-rounded ms-fill text-[15px]" aria-hidden="true">stars</span> Free up to 15 students
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1 text-[16px] font-bold uppercase tracking-wider text-brand-700">
+          <span class="material-symbols-rounded ms-fill text-[16px]" aria-hidden="true">stars</span> Free up to 15 students
         </span>
         <h1 class="mt-3 font-display text-[2rem] font-extrabold leading-[1.12] tracking-tight text-ink-900 sm:text-[2.6rem] lg:text-[3rem]">
           Run Your Coaching or Activity Center on <span class="text-brand-600">Autopilot</span>
@@ -138,14 +294,14 @@
           WhatsApp reminders, attendance and reports in one place — for less than one student's monthly fee.
         </p>
         <div class="mt-5 flex flex-wrap gap-2.5">
-          <a href="#contact" class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 font-bold text-white shadow-lift transition hover:-translate-y-0.5 hover:bg-brand-700">
+          <a href="#contact" class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 font-bold text-white shadow-lift transition hover:bg-brand-700">
             <span class="material-symbols-rounded text-[20px]" aria-hidden="true">play_circle</span> Book a free live demo
           </a>
-          <a href="#pricing" class="inline-flex items-center gap-2 rounded-xl border border-ink-300 bg-white px-5 py-3 font-bold text-ink-800 transition hover:-translate-y-0.5 hover:border-brand-500 hover:text-brand-600">
+          <a href="#pricing" class="inline-flex items-center gap-2 rounded-xl border border-ink-300 bg-white px-5 py-3 font-bold text-ink-800 transition hover:border-brand-500 hover:text-brand-600">
             <span class="material-symbols-rounded text-[20px]" aria-hidden="true">sell</span> See pricing
           </a>
         </div>
-        <ul class="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] font-medium text-ink-500">
+        <ul class="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-[16px] font-medium text-ink-500">
           <li class="inline-flex items-center gap-1"><span class="material-symbols-rounded text-[16px] text-emerald-600" aria-hidden="true">check_circle</span>No credit card</li>
           <li class="inline-flex items-center gap-1"><span class="material-symbols-rounded text-[16px] text-emerald-600" aria-hidden="true">check_circle</span>One-click Excel import</li>
           <li class="inline-flex items-center gap-1"><span class="material-symbols-rounded text-[16px] text-emerald-600" aria-hidden="true">check_circle</span>Cancel anytime</li>
@@ -157,22 +313,22 @@
         <div class="rounded-2xl border border-ink-200 bg-white p-4 shadow-soft">
           <span class="material-symbols-rounded ms-fill text-[26px] text-brand-600" aria-hidden="true">currency_rupee</span>
           <p class="font-display text-2xl font-extrabold text-ink-900">₹0</p>
-          <p class="text-[13px] text-ink-500">WhatsApp reminder cost — sent free from your own number</p>
+          <p class="text-[16px] text-ink-500">WhatsApp reminder cost — sent free from your own number</p>
         </div>
         <div class="rounded-2xl border border-ink-200 bg-white p-4 shadow-soft">
           <span class="material-symbols-rounded ms-fill text-[26px] text-brand-600" aria-hidden="true">schedule</span>
           <p class="font-display text-2xl font-extrabold text-ink-900">8 hrs</p>
-          <p class="text-[13px] text-ink-500">Admin time a typical center saves every month</p>
+          <p class="text-[16px] text-ink-500">Admin time a typical center saves every month</p>
         </div>
         <div class="rounded-2xl border border-ink-200 bg-white p-4 shadow-soft">
           <span class="material-symbols-rounded ms-fill text-[26px] text-brand-600" aria-hidden="true">percent</span>
           <p class="font-display text-2xl font-extrabold text-ink-900">1–3%</p>
-          <p class="text-[13px] text-ink-500">Of your fee revenue — less than one student's fee</p>
+          <p class="text-[16px] text-ink-500">Of your fee revenue — less than one student's fee</p>
         </div>
         <div class="rounded-2xl border border-ink-200 bg-white p-4 shadow-soft">
           <span class="material-symbols-rounded ms-fill text-[26px] text-brand-600" aria-hidden="true">category</span>
           <p class="font-display text-2xl font-extrabold text-ink-900">10+</p>
-          <p class="text-[13px] text-ink-500">Center types supported out of the box</p>
+          <p class="text-[16px] text-ink-500">Center types supported out of the box</p>
         </div>
       </div>
     </div>
@@ -182,7 +338,7 @@
 <!-- ══════════════ PROBLEM / SOLUTION ══════════════ -->
 <section id="why" class="border-b border-ink-200 py-12 md:py-14" aria-labelledby="why-h">
   <div class="mx-auto max-w-[1720px] px-6 lg:px-14">
-    <p class="text-xs font-extrabold uppercase tracking-[.14em] text-brand-600">The everyday reality</p>
+    <p class="text-[16px] font-extrabold uppercase tracking-[.14em] text-brand-600">The everyday reality</p>
     <h2 id="why-h" class="mt-1.5 font-display text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">You didn't open a center to do paperwork</h2>
     <p class="mt-1.5 max-w-5xl text-ink-600">Most centers run on a register, a WhatsApp group and memory. That works until you cross 40 students — then fees leak, parents forget, and you have no idea what you actually earned.</p>
 
@@ -191,7 +347,7 @@
         <h3 class="mb-2 inline-flex items-center gap-2 font-display text-lg font-bold text-ink-900">
           <span class="material-symbols-rounded ms-fill text-[22px] text-rose-500" aria-hidden="true">sentiment_dissatisfied</span> Without EduFlow
         </h3>
-        <ul class="space-y-1.5 text-[14.5px]">
+        <ul class="space-y-1.5 text-[16px]">
           <li class="flex gap-2"><span class="material-symbols-rounded mt-0.5 shrink-0 text-[18px] text-rose-500" aria-hidden="true">close</span>Fee register in a notebook — nobody knows who's pending</li>
           <li class="flex gap-2"><span class="material-symbols-rounded mt-0.5 shrink-0 text-[18px] text-rose-500" aria-hidden="true">close</span>Typing the same reminder to 40 parents, one by one</li>
           <li class="flex gap-2"><span class="material-symbols-rounded mt-0.5 shrink-0 text-[18px] text-rose-500" aria-hidden="true">close</span>Cash collected, no receipt, disputes later</li>
@@ -204,7 +360,7 @@
         <h3 class="mb-2 inline-flex items-center gap-2 font-display text-lg font-bold text-ink-900">
           <span class="material-symbols-rounded ms-fill text-[22px] text-emerald-600" aria-hidden="true">sentiment_very_satisfied</span> With EduFlow
         </h3>
-        <ul class="space-y-1.5 text-[14.5px]">
+        <ul class="space-y-1.5 text-[16px]">
           <li class="flex gap-2"><span class="material-symbols-rounded mt-0.5 shrink-0 text-[18px] text-emerald-600" aria-hidden="true">check</span>Every month's fees generated automatically for every student</li>
           <li class="flex gap-2"><span class="material-symbols-rounded mt-0.5 shrink-0 text-[18px] text-emerald-600" aria-hidden="true">check</span>One tap opens WhatsApp with the reminder and your UPI QR ready</li>
           <li class="flex gap-2"><span class="material-symbols-rounded mt-0.5 shrink-0 text-[18px] text-emerald-600" aria-hidden="true">check</span>Instant PDF receipt for cash or UPI</li>
@@ -220,85 +376,85 @@
 <!-- ══════════════ FEATURES ══════════════ -->
 <section id="features" class="border-b border-ink-200 bg-ink-50/60 py-12 md:py-14" aria-labelledby="feat-h">
   <div class="mx-auto max-w-[1720px] px-6 lg:px-14">
-    <p class="text-xs font-extrabold uppercase tracking-[.14em] text-brand-600">Everything in one place</p>
+    <p class="text-[16px] font-extrabold uppercase tracking-[.14em] text-brand-600">Everything in one place</p>
     <h2 id="feat-h" class="mt-1.5 font-display text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">One app for the whole center</h2>
     <p class="mt-1.5 max-w-5xl text-ink-600">No add-ons to buy, no integrations to configure. Sign in on any phone or laptop.</p>
 
     <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">how_to_reg</span>
         <h3 class="font-display font-bold text-ink-900">Admissions &amp; student register</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Add a student in twenty seconds, or import your Excel / CSV / PDF list free. Photos, parents, batch, level and status in one profile.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Add a student in twenty seconds, or import your Excel / CSV / PDF list free. Photos, parents, batch, level and status in one profile.</p>
       </article>
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">autorenew</span>
         <h3 class="font-display font-bold text-ink-900">Automatic fee generation</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Monthly fees, admission fees, reactivation and one-off charges created for every student, every month. You create nothing.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Monthly fees, admission fees, reactivation and one-off charges created for every student, every month. You create nothing.</p>
       </article>
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">qr_code_2</span>
         <h3 class="font-display font-bold text-ink-900">UPI-QR collection</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Your own PhonePe / GPay / Paytm QR rides along with every reminder. Parents scan and pay; you record it in one tap.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Your own PhonePe / GPay / Paytm QR rides along with every reminder. Parents scan and pay; you record it in one tap.</p>
       </article>
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">chat</span>
         <h3 class="font-display font-bold text-ink-900">WhatsApp reminders — free</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Due, overdue, absent, birthday, result, promotion, holiday. Click-to-send from your own number: no per-message charge, no API setup.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Due, overdue, absent, birthday, result, promotion, holiday. Click-to-send from your own number: no per-message charge, no API setup.</p>
       </article>
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">fact_check</span>
         <h3 class="font-display font-bold text-ink-900">Batches &amp; attendance</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Batch-wise attendance on one screen, with an instant "absent today" WhatsApp alert to the parent.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Batch-wise attendance on one screen, with an instant "absent today" WhatsApp alert to the parent.</p>
       </article>
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">leaderboard</span>
         <h3 class="font-display font-bold text-ink-900">Tests, ranks &amp; result cards</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Enter scores, get an automatic rank list, send every parent a personal score and rank card.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Enter scores, get an automatic rank list, send every parent a personal score and rank card.</p>
       </article>
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">workspace_premium</span>
         <h3 class="font-display font-bold text-ink-900">Certificates with QR verify</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Branded, printable certificates with a serial number and a QR anyone — parent or employer — can scan to verify.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Branded, printable certificates with a serial number and a QR anyone — parent or employer — can scan to verify.</p>
       </article>
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">palette</span>
         <h3 class="font-display font-bold text-ink-900">Welcome &amp; birthday posters</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Auto-filled with the student's name and your branding, plus an animated video version. Post it to WhatsApp status in seconds.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Auto-filled with the student's name and your branding, plus an animated video version. Post it to WhatsApp status in seconds.</p>
       </article>
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">insights</span>
         <h3 class="font-display font-bold text-ink-900">Profit, expenses &amp; P&amp;L</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Rent, salaries, utilities and head-office royalty tracked, so you see true monthly profit — not just collections.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Rent, salaries, utilities and head-office royalty tracked, so you see true monthly profit — not just collections.</p>
       </article>
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">military_tech</span>
         <h3 class="font-display font-bold text-ink-900">Levels, grades &amp; belts</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Promote a student to the next level, grade or belt, record the assessment score, and congratulate the parent automatically.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Promote a student to the next level, grade or belt, record the assessment score, and congratulate the parent automatically.</p>
       </article>
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">school</span>
         <h3 class="font-display font-bold text-ink-900">Exam boards &amp; competitions</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Register students with external boards (NIELIT, UCMAS, Prayag, drawing boards), track fees, admit cards and results.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Register students with external boards (NIELIT, UCMAS, Prayag, drawing boards), track fees, admit cards and results.</p>
       </article>
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">inventory_2</span>
         <h3 class="font-display font-bold text-ink-900">Materials, kits &amp; events</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Issue kits, books, costumes or uniforms — free or charged — and run annual functions, exhibitions and open-house days.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Issue kits, books, costumes or uniforms — free or charged — and run annual functions, exhibitions and open-house days.</p>
       </article>
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">download</span>
         <h3 class="font-display font-bold text-ink-900">Excel / CSV export everywhere</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Every table downloads in one click. Your data is always yours — no lock-in, ever.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Every table downloads in one click. Your data is always yours — no lock-in, ever.</p>
       </article>
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">restore_from_trash</span>
         <h3 class="font-display font-bold text-ink-900">Trash &amp; restore</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Someone deleted the wrong record? Restore it in one tap. A real safety net for real-world staff.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Someone deleted the wrong record? Restore it in one tap. A real safety net for real-world staff.</p>
       </article>
-      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft">
+      <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">dashboard</span>
         <h3 class="font-display font-bold text-ink-900">Owner dashboard &amp; reports</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Students, collections, dues and profit at a glance, with monthly, half-yearly and annual reports as PDF or Excel.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Students, collections, dues and profit at a glance, with monthly, half-yearly and annual reports as PDF or Excel.</p>
       </article>
     </div>
   </div>
@@ -307,28 +463,28 @@
 <!-- ══════════════ WHO IT'S FOR ══════════════ -->
 <section id="who" class="border-b border-ink-200 py-12 md:py-14" aria-labelledby="who-h">
   <div class="mx-auto max-w-[1720px] px-6 lg:px-14">
-    <p class="text-xs font-extrabold uppercase tracking-[.14em] text-brand-600">Purpose-built, not generic</p>
+    <p class="text-[16px] font-extrabold uppercase tracking-[.14em] text-brand-600">Purpose-built, not generic</p>
     <h2 id="who-h" class="mt-1.5 font-display text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">It speaks your center's language</h2>
     <p class="mt-1.5 max-w-5xl text-ink-600">Pick your center type at sign-up and EduFlow reshapes itself — the words, the modules and the ready-made WhatsApp messages all change. A dance academy sees "Dance forms" and recitals; a computer institute sees "Courses", exam boards and certificates.</p>
 
-    <ul class="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[13.5px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">calculate</span>Coaching classes</li>
-      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[13.5px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">psychology</span>Abacus centers</li>
-      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[13.5px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">computer</span>Computer institutes</li>
-      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[13.5px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">self_improvement</span>Yoga centers</li>
-      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[13.5px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">music_note</span>Dance academies</li>
-      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[13.5px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">brush</span>Drawing schools</li>
-      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[13.5px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">piano</span>Music schools</li>
-      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[13.5px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">menu_book</span>Tuition centers</li>
-      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[13.5px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">child_care</span>Preschools</li>
-      <li class="flex items-center gap-2 rounded-xl border border-brand-300 bg-brand-50 px-3 py-2.5 text-[13.5px] font-bold text-brand-700 transition hover:shadow-soft"><span class="material-symbols-rounded text-[19px]" aria-hidden="true">interests</span>Multi-activity centers</li>
+    <ul class="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[16px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">calculate</span>Coaching classes</li>
+      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[16px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">psychology</span>Abacus centers</li>
+      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[16px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">computer</span>Computer institutes</li>
+      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[16px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">self_improvement</span>Yoga centers</li>
+      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[16px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">music_note</span>Dance academies</li>
+      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[16px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">brush</span>Drawing schools</li>
+      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[16px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">piano</span>Music schools</li>
+      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[16px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">menu_book</span>Tuition centers</li>
+      <li class="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[16px] font-semibold text-ink-800 transition hover:border-brand-300 hover:shadow-soft"><span class="material-symbols-rounded text-[19px] text-brand-600" aria-hidden="true">child_care</span>Preschools</li>
+      <li class="flex items-center gap-2 rounded-xl border border-brand-300 bg-brand-50 px-3 py-2.5 text-[16px] font-bold text-brand-700 transition hover:shadow-soft"><span class="material-symbols-rounded text-[19px]" aria-hidden="true">interests</span>Multi-activity centers</li>
     </ul>
 
     <div class="mt-5 grid gap-4 rounded-2xl border border-brand-200 bg-brand-50/60 p-5 md:grid-cols-[auto_1fr] md:items-start">
       <span class="material-symbols-rounded ms-fill inline-flex size-11 items-center justify-center rounded-xl bg-brand-600 text-[24px] text-white" aria-hidden="true">interests</span>
       <div>
         <h3 class="font-display text-lg font-bold text-ink-900">Running many activities under one roof?</h3>
-        <p class="mt-1 text-[14.5px] text-ink-600">
+        <p class="mt-1 text-[16px] text-ink-600">
           Abacus in one room, computer in the next, yoga in the morning, dance and drawing in the evening.
           EduFlow's <strong class="font-bold text-ink-900">multi-activity setup</strong> gives every activity
           its own batches, timings and instructor; switches on kits, exams, belts, grades, competitions and
@@ -344,28 +500,28 @@
 <!-- ══════════════ HOW IT WORKS ══════════════ -->
 <section id="how" class="border-b border-ink-200 bg-ink-50/60 py-12 md:py-14" aria-labelledby="how-h">
   <div class="mx-auto max-w-[1720px] px-6 lg:px-14">
-    <p class="text-xs font-extrabold uppercase tracking-[.14em] text-brand-600">Setup takes an evening</p>
+    <p class="text-[16px] font-extrabold uppercase tracking-[.14em] text-brand-600">Setup takes an evening</p>
     <h2 id="how-h" class="mt-1.5 font-display text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">Live in four steps</h2>
     <ol class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <li class="rounded-xl border border-ink-200 bg-white p-4">
-        <span class="mb-2 inline-flex size-8 items-center justify-center rounded-full bg-brand-600 font-display text-sm font-extrabold text-white">1</span>
+        <span class="mb-2 inline-flex size-8 items-center justify-center rounded-full bg-brand-600 font-display text-[16px] font-extrabold text-white">1</span>
         <h3 class="font-display font-bold text-ink-900">Create your center</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Name, logo, center type, monthly fee and your UPI QR. Two minutes.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Name, logo, center type, monthly fee and your UPI QR. Two minutes.</p>
       </li>
       <li class="rounded-xl border border-ink-200 bg-white p-4">
-        <span class="mb-2 inline-flex size-8 items-center justify-center rounded-full bg-brand-600 font-display text-sm font-extrabold text-white">2</span>
+        <span class="mb-2 inline-flex size-8 items-center justify-center rounded-full bg-brand-600 font-display text-[16px] font-extrabold text-white">2</span>
         <h3 class="font-display font-bold text-ink-900">Import your students</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Upload your existing Excel or CSV register and EduFlow creates every student, batch and level for you.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Upload your existing Excel or CSV register and EduFlow creates every student, batch and level for you.</p>
       </li>
       <li class="rounded-xl border border-ink-200 bg-white p-4">
-        <span class="mb-2 inline-flex size-8 items-center justify-center rounded-full bg-brand-600 font-display text-sm font-extrabold text-white">3</span>
+        <span class="mb-2 inline-flex size-8 items-center justify-center rounded-full bg-brand-600 font-display text-[16px] font-extrabold text-white">3</span>
         <h3 class="font-display font-bold text-ink-900">Fees generate themselves</h3>
-        <p class="mt-1 text-[14px] text-ink-500">Every month, for every student, with due dates and live status.</p>
+        <p class="mt-1 text-[16px] text-ink-500">Every month, for every student, with due dates and live status.</p>
       </li>
       <li class="rounded-xl border border-ink-200 bg-white p-4">
-        <span class="mb-2 inline-flex size-8 items-center justify-center rounded-full bg-brand-600 font-display text-sm font-extrabold text-white">4</span>
+        <span class="mb-2 inline-flex size-8 items-center justify-center rounded-full bg-brand-600 font-display text-[16px] font-extrabold text-white">4</span>
         <h3 class="font-display font-bold text-ink-900">Collect on WhatsApp</h3>
-        <p class="mt-1 text-[14px] text-ink-500">One tap sends the reminder with your QR. Record the payment; the receipt is instant.</p>
+        <p class="mt-1 text-[16px] text-ink-500">One tap sends the reminder with your QR. Record the payment; the receipt is instant.</p>
       </li>
     </ol>
   </div>
@@ -375,33 +531,33 @@
 <section id="pricing" class="border-b border-ink-200 py-12 md:py-14" aria-labelledby="pricing-h">
   <div class="mx-auto max-w-[1720px] px-6 lg:px-14">
     <div class="text-center">
-      <p class="text-xs font-extrabold uppercase tracking-[.14em] text-brand-600">Pricing</p>
+      <p class="text-[16px] font-extrabold uppercase tracking-[.14em] text-brand-600">Pricing</p>
       <h2 id="pricing-h" class="mt-1.5 font-display text-2xl font-extrabold tracking-tight text-ink-900 sm:text-[2rem]">Simple Pricing That Grows With Your Center</h2>
       <p class="mx-auto mt-2 max-w-4xl text-ink-600">
         Pay only for the number of students you manage. No hidden charges. No setup fee.
         Upgrade only when your center grows.
       </p>
-      <p class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1.5 text-[13px] font-bold text-emerald-700 ring-1 ring-emerald-200">
+      <p class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1.5 text-[16px] font-bold text-emerald-700 ring-1 ring-emerald-200">
         <span class="material-symbols-rounded ms-fill text-[17px]" aria-hidden="true">campaign</span>
         Launch offer — special pricing for your first month
       </p>
     </div>
 
-    <div class="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-start">
+    <div class="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 xl:items-start">
 
       <!-- FREE -->
-      <article class="flex h-full flex-col rounded-2xl border border-ink-200 bg-white p-5 transition hover:-translate-y-1 hover:border-emerald-300 hover:shadow-soft">
+      <article class="flex h-full flex-col rounded-2xl border border-ink-200 bg-white p-5 transition hover:border-emerald-300 hover:shadow-soft">
         <div class="flex items-center gap-2">
           <span class="material-symbols-rounded ms-fill text-[20px] text-emerald-600" aria-hidden="true">rocket_launch</span>
-          <h3 class="font-display text-sm font-extrabold uppercase tracking-wide text-emerald-700">Free</h3>
+          <h3 class="font-display text-[16px] font-extrabold uppercase tracking-wide text-emerald-700">Free</h3>
         </div>
-        <p class="mt-2 font-display text-3xl font-extrabold text-ink-900">₹0<span class="text-sm font-semibold text-ink-400">/month</span></p>
-        <p class="text-[13px] font-bold text-emerald-600">Free forever — not a trial</p>
+        <p class="mt-2 font-display text-3xl font-extrabold text-ink-900">₹0<span class="text-[16px] font-semibold text-ink-400">/month</span></p>
+        <p class="text-[16px] font-bold text-emerald-600">Free forever — not a trial</p>
         <dl class="mt-3 grid grid-cols-2 gap-2 border-y border-ink-200 py-2.5 text-center">
-          <div><dt class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Students</dt><dd class="font-display font-extrabold text-ink-900">Up to 15</dd></div>
-          <div><dt class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Staff login</dt><dd class="font-display font-extrabold text-ink-900">1</dd></div>
+          <div><dt class="text-[16px] font-semibold uppercase tracking-wide text-ink-400">Students</dt><dd class="font-display font-extrabold text-ink-900">Up to 15</dd></div>
+          <div><dt class="text-[16px] font-semibold uppercase tracking-wide text-ink-400">Staff login</dt><dd class="font-display font-extrabold text-ink-900">1</dd></div>
         </dl>
-        <ul class="mt-3 flex-1 space-y-1.5 text-[13.5px]">
+        <ul class="mt-3 flex-1 space-y-1.5 text-[16px]">
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Student management</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Admissions</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Attendance</li>
@@ -411,29 +567,29 @@
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>PDF receipts</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Excel export</li>
         </ul>
-        <a href="#contact" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border-2 border-emerald-600 px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-600 hover:text-white">Start Free</a>
+        <a href="#contact" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border-2 border-emerald-600 px-4 py-2.5 text-[16px] font-bold text-emerald-700 transition hover:bg-emerald-600 hover:text-white">Start Free</a>
       </article>
 
       <!-- STARTER -->
-      <article class="flex h-full flex-col rounded-2xl border border-ink-200 bg-white p-5 transition hover:-translate-y-1 hover:border-brand-300 hover:shadow-soft">
+      <article class="flex h-full flex-col rounded-2xl border border-ink-200 bg-white p-5 transition hover:border-brand-300 hover:shadow-soft">
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-2">
             <span class="material-symbols-rounded ms-fill text-[20px] text-brand-600" aria-hidden="true">storefront</span>
-            <h3 class="font-display text-sm font-extrabold uppercase tracking-wide text-brand-700">Starter</h3>
+            <h3 class="font-display text-[16px] font-extrabold uppercase tracking-wide text-brand-700">Starter</h3>
           </div>
         </div>
-        <p class="mt-1 text-[11px] font-bold uppercase tracking-wide text-ink-400">Best for small centers</p>
+        <p class="mt-1 text-[16px] font-bold uppercase tracking-wide text-ink-400">Best for small centers</p>
         <p class="mt-1 flex items-baseline gap-2">
           <span class="font-display text-3xl font-extrabold text-ink-900">₹299</span>
-          <span class="text-sm font-semibold text-ink-400 line-through">₹499</span>
+          <span class="text-[16px] font-semibold text-ink-400 line-through">₹499</span>
         </p>
-        <p class="text-[13px] font-bold text-emerald-600">Launch offer · first month, then ₹499/mo</p>
+        <p class="text-[16px] font-bold text-emerald-600">Launch offer · first month, then ₹499/mo</p>
         <dl class="mt-3 grid grid-cols-2 gap-2 border-y border-ink-200 py-2.5 text-center">
-          <div><dt class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Students</dt><dd class="font-display font-extrabold text-ink-900">Up to 75</dd></div>
-          <div><dt class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Staff login</dt><dd class="font-display font-extrabold text-ink-900">1</dd></div>
+          <div><dt class="text-[16px] font-semibold uppercase tracking-wide text-ink-400">Students</dt><dd class="font-display font-extrabold text-ink-900">Up to 75</dd></div>
+          <div><dt class="text-[16px] font-semibold uppercase tracking-wide text-ink-400">Staff login</dt><dd class="font-display font-extrabold text-ink-900">1</dd></div>
         </dl>
-        <p class="mt-3 text-[13px] font-bold text-ink-900">Everything in Free, plus:</p>
-        <ul class="mt-1.5 flex-1 space-y-1.5 text-[13.5px]">
+        <p class="mt-3 text-[16px] font-bold text-ink-900">Everything in Free, plus:</p>
+        <ul class="mt-1.5 flex-1 space-y-1.5 text-[16px]">
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Tests &amp; rank lists</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Certificates with QR verify</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Exam management</li>
@@ -441,95 +597,95 @@
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Profit reports</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Student promotion</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Material management</li>
+          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Welcome &amp; birthday posters</li>
+          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Half-yearly &amp; annual reports</li>
+          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Teacher &amp; staff management</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>No EduFlow mark on posters</li>
         </ul>
-        <a href="#contact" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border-2 border-brand-600 px-4 py-2.5 text-sm font-bold text-brand-700 transition hover:bg-brand-600 hover:text-white">Start Starter Plan</a>
+        <a href="#contact" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border-2 border-brand-600 px-4 py-2.5 text-[16px] font-bold text-brand-700 transition hover:bg-brand-600 hover:text-white">Start Starter Plan</a>
       </article>
 
       <!-- GROWTH -->
-      <article class="relative flex h-full flex-col rounded-2xl border-2 border-brand-500 bg-white p-5 shadow-lift transition hover:-translate-y-1 lg:-mt-3 lg:mb-0">
-        <span class="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-brand-600 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[.1em] text-white shadow-sm">★ Most popular</span>
+      <article class="relative flex h-full flex-col rounded-2xl border-2 border-brand-500 bg-white p-5 shadow-lift transition xl:-mt-3 xl:mb-0">
+        <span class="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-brand-600 px-3 py-1 text-[16px] font-extrabold uppercase tracking-[.1em] text-white shadow-sm">★ Most popular</span>
         <div class="mt-1.5 flex items-center gap-2">
           <span class="material-symbols-rounded ms-fill text-[20px] text-brand-600" aria-hidden="true">trending_up</span>
-          <h3 class="font-display text-sm font-extrabold uppercase tracking-wide text-brand-700">Growth</h3>
+          <h3 class="font-display text-[16px] font-extrabold uppercase tracking-wide text-brand-700">Growth</h3>
         </div>
         <p class="mt-2 flex items-baseline gap-2">
           <span class="font-display text-3xl font-extrabold text-ink-900">₹699</span>
-          <span class="text-sm font-semibold text-ink-400 line-through">₹999</span>
+          <span class="text-[16px] font-semibold text-ink-400 line-through">₹999</span>
         </p>
-        <p class="text-[13px] font-bold text-emerald-600">Launch offer · first month, then ₹999/mo</p>
+        <p class="text-[16px] font-bold text-emerald-600">Launch offer · first month, then ₹999/mo</p>
         <dl class="mt-3 grid grid-cols-2 gap-2 border-y border-brand-200 py-2.5 text-center">
-          <div><dt class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Students</dt><dd class="font-display font-extrabold text-ink-900">Up to 200</dd></div>
-          <div><dt class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Staff logins</dt><dd class="font-display font-extrabold text-ink-900">3</dd></div>
+          <div><dt class="text-[16px] font-semibold uppercase tracking-wide text-ink-400">Students</dt><dd class="font-display font-extrabold text-ink-900">Up to 200</dd></div>
+          <div><dt class="text-[16px] font-semibold uppercase tracking-wide text-ink-400">Staff logins</dt><dd class="font-display font-extrabold text-ink-900">3</dd></div>
         </dl>
-        <p class="mt-3 text-[13px] font-bold text-ink-900">Everything in Starter, plus:</p>
-        <ul class="mt-1.5 flex-1 space-y-1.5 text-[13.5px]">
-          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Welcome poster generator</li>
-          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Birthday posters</li>
-          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Half-yearly reports</li>
-          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Annual reports</li>
-          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Multi-staff login &amp; roles</li>
-          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Teacher &amp; staff management</li>
+        <p class="mt-3 text-[16px] font-bold text-ink-900">Every Starter feature, plus:</p>
+        <ul class="mt-1.5 flex-1 space-y-1.5 text-[16px]">
+          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span><strong class="font-bold">3 staff logins</strong> instead of 1</li>
+          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Staff roles &amp; permissions</li>
+          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Room for <strong class="font-bold">200 students</strong></li>
         </ul>
-        <a href="#contact" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-700">
+        <a href="#contact" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2.5 text-[16px] font-bold text-white shadow-sm transition hover:bg-brand-700">
           <span class="material-symbols-rounded text-[18px]" aria-hidden="true">event_available</span> Book Free Demo
         </a>
       </article>
 
       <!-- BUSINESS -->
-      <article class="flex h-full flex-col rounded-2xl border border-ink-200 bg-white p-5 transition hover:-translate-y-1 hover:border-brand-300 hover:shadow-soft">
+      <article class="flex h-full flex-col rounded-2xl border border-ink-200 bg-white p-5 transition hover:border-brand-300 hover:shadow-soft">
         <div class="flex items-center gap-2">
           <span class="material-symbols-rounded ms-fill text-[20px] text-brand-600" aria-hidden="true">apartment</span>
-          <h3 class="font-display text-sm font-extrabold uppercase tracking-wide text-brand-700">Business</h3>
+          <h3 class="font-display text-[16px] font-extrabold uppercase tracking-wide text-brand-700">Business</h3>
         </div>
         <p class="mt-2 flex items-baseline gap-2">
           <span class="font-display text-3xl font-extrabold text-ink-900">₹1,499</span>
-          <span class="text-sm font-semibold text-ink-400 line-through">₹1,999</span>
+          <span class="text-[16px] font-semibold text-ink-400 line-through">₹1,999</span>
         </p>
-        <p class="text-[13px] font-bold text-emerald-600">Launch offer · first month, then ₹1,999/mo</p>
+        <p class="text-[16px] font-bold text-emerald-600">Launch offer · first month, then ₹1,999/mo</p>
         <dl class="mt-3 grid grid-cols-2 gap-2 border-y border-ink-200 py-2.5 text-center">
-          <div><dt class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Students</dt><dd class="font-display font-extrabold text-ink-900">Up to 500</dd></div>
-          <div><dt class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Staff logins</dt><dd class="font-display font-extrabold text-ink-900">10</dd></div>
+          <div><dt class="text-[16px] font-semibold uppercase tracking-wide text-ink-400">Students</dt><dd class="font-display font-extrabold text-ink-900">Up to 500</dd></div>
+          <div><dt class="text-[16px] font-semibold uppercase tracking-wide text-ink-400">Staff logins</dt><dd class="font-display font-extrabold text-ink-900">10</dd></div>
         </dl>
-        <p class="mt-3 text-[13px] font-bold text-ink-900">Everything in Growth, plus:</p>
-        <ul class="mt-1.5 flex-1 space-y-1.5 text-[13.5px]">
+        <p class="mt-3 text-[16px] font-bold text-ink-900">Everything in Growth, plus:</p>
+        <ul class="mt-1.5 flex-1 space-y-1.5 text-[16px]">
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Animated video maker</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Advanced reports &amp; analytics</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Custom branding</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Priority support</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Multiple activities</li>
-          <li class="flex gap-1.5 text-ink-500"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-ink-400" aria-hidden="true">schedule</span>Parent portal <span class="ml-1 rounded bg-ink-100 px-1.5 text-[10px] font-bold uppercase text-ink-500">Soon</span></li>
+          <li class="flex gap-1.5 text-ink-500"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-ink-400" aria-hidden="true">schedule</span>Parent portal <span class="ml-1 rounded bg-ink-100 whitespace-nowrap px-1.5 text-[14px] font-bold uppercase text-ink-500">Coming soon</span></li>
         </ul>
-        <a href="#contact" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border-2 border-brand-600 px-4 py-2.5 text-sm font-bold text-brand-700 transition hover:bg-brand-600 hover:text-white">Book Demo</a>
+        <a href="#contact" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border-2 border-brand-600 px-4 py-2.5 text-[16px] font-bold text-brand-700 transition hover:bg-brand-600 hover:text-white">Book Demo</a>
       </article>
 
       <!-- ENTERPRISE -->
-      <article class="flex h-full flex-col rounded-2xl border border-ink-800 bg-ink-900 p-5 text-ink-200 transition hover:-translate-y-1 hover:shadow-soft">
+      <article class="panel-invert flex h-full flex-col rounded-2xl border border-ink-800 p-5 text-ink-200 transition hover:shadow-soft">
         <div class="flex items-center gap-2">
           <span class="material-symbols-rounded ms-fill text-[20px] text-brand-400" aria-hidden="true">hub</span>
-          <h3 class="font-display text-sm font-extrabold uppercase tracking-wide text-brand-300">Enterprise</h3>
+          <h3 class="font-display text-[16px] font-extrabold uppercase tracking-wide text-brand-300">Enterprise</h3>
         </div>
         <p class="mt-2 font-display text-2xl font-extrabold text-white">Contact Sales</p>
-        <p class="text-[13px] font-semibold text-ink-400">Custom pricing for franchises &amp; large brands</p>
+        <p class="text-[16px] font-semibold text-ink-400">Custom pricing for franchises &amp; large brands</p>
         <dl class="mt-3 grid grid-cols-2 gap-2 border-y border-ink-700 py-2.5 text-center">
-          <div><dt class="text-[11px] font-semibold uppercase tracking-wide text-ink-500">Students</dt><dd class="font-display font-extrabold text-white">Unlimited</dd></div>
-          <div><dt class="text-[11px] font-semibold uppercase tracking-wide text-ink-500">Staff logins</dt><dd class="font-display font-extrabold text-white">Unlimited</dd></div>
+          <div><dt class="text-[16px] font-semibold uppercase tracking-wide text-ink-500">Students</dt><dd class="font-display font-extrabold text-white">Unlimited</dd></div>
+          <div><dt class="text-[16px] font-semibold uppercase tracking-wide text-ink-500">Staff logins</dt><dd class="font-display font-extrabold text-white">Unlimited</dd></div>
         </dl>
-        <p class="mt-3 text-[13px] font-bold text-white">Everything in Business, plus:</p>
-        <ul class="mt-1.5 flex-1 space-y-1.5 text-[13.5px]">
+        <p class="mt-3 text-[16px] font-bold text-white">Everything in Business, plus:</p>
+        <ul class="mt-1.5 flex-1 space-y-1.5 text-[16px]">
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-brand-400" aria-hidden="true">check</span>Dedicated account manager</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-brand-400" aria-hidden="true">check</span>Priority onboarding</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-brand-400" aria-hidden="true">check</span>Enterprise security &amp; backups</li>
-          <li class="flex gap-1.5 text-ink-400"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-ink-500" aria-hidden="true">schedule</span>Multi-branch <span class="ml-1 rounded bg-ink-800 px-1.5 text-[10px] font-bold uppercase text-ink-400">Soon</span></li>
-          <li class="flex gap-1.5 text-ink-400"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-ink-500" aria-hidden="true">schedule</span>Head-office dashboard <span class="ml-1 rounded bg-ink-800 px-1.5 text-[10px] font-bold uppercase text-ink-400">Soon</span></li>
-          <li class="flex gap-1.5 text-ink-400"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-ink-500" aria-hidden="true">schedule</span>API access &amp; integrations <span class="ml-1 rounded bg-ink-800 px-1.5 text-[10px] font-bold uppercase text-ink-400">Soon</span></li>
+          <li class="flex gap-1.5 text-ink-400"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-ink-500" aria-hidden="true">schedule</span>Multi-branch <span class="ml-1 rounded bg-ink-800 whitespace-nowrap px-1.5 text-[14px] font-bold uppercase text-ink-400">Coming soon</span></li>
+          <li class="flex gap-1.5 text-ink-400"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-ink-500" aria-hidden="true">schedule</span>Head-office dashboard <span class="ml-1 rounded bg-ink-800 whitespace-nowrap px-1.5 text-[14px] font-bold uppercase text-ink-400">Coming soon</span></li>
+          <li class="flex gap-1.5 text-ink-400"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-ink-500" aria-hidden="true">schedule</span>API access &amp; integrations <span class="ml-1 rounded bg-ink-800 whitespace-nowrap px-1.5 text-[14px] font-bold uppercase text-ink-400">Coming soon</span></li>
         </ul>
-        <a href="#contact" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-ink-900 transition hover:bg-brand-50">Talk to Sales</a>
+        <a href="#contact" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-4 py-2.5 text-[16px] font-bold text-ink-900 transition hover:bg-brand-50">Talk to Sales</a>
       </article>
     </div>
 
     <!-- Add-ons & policies strip -->
-    <ul class="mt-5 grid gap-2 rounded-2xl border border-ink-200 bg-ink-50/70 p-4 text-[13.5px] font-semibold text-ink-700 sm:grid-cols-2 lg:grid-cols-4">
+    <ul class="mt-5 grid gap-2 rounded-2xl border border-ink-200 bg-ink-50/70 p-4 text-[16px] font-semibold text-ink-700 sm:grid-cols-2 lg:grid-cols-4">
       <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>GST extra (18%)</li>
       <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>Annual billing — <span class="text-brand-600">save 20%</span></li>
       <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>Extra student — ₹8/month</li>
@@ -539,7 +695,7 @@
       <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>No credit card required</li>
       <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>No setup fee, no lock-in</li>
     </ul>
-    <p class="mt-2.5 text-center text-[13px] text-ink-500">
+    <p class="mt-2.5 text-center text-[16px] text-ink-500">
       You are buying <strong class="font-bold text-ink-800">capacity, not features</strong> — every paid plan keeps the tools your center uses daily. Cross your student limit and nothing stops working; you simply pay ₹8 per extra student, or move up when that's cheaper.
     </p>
   </div>
@@ -548,21 +704,26 @@
 <!-- ══════════════ COMPARISON TABLE ══════════════ -->
 <section id="compare" class="border-b border-ink-200 bg-ink-50/60 py-12 md:py-14" aria-labelledby="cmp-h">
   <div class="mx-auto max-w-[1720px] px-6 lg:px-14">
-    <p class="text-xs font-extrabold uppercase tracking-[.14em] text-brand-600">Side by side</p>
+    <p class="text-[16px] font-extrabold uppercase tracking-[.14em] text-brand-600">Side by side</p>
     <h2 id="cmp-h" class="mt-1.5 font-display text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">Compare every plan</h2>
     <p class="mt-1.5 text-ink-600">Green tick means included. A dash means not on that plan.</p>
 
-    <div class="mt-5 overflow-x-auto rounded-2xl border border-ink-200 bg-white">
-      <table class="w-full min-w-[760px] border-collapse text-[13.5px]">
+    <!-- Below sm a 6-column table forces a horizontal scroll that shows one
+         plan at a time with the header cut off — a per-plan accordion reads
+         far better on a phone. The table takes over from sm up. -->
+    <div id="cmpAccordion" class="mt-5 space-y-2 sm:hidden"></div>
+
+    <div class="mt-5 hidden overflow-x-auto rounded-2xl border border-ink-200 bg-white sm:block">
+      <table class="w-full min-w-[760px] border-collapse text-[16px]">
         <caption class="sr-only">Feature comparison across the Free, Starter, Growth, Business and Enterprise plans</caption>
         <thead>
           <tr class="bg-ink-50">
-            <th scope="col" class="sticky left-0 z-10 bg-ink-50 px-4 py-3 text-left font-display text-[13px] font-extrabold uppercase tracking-wide text-ink-700">Feature</th>
-            <th scope="col" class="px-3 py-3 text-center font-display text-[13px] font-extrabold uppercase tracking-wide text-ink-700">Free</th>
-            <th scope="col" class="px-3 py-3 text-center font-display text-[13px] font-extrabold uppercase tracking-wide text-ink-700">Starter</th>
-            <th scope="col" class="bg-brand-50 px-3 py-3 text-center font-display text-[13px] font-extrabold uppercase tracking-wide text-brand-700">Growth ★</th>
-            <th scope="col" class="px-3 py-3 text-center font-display text-[13px] font-extrabold uppercase tracking-wide text-ink-700">Business</th>
-            <th scope="col" class="px-3 py-3 text-center font-display text-[13px] font-extrabold uppercase tracking-wide text-ink-700">Enterprise</th>
+            <th scope="col" class="sticky left-0 z-10 bg-ink-50 px-4 py-3 text-left font-display text-[16px] font-extrabold uppercase tracking-wide text-ink-700">Feature</th>
+            <th scope="col" class="px-3 py-3 text-center font-display text-[16px] font-extrabold uppercase tracking-wide text-ink-700">Free</th>
+            <th scope="col" class="px-3 py-3 text-center font-display text-[16px] font-extrabold uppercase tracking-wide text-ink-700">Starter</th>
+            <th scope="col" class="bg-brand-50 px-3 py-3 text-center font-display text-[16px] font-extrabold uppercase tracking-wide text-brand-700">Growth ★</th>
+            <th scope="col" class="px-3 py-3 text-center font-display text-[16px] font-extrabold uppercase tracking-wide text-ink-700">Business</th>
+            <th scope="col" class="px-3 py-3 text-center font-display text-[16px] font-extrabold uppercase tracking-wide text-ink-700">Enterprise</th>
           </tr>
         </thead>
         <tbody id="cmpBody" class="[&>tr:nth-child(even)]:bg-ink-50/40"></tbody>
@@ -581,7 +742,7 @@
         <h2 id="roi-h" class="font-display text-xl font-extrabold tracking-tight text-ink-900 sm:text-2xl">Recover EduFlow's Cost with Just One Student</h2>
         <p class="mt-2 text-ink-700">If your monthly fee is <strong class="font-bold text-ink-900">₹600</strong>, EduFlow Starter costs only <strong class="font-bold text-ink-900">₹499</strong>.</p>
         <p class="mt-1.5 text-ink-700">Recovering just <strong class="font-bold text-brand-700">ONE</strong> pending fee pays for EduFlow — for the whole month.</p>
-        <ul class="mt-4 space-y-1.5 text-[14px] text-ink-600">
+        <ul class="mt-4 space-y-1.5 text-[16px] text-ink-600">
           <li class="flex gap-2"><span class="material-symbols-rounded shrink-0 text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>Most centers have 3–6 forgotten fees every single month.</li>
           <li class="flex gap-2"><span class="material-symbols-rounded shrink-0 text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>Less than ₹17 a day — cheaper than one cup of tea per class.</li>
           <li class="flex gap-2"><span class="material-symbols-rounded shrink-0 text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>Under 15 students? You pay nothing at all.</li>
@@ -592,19 +753,19 @@
         <h3 class="font-display text-lg font-extrabold text-ink-900">Do the maths with your own numbers</h3>
         <div class="mt-4 grid gap-3 sm:grid-cols-3">
           <div>
-            <label for="students" class="mb-1 block text-[12.5px] font-bold text-ink-700">Number of students</label>
+            <label for="students" class="mb-1 block text-[16px] font-bold text-ink-700">Number of students</label>
             <input id="students" type="number" min="1" value="80" inputmode="numeric" class="w-full rounded-lg border border-ink-300 px-3 py-2.5 font-semibold text-ink-900 transition focus:border-brand-500" />
           </div>
           <div>
-            <label for="fee" class="mb-1 block text-[12.5px] font-bold text-ink-700">Average monthly fee (₹)</label>
+            <label for="fee" class="mb-1 block text-[16px] font-bold text-ink-700">Average monthly fee (₹)</label>
             <input id="fee" type="number" min="1" value="600" inputmode="numeric" class="w-full rounded-lg border border-ink-300 px-3 py-2.5 font-semibold text-ink-900 transition focus:border-brand-500" />
           </div>
           <div>
-            <label for="missed" class="mb-1 block text-[12.5px] font-bold text-ink-700">Fees missed / late each month</label>
+            <label for="missed" class="mb-1 block text-[16px] font-bold text-ink-700">Fees missed / late each month</label>
             <input id="missed" type="number" min="0" value="4" inputmode="numeric" class="w-full rounded-lg border border-ink-300 px-3 py-2.5 font-semibold text-ink-900 transition focus:border-brand-500" />
           </div>
         </div>
-        <output id="result" for="students fee missed" aria-live="polite" class="mt-4 block rounded-xl bg-brand-50 p-4 text-[14.5px] text-ink-800"></output>
+        <output id="result" for="students fee missed" aria-live="polite" class="mt-4 block rounded-xl bg-brand-50 p-4 text-[16px] text-ink-800"></output>
       </div>
     </div>
   </div>
@@ -613,62 +774,62 @@
 <!-- ══════════════ FAQ ══════════════ -->
 <section id="faq" class="border-b border-ink-200 bg-ink-50/60 py-12 md:py-14" aria-labelledby="faq-h">
   <div class="mx-auto max-w-[1280px] px-6 lg:px-14">
-    <p class="text-xs font-extrabold uppercase tracking-[.14em] text-brand-600">Straight answers</p>
+    <p class="text-[16px] font-extrabold uppercase tracking-[.14em] text-brand-600">Straight answers</p>
     <h2 id="faq-h" class="mt-1.5 font-display text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">Questions center owners actually ask</h2>
 
     <div class="mt-5 space-y-2">
       <details open class="group rounded-xl border border-ink-200 bg-white px-4 py-3">
         <summary class="flex cursor-pointer items-center justify-between gap-3 font-display font-bold text-ink-900">Why is EduFlow so affordable?<span class="faq-chev material-symbols-rounded shrink-0 text-[22px] text-brand-600 transition" aria-hidden="true">expand_more</span></summary>
-        <p class="mt-2 text-[14.5px] text-ink-600">Three reasons. It's built for Indian centers, so there's no bloat you'd never use. It's sold directly, so no reseller margin. And WhatsApp reminders go from your own number, so there are no per-message charges to pass on. Those savings go into the price instead of into middlemen.</p>
+        <p class="mt-2 text-[16px] text-ink-600">Three reasons. It's built for Indian centers, so there's no bloat you'd never use. It's sold directly, so no reseller margin. And WhatsApp reminders go from your own number, so there are no per-message charges to pass on. Those savings go into the price instead of into middlemen.</p>
       </details>
       <details class="group rounded-xl border border-ink-200 bg-white px-4 py-3">
         <summary class="flex cursor-pointer items-center justify-between gap-3 font-display font-bold text-ink-900">What happens after 75 students?<span class="faq-chev material-symbols-rounded shrink-0 text-[22px] text-brand-600 transition" aria-hidden="true">expand_more</span></summary>
-        <p class="mt-2 text-[14.5px] text-ink-600">Nothing breaks and nothing switches off. You stay on Starter and pay ₹8 per extra student per month, or move to Growth when that works out cheaper — we'll tell you the moment it does. You're never forced to upgrade for succeeding.</p>
+        <p class="mt-2 text-[16px] text-ink-600">Nothing breaks and nothing switches off. You stay on Starter and pay ₹8 per extra student per month, or move to Growth when that works out cheaper — we'll tell you the moment it does. You're never forced to upgrade for succeeding.</p>
       </details>
       <details class="group rounded-xl border border-ink-200 bg-white px-4 py-3">
         <summary class="flex cursor-pointer items-center justify-between gap-3 font-display font-bold text-ink-900">Can I upgrade anytime?<span class="faq-chev material-symbols-rounded shrink-0 text-[22px] text-brand-600 transition" aria-hidden="true">expand_more</span></summary>
-        <p class="mt-2 text-[14.5px] text-ink-600">Yes — upgrade or downgrade whenever you like and we adjust the difference on your next bill. No upgrade fee, no re-setup, no data migration. Your students, fees and history stay exactly where they are.</p>
+        <p class="mt-2 text-[16px] text-ink-600">Yes — upgrade or downgrade whenever you like and we adjust the difference on your next bill. No upgrade fee, no re-setup, no data migration. Your students, fees and history stay exactly where they are.</p>
       </details>
       <details class="group rounded-xl border border-ink-200 bg-white px-4 py-3">
         <summary class="flex cursor-pointer items-center justify-between gap-3 font-display font-bold text-ink-900">Can I bring my existing Excel list?<span class="faq-chev material-symbols-rounded shrink-0 text-[22px] text-brand-600 transition" aria-hidden="true">expand_more</span></summary>
-        <p class="mt-2 text-[14.5px] text-ink-600">Yes. EduFlow has a built-in importer — upload your Excel or CSV file and every student, parent contact and batch is created in one go. It takes a few minutes, you do it yourself whenever you like, and nothing is retyped. If the file needs tidying first, we'll show you exactly what the columns should look like on your demo call.</p>
+        <p class="mt-2 text-[16px] text-ink-600">Yes. EduFlow has a built-in importer — upload your Excel or CSV file and every student, parent contact and batch is created in one go. It takes a few minutes, you do it yourself whenever you like, and nothing is retyped. If the file needs tidying first, we'll show you exactly what the columns should look like on your demo call.</p>
       </details>
       <details class="group rounded-xl border border-ink-200 bg-white px-4 py-3">
         <summary class="flex cursor-pointer items-center justify-between gap-3 font-display font-bold text-ink-900">Can I cancel anytime?<span class="faq-chev material-symbols-rounded shrink-0 text-[22px] text-brand-600 transition" aria-hidden="true">expand_more</span></summary>
-        <p class="mt-2 text-[14.5px] text-ink-600">Any time, from your own account. Export everything to Excel in one click first — every table downloads, so your data leaves with you. No cancellation charge and no lock-in contract.</p>
+        <p class="mt-2 text-[16px] text-ink-600">Any time, from your own account. Export everything to Excel in one click first — every table downloads, so your data leaves with you. No cancellation charge and no lock-in contract.</p>
       </details>
       <details class="group rounded-xl border border-ink-200 bg-white px-4 py-3">
         <summary class="flex cursor-pointer items-center justify-between gap-3 font-display font-bold text-ink-900">I'm not technical. Can I really use it?<span class="faq-chev material-symbols-rounded shrink-0 text-[22px] text-brand-600 transition" aria-hidden="true">expand_more</span></summary>
-        <p class="mt-2 text-[14.5px] text-ink-600">If you can use WhatsApp, you can use EduFlow. We set the center up for you, import your students and walk you through it on a call. Most owners are collecting fees through it the same week.</p>
+        <p class="mt-2 text-[16px] text-ink-600">If you can use WhatsApp, you can use EduFlow. We set the center up for you, import your students and walk you through it on a call. Most owners are collecting fees through it the same week.</p>
       </details>
       <details class="group rounded-xl border border-ink-200 bg-white px-4 py-3">
         <summary class="flex cursor-pointer items-center justify-between gap-3 font-display font-bold text-ink-900">Do I pay extra for WhatsApp messages?<span class="faq-chev material-symbols-rounded shrink-0 text-[22px] text-brand-600 transition" aria-hidden="true">expand_more</span></summary>
-        <p class="mt-2 text-[14.5px] text-ink-600">No — on every plan, including Free. The message opens ready-written on your own WhatsApp with the parent's name, the amount and your UPI QR filled in, and you press send. Unlimited, from your own number, at no cost.</p>
+        <p class="mt-2 text-[16px] text-ink-600">No — on every plan, including Free. The message opens ready-written on your own WhatsApp with the parent's name, the amount and your UPI QR filled in, and you press send. Unlimited, from your own number, at no cost.</p>
       </details>
       <details class="group rounded-xl border border-ink-200 bg-white px-4 py-3">
         <summary class="flex cursor-pointer items-center justify-between gap-3 font-display font-bold text-ink-900">I run several activities in one center. Does that work?<span class="faq-chev material-symbols-rounded shrink-0 text-[22px] text-brand-600 transition" aria-hidden="true">expand_more</span></summary>
-        <p class="mt-2 text-[14.5px] text-ink-600">Yes — choose the multi-activity setup. Every activity (abacus, computer, yoga, dance, drawing, music, karate, spoken English and more) gets its own batches, timings and instructor, with kits, exams, belts, grades, competitions and events switched on — and you still see one fee register and one profit figure for the whole center.</p>
+        <p class="mt-2 text-[16px] text-ink-600">Yes — choose the multi-activity setup. Every activity (abacus, computer, yoga, dance, drawing, music, karate, spoken English and more) gets its own batches, timings and instructor, with kits, exams, belts, grades, competitions and events switched on — and you still see one fee register and one profit figure for the whole center.</p>
       </details>
     </div>
   </div>
 </section>
 
 <!-- ══════════════ FINAL CTA ══════════════ -->
-<section id="contact" class="bg-gradient-to-br from-brand-600 to-brand-500 py-12 md:py-14" aria-labelledby="cta-h">
+<section id="contact" class="cta-band py-12 md:py-14" aria-labelledby="cta-h">
   <div class="mx-auto max-w-[1720px] px-6 lg:px-14">
     <div class="grid items-start gap-8 lg:grid-cols-2">
       <div class="text-white">
         <h2 id="cta-h" class="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">See it on your own students — free</h2>
         <p class="mt-2 max-w-md text-white/90">A 20-minute demo on your phone or laptop. We'll show a ready-made sample center of your exact type, then set yours up if you like it. No card, no obligation.</p>
         <div class="mt-5 flex flex-wrap gap-2.5">
-          <a id="waBtn" href="#" class="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-bold text-ink-900 shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:bg-brand-50">
+          <a id="waBtn" href="#" class="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-bold text-ink-900 shadow-sm ring-1 ring-black/5 transition hover:bg-brand-50">
             <span class="material-symbols-rounded ms-fill text-[20px] text-[#1FA855]" aria-hidden="true">chat</span> WhatsApp us now
           </a>
-          <a href="tel:+919804243159" class="inline-flex items-center gap-2 rounded-xl border-2 border-white/70 px-5 py-3 font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/10">
+          <a href="tel:+919804243159" class="inline-flex items-center gap-2 rounded-xl border-2 border-white/70 px-5 py-3 font-bold text-white transition hover:bg-white/10">
             <span class="material-symbols-rounded ms-fill text-[20px]" aria-hidden="true">call</span> +91 98042 43159
           </a>
         </div>
-        <ul class="mt-5 space-y-1.5 text-[14px] text-white/90">
+        <ul class="mt-5 space-y-1.5 text-[16px] text-white/90">
           <li class="flex gap-2"><span class="material-symbols-rounded text-[18px]" aria-hidden="true">check</span>Bring your student list across in one click</li>
           <li class="flex gap-2"><span class="material-symbols-rounded text-[18px]" aria-hidden="true">check</span>Free forever up to 15 students</li>
           <li class="flex gap-2"><span class="material-symbols-rounded text-[18px]" aria-hidden="true">check</span>Usually replying within 10 minutes</li>
@@ -677,19 +838,19 @@
 
       <form id="leadForm" class="relative rounded-2xl bg-white p-5 shadow-soft" novalidate>
         <h3 class="font-display text-lg font-extrabold text-ink-900">Book your free demo</h3>
-        <p class="mb-3 text-[13px] text-ink-500">Fills in a WhatsApp message with your details — nothing is stored on this page.</p>
+        <p class="mb-3 text-[16px] text-ink-500">Fills in a WhatsApp message with your details — nothing is stored on this page.</p>
         <div class="grid gap-3 sm:grid-cols-2">
           <div>
-            <label for="lname" class="mb-1 block text-[12.5px] font-bold text-ink-700">Your name</label>
-            <input id="lname" name="name" required autocomplete="name" placeholder="Priya Menon" class="w-full rounded-lg border border-ink-300 px-3 py-2.5 text-[14.5px] transition focus:border-brand-500" />
+            <label for="lname" class="mb-1 block text-[16px] font-bold text-ink-700">Your name</label>
+            <input id="lname" name="name" required autocomplete="name" placeholder="Priya Menon" class="w-full rounded-lg border border-ink-300 px-3 py-2.5 text-[16px] transition focus:border-brand-500" />
           </div>
           <div>
-            <label for="lcenter" class="mb-1 block text-[12.5px] font-bold text-ink-700">Center name</label>
-            <input id="lcenter" name="center" required placeholder="Bright Abacus Academy" class="w-full rounded-lg border border-ink-300 px-3 py-2.5 text-[14.5px] transition focus:border-brand-500" />
+            <label for="lcenter" class="mb-1 block text-[16px] font-bold text-ink-700">Center name</label>
+            <input id="lcenter" name="center" required placeholder="Bright Abacus Academy" class="w-full rounded-lg border border-ink-300 px-3 py-2.5 text-[16px] transition focus:border-brand-500" />
           </div>
           <div class="sm:col-span-2">
-            <label for="ltype" class="mb-1 block text-[12.5px] font-bold text-ink-700">Type of center</label>
-            <select id="ltype" name="type" class="w-full rounded-lg border border-ink-300 bg-white px-3 py-2.5 text-[14.5px] transition focus:border-brand-500">
+            <label for="ltype" class="mb-1 block text-[16px] font-bold text-ink-700">Type of center</label>
+            <select id="ltype" name="type" class="w-full rounded-lg border border-ink-300 bg-white px-3 py-2.5 text-[16px] transition focus:border-brand-500">
               <option>Coaching classes</option>
               <option>Abacus center</option>
               <option>Computer institute</option>
@@ -704,22 +865,22 @@
             </select>
           </div>
           <div>
-            <label for="lcount" class="mb-1 block text-[12.5px] font-bold text-ink-700">How many students?</label>
-            <input id="lcount" name="students" type="number" min="1" inputmode="numeric" placeholder="80" class="w-full rounded-lg border border-ink-300 px-3 py-2.5 text-[14.5px] transition focus:border-brand-500" />
+            <label for="lcount" class="mb-1 block text-[16px] font-bold text-ink-700">How many students?</label>
+            <input id="lcount" name="students" type="number" min="1" inputmode="numeric" placeholder="80" class="w-full rounded-lg border border-ink-300 px-3 py-2.5 text-[16px] transition focus:border-brand-500" />
           </div>
           <div>
-            <label for="lphone" class="mb-1 block text-[12.5px] font-bold text-ink-700">Your WhatsApp number</label>
-            <input id="lphone" name="phone" type="tel" required autocomplete="tel" inputmode="tel" pattern="[0-9+\s-]{10,15}" placeholder="10-digit mobile" class="w-full rounded-lg border border-ink-300 px-3 py-2.5 text-[14.5px] transition focus:border-brand-500" />
+            <label for="lphone" class="mb-1 block text-[16px] font-bold text-ink-700">Your WhatsApp number</label>
+            <input id="lphone" name="phone" type="tel" required autocomplete="tel" inputmode="tel" pattern="[0-9+\s-]{10,15}" placeholder="10-digit mobile" class="w-full rounded-lg border border-ink-300 px-3 py-2.5 text-[16px] transition focus:border-brand-500" />
           </div>
         </div>
-        <div class="absolute left-[-9999px]" aria-hidden="true">
+        <div class="hp-trap" aria-hidden="true">
           <label for="company">Company (leave this empty)</label>
           <input id="company" name="company" type="text" tabindex="-1" autocomplete="off" />
         </div>
-        <p id="formError" role="alert" class="mt-2 hidden text-[13px] font-semibold text-rose-600"></p>
-        <p id="formOk" role="status" class="mt-2 hidden rounded-lg bg-emerald-50 p-3 text-[13.5px] font-semibold text-emerald-800"></p>
+        <p id="formError" role="alert" class="mt-2 hidden text-[16px] font-semibold text-rose-600"></p>
+        <p id="formOk" role="status" class="mt-2 hidden rounded-lg bg-emerald-50 p-3 text-[16px] font-semibold text-emerald-800"></p>
         <button type="submit" class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-3 font-bold text-white transition hover:bg-brand-700">
-          <span class="material-symbols-rounded ms-fill text-[20px]" aria-hidden="true">send</span> Send on WhatsApp &amp; book my demo
+          <span class="material-symbols-rounded ms-fill text-[20px]" aria-hidden="true">send</span> Book Free Demo
         </button>
       </form>
     </div>
@@ -729,16 +890,16 @@
 </main>
 
 <!-- ══════════════ FOOTER ══════════════ -->
-<footer class="bg-ink-900 py-10 text-ink-400">
+<footer class="panel-invert py-10 text-ink-400">
   <div class="mx-auto max-w-[1720px] px-6 lg:px-14">
-    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      <div>
+    <div class="grid grid-cols-2 gap-x-4 gap-y-6 lg:grid-cols-4">
+      <div class="col-span-2 lg:col-span-1">
         <p class="flex items-center gap-2.5"><span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg></span><span class="font-display text-lg font-extrabold text-white">Edu<span class="text-brand-400">Flow</span></span></p>
-        <p class="mt-2 text-[13.5px]">India's most affordable software for coaching classes and activity centers. Built in India, for Indian centers.</p>
+        <p class="mt-2 text-[16px]">India's most affordable software for coaching classes and activity centers. Built in India, for Indian centers.</p>
       </div>
       <nav aria-label="Product">
-        <h2 class="font-display text-[13px] font-bold uppercase tracking-wide text-white">Product</h2>
-        <ul class="mt-2 space-y-1 text-[13.5px]">
+        <h2 class="font-display text-[16px] font-bold uppercase tracking-wide text-white">Product</h2>
+        <ul class="mt-2 space-y-1 text-[16px]">
           <li><a class="transition hover:text-brand-400" href="#features">Features</a></li>
           <li><a class="transition hover:text-brand-400" href="#who">Who it's for</a></li>
           <li><a class="transition hover:text-brand-400" href="#pricing">Pricing</a></li>
@@ -747,8 +908,8 @@
         </ul>
       </nav>
       <nav aria-label="Company">
-        <h2 class="font-display text-[13px] font-bold uppercase tracking-wide text-white">Company</h2>
-        <ul class="mt-2 space-y-1 text-[13.5px]">
+        <h2 class="font-display text-[16px] font-bold uppercase tracking-wide text-white">Company</h2>
+        <ul class="mt-2 space-y-1 text-[16px]">
           <li><a class="transition hover:text-brand-400" href="#contact">Book a demo</a></li>
           <li><a class="transition hover:text-brand-400" href="#faq">FAQ</a></li>
           <li><a class="transition hover:text-brand-400" href="/privacy.html">Privacy policy</a></li>
@@ -756,32 +917,40 @@
         </ul>
       </nav>
       <nav aria-label="Follow us">
-        <h2 class="font-display text-[13px] font-bold uppercase tracking-wide text-white">Follow</h2>
-        <ul class="mt-2 space-y-1 text-[13.5px]">
+        <h2 class="font-display text-[16px] font-bold uppercase tracking-wide text-white">Follow</h2>
+        <ul class="mt-2 space-y-1 text-[16px]">
           <li><a class="transition hover:text-brand-400" href="https://www.facebook.com/" target="_blank" rel="noopener">Facebook</a></li>
           <li><a class="transition hover:text-brand-400" href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a></li>
           <li><a class="transition hover:text-brand-400" href="#contact">WhatsApp</a></li>
         </ul>
       </nav>
     </div>
-    <p class="mt-7 border-t border-ink-800 pt-5 text-[12.5px]">© <span id="yr"></span> EduFlow. All rights reserved. Prices in INR, exclusive of 18% GST. Features marked “Soon” are in development and are not part of the current plan.</p>
+    <p class="mt-7 border-t border-ink-800 pt-5 text-[16px]">© <span id="yr"></span> EduFlow. All rights reserved. Prices in INR, exclusive of 18% GST. Features marked “Coming soon” are in development and are not part of the current plan.</p>
   </div>
 </footer>
 
-<!-- Sticky mobile CTA -->
-<div class="fixed inset-x-0 bottom-0 z-50 flex gap-2 border-t border-ink-200 bg-white/95 p-2.5 shadow-[0_-4px_16px_rgba(15,23,42,.08)] backdrop-blur md:hidden">
-  <a id="waBtnMobile" href="#" class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-ink-300 px-3 py-2.5 text-sm font-bold text-ink-800">
-    <span class="material-symbols-rounded ms-fill text-[19px] text-[#1FA855]" aria-hidden="true">chat</span> WhatsApp
+<!-- Sticky mobile CTA bar — both actions always reachable below md -->
+<div class="fixed inset-x-0 bottom-0 z-50 flex gap-2 border-t border-ink-200 bg-white/95 p-2.5 shadow-[0_-4px_16px_rgba(15,23,42,.08)] backdrop-blur md:hidden" style="padding-bottom: calc(.625rem + env(safe-area-inset-bottom));">
+  <a id="waBtnMobile" href="#" class="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-ink-300 px-2 py-2.5 text-[16px] font-bold text-ink-800 sm:px-3">
+    <span class="material-symbols-rounded ms-fill shrink-0 text-[19px] text-[#1FA855]" aria-hidden="true">chat</span> WhatsApp
   </a>
-  <a href="#contact" class="inline-flex flex-[1.4] items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2.5 text-sm font-bold text-white">
-    <span class="material-symbols-rounded text-[19px]" aria-hidden="true">event_available</span> Book free demo
+  <a href="#contact" class="inline-flex min-w-0 flex-[1.4] items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-brand-600 px-2 py-2.5 text-[16px] font-bold text-white sm:px-3">
+    <span class="material-symbols-rounded shrink-0 text-[19px]" aria-hidden="true">event_available</span> Book free demo
   </a>
 </div>
 
-<!-- Desktop floating WhatsApp -->
-<a id="waFab" href="#" class="fixed bottom-5 right-5 z-50 hidden items-center gap-2 rounded-full bg-ink-900 px-4 py-3 text-sm font-bold text-white shadow-lg ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-ink-800 md:inline-flex" aria-label="Chat with us on WhatsApp">
-  <span class="material-symbols-rounded ms-fill text-[20px] text-[#25D366]" aria-hidden="true">chat</span> Chat on WhatsApp
-</a>
+<!-- Back to top — appears once the visitor is a screen or two down -->
+<button id="toTop" type="button" class="fixed bottom-[5.5rem] right-4 z-50 hidden size-11 items-center justify-center rounded-full border border-ink-300 bg-surface text-ink-700 shadow-lg transition hover:border-brand-500 hover:text-brand-600 md:bottom-5 md:left-5 md:right-auto" aria-label="Back to top">
+  <span class="material-symbols-rounded text-[22px]" aria-hidden="true">arrow_upward</span>
+</button>
+
+<!-- Desktop floating WhatsApp. "Book free demo" is not repeated here: the
+     sticky header already keeps it on screen at every scroll position. -->
+<div class="fixed bottom-5 right-5 z-50 hidden flex-col items-end gap-2 md:flex">
+  <a id="waFab" href="#" class="panel-invert inline-flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-3 text-[16px] font-bold text-white shadow-lg ring-1 ring-white/20 transition" aria-label="Chat with us on WhatsApp">
+    <span class="material-symbols-rounded ms-fill shrink-0 text-[20px] text-[#25D366]" aria-hidden="true">chat</span> Chat on WhatsApp
+  </a>
+</div>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════
@@ -791,6 +960,81 @@
 var WHATSAPP_NUMBER = "919804243159";
 
 document.getElementById("yr").textContent = new Date().getFullYear();
+
+/* ── Icons ───────────────────────────────────────────────────────────
+   Icon spans stay clamped and invisible until the icon font is really
+   ready, so a slow or blocked font can never render ligature names as
+   text and stretch the layout. The timeout is the safety net.         */
+(function () {
+  var root = document.documentElement;
+  function reveal() { root.classList.add("icons-ready"); }
+  if (!document.fonts || !document.fonts.ready) { reveal(); return; }
+
+  /* Measure rather than trust: a ligature name rendered in a fallback font is
+     many ems wide, a real glyph is about one. Only reveal when it is a glyph. */
+  var probe = document.createElement("span");
+  probe.className = "material-symbols-rounded";
+  probe.textContent = "check_circle";
+  probe.setAttribute("aria-hidden", "true");
+  probe.style.cssText = "position:absolute;left:-9999px;top:0;font-size:24px;" +
+                        "visibility:hidden;width:auto;max-width:none;white-space:nowrap";
+  function check() {
+    document.body.appendChild(probe);
+    var w = probe.getBoundingClientRect().width;
+    probe.remove();
+    if (w > 0 && w < 48) { reveal(); return true; }   // <= 2em means a glyph
+    return false;
+  }
+  if (check()) return;
+  document.fonts.ready.then(function () {
+    if (!check()) setTimeout(check, 600);
+  }, function () {});
+})();
+
+/* ── Back to top ─────────────────────────────────────────────────── */
+(function () {
+  var btn = document.getElementById("toTop");
+  function sync() {
+    btn.classList.toggle("hidden", window.scrollY < 600);
+    btn.classList.toggle("flex", window.scrollY >= 600);
+  }
+  window.addEventListener("scroll", sync, { passive: true });
+  btn.addEventListener("click", function () {
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+    document.querySelector("header a").focus({ preventScroll: true });
+  });
+  sync();
+})();
+
+/* ── Light / dark theme ──────────────────────────────────────────── */
+(function () {
+  var root = document.documentElement,
+      btn  = document.getElementById("themeToggle"),
+      icon = document.getElementById("themeIcon"),
+      mq   = window.matchMedia("(prefers-color-scheme: dark)");
+
+  function paint() {
+    var dark = root.classList.contains("dark");
+    icon.textContent = dark ? "light_mode" : "dark_mode";
+    btn.setAttribute("aria-pressed", String(dark));
+    btn.setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+    btn.title = btn.getAttribute("aria-label");
+  }
+  btn.addEventListener("click", function () {
+    var dark = !root.classList.contains("dark");
+    root.classList.toggle("dark", dark);
+    try { localStorage.setItem("eduflow-theme", dark ? "dark" : "light"); } catch (e) {}
+    paint();
+  });
+  /* Follow the OS until the visitor picks a side themselves. */
+  mq.addEventListener("change", function (e) {
+    try { if (localStorage.getItem("eduflow-theme")) return; } catch (err) {}
+    root.classList.toggle("dark", e.matches);
+    paint();
+  });
+  paint();
+})();
 
 function waLink(text){ return "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + encodeURIComponent(text); }
 var DEFAULT_MSG = "Hi! I run a center and I'd like a free EduFlow demo.";
@@ -889,9 +1133,9 @@ var COMPARE = [
   { label: "Exam management & competitions", values: [0,1,1,1,1] },
   { label: "Expenses, profit & P&L reports", values: [0,1,1,1,1] },
   { label: "Student promotion & materials",  values: [0,1,1,1,1] },
-  { label: "Welcome & birthday poster maker", values: [0,0,1,1,1] },
-  { label: "Half-yearly & annual reports",   values: [0,0,1,1,1] },
-  { label: "Teacher & staff management",     values: [0,0,1,1,1] },
+  { label: "Welcome & birthday poster maker", values: [0,1,1,1,1] },
+  { label: "Half-yearly & annual reports",   values: [0,1,1,1,1] },
+  { label: "Teacher & staff management",     values: [0,1,1,1,1] },
   { label: "Animated video maker",           values: [0,0,0,1,1] },
   { label: "Advanced reports & analytics",   values: [0,0,0,1,1] },
   { label: "Custom branding",                values: [0,0,0,1,1] },
@@ -906,7 +1150,7 @@ var COMPARE = [
 (function buildTable(){
   var tick = '<span class="material-symbols-rounded text-[20px] font-bold text-emerald-600" title="Included">check_circle</span><span class="sr-only">Included</span>';
   var dash = '<span class="text-ink-300" aria-hidden="true">—</span><span class="sr-only">Not included</span>';
-  var soon = '<span class="rounded bg-ink-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink-500">Soon</span>';
+  var soon = '<span class="inline-block whitespace-nowrap rounded bg-ink-100 px-1.5 py-0.5 text-[14px] font-bold uppercase tracking-wide text-ink-500">Coming soon</span>';
   var html = COMPARE.map(function(row){
     var cells = row.values.map(function(v, i){
       var highlight = PLAN_KEYS[i] === "growth" ? " bg-brand-50/70" : "";
@@ -918,6 +1162,24 @@ var COMPARE = [
       + row.label + '</th>' + cells + '</tr>';
   }).join("");
   document.getElementById("cmpBody").innerHTML = html;
+
+  /* Mobile accordion: one <details> per plan, same COMPARE data. */
+  var PLAN_LABELS = ["Free", "Starter", "Growth ★", "Business", "Enterprise"];
+  var accHtml = PLAN_LABELS.map(function (label, i) {
+    var rows = COMPARE.map(function (row) {
+      var v = row.values[i];
+      var content = v === 1 ? tick : v === 0 ? dash : v === "soon" ? soon
+        : '<span class="font-display font-extrabold text-ink-900">' + v + '</span>';
+      return '<li class="flex items-center justify-between gap-3 border-t border-ink-200 py-2 first:border-t-0">'
+        + '<span class="text-ink-700">' + row.label + '</span>' + content + '</li>';
+    }).join("");
+    var growth = label.indexOf("Growth") === 0;
+    return '<details' + (growth ? " open" : "") + ' class="group rounded-2xl border' + (growth ? " border-brand-300 bg-brand-50/40" : " border-ink-200 bg-white") + ' px-4 py-3">'
+      + '<summary class="flex cursor-pointer items-center justify-between gap-3 font-display font-bold text-ink-900">' + label
+      + '<span class="faq-chev material-symbols-rounded shrink-0 text-[22px] text-brand-600 transition" aria-hidden="true">expand_more</span></summary>'
+      + '<ul class="mt-2 text-[14px]">' + rows + '</ul></details>';
+  }).join("");
+  document.getElementById("cmpAccordion").innerHTML = accHtml;
 })();
 
 /* ── ROI calculator ─────────────────────────────────────────────── */
