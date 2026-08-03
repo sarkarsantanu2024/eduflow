@@ -65,15 +65,23 @@ export const NAV_ITEMS: NavItem[] = [
 // Codes must match subscription_plans.code in the DB (see src/lib/db/seed.ts)
 // and the ranks in src/lib/plan-gating.ts.
 //
-// PRICING RULES WE HOLD TO (see sales/01-PRICING-REVIEW-AND-GAPS.md):
-//  1. Every tier gets every *daily workflow* module — attendance, fees, tests,
-//     certificates, exam boards, promotions, materials, events. We only charge
-//     for SIZE (students, staff logins) and EXTRAS (posters, videos, branding,
-//     onboarding, multi-center). Never gate what a center needs to run its day.
-//  2. WhatsApp click-to-send is FREE AND UNLIMITED on every tier, because it
-//     goes from the owner's own number and costs us nothing. There are no
-//     per-tier message quotas. Fully-automated sending via the Meta Cloud API
-//     is Enterprise-only and has NOT shipped yet — never imply otherwise.
+// PRICING RULES WE HOLD TO:
+//  1. The headline axis is SIZE — students and staff logins. A center picks its
+//     plan by how big it is, which is the one number an owner already knows.
+//  2. WhatsApp is ONE-CLICK, never automatic. The message opens ready-written
+//     in the owner's own WhatsApp and they press send. It is free and unlimited
+//     on every tier, including Free, with no per-tier quotas. Never call it
+//     "automatic", "auto-send" or "automation" anywhere in the product or the
+//     marketing — a customer would expect messages to go out with their phone
+//     off, and they do not. Meta Cloud API auto-send has NOT shipped.
+//  3. Annual billing is 10 months for 12 (~17% off). This is permanent, not a
+//     launch offer, so there is no awkward moment when the offer expires.
+//  4. Anything not built yet carries a "Coming soon" note in its own label.
+//     Never list an unshipped capability as if it were included today.
+//  5. Student capacity is PREPAID and enforced (src/lib/plan-limits.ts). A
+//     center cannot add a student past plan cap + paid extra slots. Never
+//     write copy promising that crossing the limit "changes nothing" — it
+//     blocks the next admission until the extra capacity is paid for.
 //
 // Five tiers only. Fewer plans = less hesitation at the point of sale.
 export const SUBSCRIPTION_PLANS = [
@@ -82,69 +90,107 @@ export const SUBSCRIPTION_PLANS = [
     name: "Free",
     price: 0,
     priceLabel: "₹0",
-    launchPrice: 0,
-    students: "Up to 15 students · 1 staff login",
-    maxStudents: 15,
+    annualPrice: 0,
+    annualLabel: "₹0",
+    tagline: "Perfect for home tutors",
+    students: "Up to 20 students · 1 staff login",
+    maxStudents: 20,
+    maxStaff: 1,
     popular: false,
-    features: ["Student management & admissions", "Attendance & batches", "Monthly fee generation", "UPI-QR payment", "Unlimited free WhatsApp reminders", "PDF receipts & Excel export"],
+    features: ["Student management & admissions", "Attendance & batches", "Monthly fee generation", "UPI-QR payment", "Unlimited one-click WhatsApp reminders", "PDF receipts", "Basic reports", "Works on any phone"],
   },
   {
     code: "starter",
     name: "Starter",
-    price: 499,
-    priceLabel: "₹499",
-    launchPrice: 299,
-    students: "Up to 75 students · 1 staff login",
-    maxStudents: 75,
+    price: 399,
+    priceLabel: "₹399",
+    annualPrice: 3999,
+    annualLabel: "₹3,999",
+    tagline: "Small coaching, abacus, dance, drawing & music",
+    students: "Up to 100 students · 3 staff logins",
+    maxStudents: 100,
+    maxStaff: 3,
     popular: false,
-    features: ["Everything in Free", "Tests & rank lists", "Certificates with QR verify", "Exam management", "Expense tracking & profit reports", "Student promotion & materials"],
+    features: ["Everything in Free", "Student ID cards", "Certificates with QR verify", "Excel / CSV export & Trash", "No EduFlow mark on posters", "Email & WhatsApp support"],
   },
   {
     code: "growth",
     name: "Growth",
-    price: 999,
-    priceLabel: "₹999",
-    launchPrice: 699,
-    students: "Up to 200 students · 3 staff logins",
-    maxStudents: 200,
+    price: 799,
+    priceLabel: "₹799",
+    annualPrice: 7999,
+    annualLabel: "₹7,999",
+    tagline: "Growing centers that run exams and track profit",
+    students: "Up to 300 students · 8 staff logins",
+    maxStudents: 300,
+    maxStaff: 8,
     popular: true,
-    features: ["Everything in Starter", "Welcome & birthday poster maker", "Half-yearly & annual reports", "Multi-staff login & roles", "Teacher & staff management"],
+    features: ["Everything in Starter", "Exams, tests & rank lists", "Expenses, income & profit reports", "Teacher salary management", "Staff roles & permissions", "Student promotion & inventory", "Bulk Excel / CSV import", "Custom fee rules", "Advanced reports", "Priority support"],
   },
   {
     code: "business",
     name: "Business",
-    price: 1999,
-    priceLabel: "₹1,999",
-    launchPrice: 1499,
-    students: "Up to 500 students · 10 staff logins",
-    maxStudents: 500,
+    price: 1499,
+    priceLabel: "₹1,499",
+    annualPrice: 14999,
+    annualLabel: "₹14,999",
+    tagline: "Large academies and multi-activity centers",
+    students: "Up to 1,000 students · unlimited staff logins",
+    maxStudents: 1000,
+    maxStaff: null,
     popular: false,
-    features: ["Everything in Growth", "Animated video maker", "Advanced reports & analytics", "Custom branding", "Priority support", "Multiple activities in one center"],
+    features: ["Everything in Growth", "Custom branding", "Multiple activities in one center", "Animated video maker", "Advanced analytics", "Data backup & full export", "Own domain (coming soon)", "Parent app (coming soon)", "Teacher app (coming soon)", "API access (coming soon)", "White label (coming soon)"],
   },
   {
     code: "enterprise",
     name: "Enterprise",
     price: 0,
     priceLabel: "Contact Sales",
-    launchPrice: 0,
+    annualPrice: 0,
+    annualLabel: "Contact Sales",
+    tagline: "Franchises and brands running many branches",
     students: "Unlimited students & staff logins",
     maxStudents: null,
+    maxStaff: null,
     popular: false,
-    features: ["Everything in Business", "Dedicated account manager", "Priority onboarding", "Enterprise security & backups", "Multi-branch & head-office console (not yet released)", "API access & integrations (not yet released)"],
+    features: ["Everything in Business", "Dedicated account manager", "Custom development", "Onboarding & staff training", "Data migration done for you", "Dedicated server", "Multiple branches (coming soon)", "Single sign-on (coming soon)"],
   },
 ] as const;
 
 /** Shown under every price. Decide once, print everywhere. */
-export const PRICE_NOTE = "Prices in INR, exclusive of 18% GST. Cross your student limit and nothing switches off — you stay on the same plan at ₹8 per extra student per month, and move up only when the next plan works out cheaper.";
+export const PRICE_NOTE = "Prices in INR, exclusive of 18% GST. Student capacity is prepaid: to go past your plan's limit, add a seat pack (+25, +50 or +100 students) or move up a plan — whichever suits you. Your existing students and data are completely safe either way; only new admissions wait for capacity.";
 
 /** Paid add-ons, priced per month. */
 export const ADD_ONS = {
+  /** Internal unit rate. NEVER shown to a customer — see SEAT_PACKS. */
   extraStudent: 8,
   extraBranch: 399,
 } as const;
 
-/** Annual billing discount, shown as "Save 20%". */
-export const ANNUAL_DISCOUNT_PERCENT = 20;
+/**
+ * Extra student capacity is sold as PACKS, never as a per-student rate.
+ * "+50 students" is a decision an owner can make in one second; "₹8 per student
+ * per month" makes them do arithmetic and feel metered.
+ *
+ * `price` is what WE quote on WhatsApp once they ask — it is deliberately NOT
+ * rendered anywhere in the product or on the marketing site. Packs are priced
+ * a little under the unit rate (50 × ₹8 = ₹400 → ₹349) so a bigger pack always
+ * feels like the better buy.
+ */
+export const SEAT_PACKS = [
+  { seats: 25, price: 199 },
+  { seats: 50, price: 349 },
+  { seats: 100, price: 649 },
+] as const;
+
+export type SeatPack = (typeof SEAT_PACKS)[number];
+
+/**
+ * Annual billing = pay for 10 months, get 12. That is 2/12 = 16.67%, which we
+ * round to "Save 17%". Permanent, so it never has to be withdrawn.
+ */
+export const ANNUAL_DISCOUNT_PERCENT = 17;
+export const ANNUAL_MONTHS_BILLED = 10;
 
 /** Franchise / multi-branch add-on, sold on top of any paid plan. */
 export const FRANCHISE_PLAN = {

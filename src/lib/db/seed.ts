@@ -26,26 +26,28 @@ async function main() {
 
   // ── 1) Subscription plans (global) ─────────────────────────────────
   // Full lineup — keep in sync with SUBSCRIPTION_PLANS in src/lib/constants.ts.
+  // Priced by center size: students and staff logins are the headline axis.
+  // priceAnnual is 10 months' worth (~17% off) and needs drizzle/0005.
   // whatsappQuota stays 0 on every tier: click-to-send goes from the owner's own
-  // number, so it is free and unlimited. Quotas would only apply if/when the
-  // Meta Cloud API auto-send ships (Enterprise).
+  // number, so it is free and unlimited on every plan including Free. Quotas
+  // would only apply if/when the Meta Cloud API auto-send ships.
   const plans: Array<typeof subscriptionPlans.$inferInsert> = [
-    { code: "free", name: "Free", priceMonthly: 0, maxStudents: 15, maxStaff: 1, whatsappQuota: 0, sortOrder: 0,
-      features: { bulk_import: true, watermark: true } },
-    { code: "starter", name: "Starter", priceMonthly: 499, maxStudents: 75, maxStaff: 1, whatsappQuota: 0, sortOrder: 1,
-      features: { launch_offer: true, reports: true, bulk_import: true, tests: true, exam_boards: true, certificates: true, expenses: true } },
-    { code: "growth", name: "Growth", priceMonthly: 999, maxStudents: 200, maxStaff: 3, whatsappQuota: 0, sortOrder: 2,
-      features: { launch_offer: true, reports: true, bulk_import: true, tests: true, exam_boards: true, certificates: true, expenses: true, posters: true, periodic_reports: true } },
-    { code: "business", name: "Business", priceMonthly: 1999, maxStudents: 500, maxStaff: 10, whatsappQuota: 0, sortOrder: 3,
-      features: { launch_offer: true, reports: true, bulk_import: true, tests: true, exam_boards: true, certificates: true, expenses: true, posters: true, periodic_reports: true, videos: true, advanced_reports: true, custom_branding: true, priority_support: true, multi_activity: true } },
-    { code: "enterprise", name: "Enterprise", priceMonthly: 0, maxStudents: null, maxStaff: null, whatsappQuota: 0, sortOrder: 4,
-      features: { custom_pricing: true, account_manager: true, priority_onboarding: true, unlimited_staff: true } },
+    { code: "free", name: "Free", priceMonthly: 0, priceAnnual: 0, maxStudents: 20, maxStaff: 1, whatsappQuota: 0, sortOrder: 0,
+      features: { reports: true, watermark: true } },
+    { code: "starter", name: "Starter", priceMonthly: 399, priceAnnual: 3999, maxStudents: 100, maxStaff: 3, whatsappQuota: 0, sortOrder: 1,
+      features: { reports: true, certificates: true, id_cards: true, export: true } },
+    { code: "growth", name: "Growth", priceMonthly: 799, priceAnnual: 7999, maxStudents: 300, maxStaff: 8, whatsappQuota: 0, sortOrder: 2,
+      features: { reports: true, certificates: true, id_cards: true, export: true, tests: true, exam_boards: true, expenses: true, salary: true, roles: true, promotions: true, materials: true, bulk_import: true, custom_fees: true, advanced_reports: true, priority_support: true } },
+    { code: "business", name: "Business", priceMonthly: 1499, priceAnnual: 14999, maxStudents: 1000, maxStaff: null, whatsappQuota: 0, sortOrder: 3,
+      features: { reports: true, certificates: true, id_cards: true, export: true, tests: true, exam_boards: true, expenses: true, salary: true, roles: true, promotions: true, materials: true, bulk_import: true, custom_fees: true, advanced_reports: true, priority_support: true, posters: true, videos: true, custom_branding: true, multi_activity: true, analytics: true, data_backup: true, unlimited_staff: true } },
+    { code: "enterprise", name: "Enterprise", priceMonthly: 0, priceAnnual: 0, maxStudents: null, maxStaff: null, whatsappQuota: 0, sortOrder: 4,
+      features: { custom_pricing: true, account_manager: true, custom_development: true, training: true, migration: true, dedicated_server: true, unlimited_staff: true } },
   ];
   for (const p of plans) {
     // Upsert by code so re-running updates prices/caps for the whole lineup.
     await db.insert(subscriptionPlans).values(p).onConflictDoUpdate({
       target: subscriptionPlans.code,
-      set: { name: p.name, priceMonthly: p.priceMonthly, maxStudents: p.maxStudents, maxStaff: p.maxStaff, whatsappQuota: p.whatsappQuota, sortOrder: p.sortOrder, features: p.features, isActive: true },
+      set: { name: p.name, priceMonthly: p.priceMonthly, priceAnnual: p.priceAnnual, maxStudents: p.maxStudents, maxStaff: p.maxStaff, whatsappQuota: p.whatsappQuota, sortOrder: p.sortOrder, features: p.features, isActive: true },
     });
   }
   // Retire the codes from earlier lineups. Existing subscriptions keep working

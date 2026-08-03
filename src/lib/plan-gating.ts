@@ -5,11 +5,18 @@
  * (NEXT_PUBLIC_FEATURE_BILLING=true). While off, `planAllowsModule` returns
  * true for everything, so nothing changes for existing centers.
  *
- * PRICING RULE: we charge for SIZE (students, staff logins) and EXTRAS
- * (posters, videos, custom branding, onboarding, multi-center) — never for a
- * center's daily workflow. So every *paid* tier gets every module; the Free
- * tier is limited to the core (students, fees, WhatsApp, attendance) so there
- * is a real reason to move up to Starter.
+ * PRICING RULE: size (students, staff logins) is the headline axis, and the
+ * published lineup layers modules on top of it:
+ *   Free     — the core a center cannot run a day without: students, fees,
+ *              UPI-QR, WhatsApp reminders, attendance.
+ *   Starter  — adds the things a small center hands to a parent: ID cards and
+ *              QR-verified certificates.
+ *   Growth   — adds the exam / money / staff block: tests, rank lists, exam
+ *              boards, promotions, materials, competitions and events.
+ *   Business — adds branding, analytics and multi-activity (not modules).
+ *
+ * Keep this in step with SUBSCRIPTION_PLANS in src/lib/constants.ts and the
+ * per-plan `features` map in src/lib/db/seed.ts.
  *
  * Unknown / unmapped plan codes are treated as unlimited (fail-open), so a
  * mis-set plan never hides a paying customer's features.
@@ -34,9 +41,13 @@ const PLAN_RANK: Record<string, number> = {
 /** Minimum tier rank required to use each optional module. */
 const MODULE_MIN_RANK: Partial<Record<ModuleKey, number>> = {
   attendance: 0, // Free+ — a center can't run a day without it
-  // Everything else defaults to 1 = every PAID tier, from Starter up. A ₹499
-  // tuition center gets tests; a ₹499 dance school gets exam boards. Both are
-  // daily work, not a premium feature.
+  certificates: 1, // Starter+ — listed on the Starter card alongside ID cards
+  tests: 2, // Growth+ — the published "exams, tests & rank lists" block
+  examBoards: 2, // Growth+
+  promotions: 2, // Growth+ — "student promotion"
+  materials: 2, // Growth+ — "inventory"
+  performance: 2, // Growth+ — competitions sit with the exam block
+  events: 2, // Growth+
 };
 
 /** True if a center on `planCode` may use `module`. Fail-open when gating is off. */

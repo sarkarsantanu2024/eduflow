@@ -15,6 +15,7 @@ import {
   useCollection, useProfile, addItem, updateItem, newId, effectiveFee, type Student, type Fee,
 } from "@/lib/store/local-db";
 import { uploadImageFile } from "@/features/uploads/upload-client";
+import { checkStudentCapacityAction } from "@/features/data/actions";
 import { getLabels } from "@/lib/constants";
 
 const selectClass =
@@ -67,11 +68,21 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
     }
   }
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.code.trim() || !form.firstName.trim()) {
       toast.error("Student ID and First name are required");
       return;
+    }
+    // Capacity is prepaid — check before writing so the owner gets a clear
+    // message instead of an optimistic row that silently disappears.
+    if (!existing) {
+      const check = await checkStudentCapacityAction(1);
+      if (!check.ok) {
+        toast.error("Student limit reached", { description: check.reason, duration: 10000 });
+        router.push("/students/new");   // shows the seat-pack screen
+        return;
+      }
     }
     // sync parent fields for reminders/fees
     const payload = {

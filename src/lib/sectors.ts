@@ -301,7 +301,7 @@ const COMMON_FAQS: Faq[] = [
 // Extra, sector-specific questions.
 const SECTOR_FAQS: Record<string, Faq[]> = {
   abacus: [
-    { q: "How do I promote a student to the next level?", a: "Open Promotions, choose the student and the new level, add the assessment score, and send the parent an automatic WhatsApp congratulations." },
+    { q: "How do I promote a student to the next level?", a: "Open Promotions, choose the student and the new level, add the assessment score, and send the parent a WhatsApp congratulations in one click." },
     { q: "Can I issue level-completion certificates?", a: "Yes. Go to Certificates, issue one for the level — print it or save as PDF with a scannable verify QR." },
     { q: "Can I track competition results?", a: "Use Performance to log state/national competition ranks and share them with parents on WhatsApp." },
   ],
@@ -324,7 +324,7 @@ const SECTOR_FAQS: Record<string, Faq[]> = {
   ],
   spoken_english: [
     { q: "How do I run a free demo class funnel?", a: "Use the 'Demo Class Invite' WhatsApp template to invite prospects, then enrol them and promote between modules as they progress." },
-    { q: "How do I promote a student to the next module?", a: "Open Promotions, move them from one module to the next, and send an automatic WhatsApp congratulations." },
+    { q: "How do I promote a student to the next module?", a: "Open Promotions, move them from one module to the next, and send a WhatsApp congratulations in one click." },
   ],
   tuition: [
     { q: "How do I share test marks with parents?", a: "Use Tests & Ranks to record marks and send each parent a result on WhatsApp." },
