@@ -15,6 +15,55 @@
       "when": 1782801373250,
       "tag": "0001_add_username",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783277502720,
+      "tag": "0002_head_office",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785699172580,
+      "tag": "0003_activity_center",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785705702166,
+      "tag": "0004_leads",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785769482240,
+      "tag": "0005_plan_annual_price",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785773878810,
+      "tag": "0006_subscription_capacity",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785783157844,
+      "tag": "0007_capacity_requests_and_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785960396977,
+      "tag": "0008_ad_materials_stationery_royalty",
+      "breakpoints": true
     }
   ]
 }
