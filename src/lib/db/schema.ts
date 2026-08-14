@@ -2,7 +2,7 @@ import {
   pgTable, pgEnum, uuid, text, integer, boolean, timestamp, date, jsonb,
   doublePrecision, uniqueIndex, index,
 } from "drizzle-orm/pg-core";
-import type { CertLayout, RecurringCharge } from "../store/types";
+import type { AutomationSettings, CertLayout, RecurringCharge } from "../store/types";
 
 /**
  * EduFlow database schema (Neon Postgres via Drizzle).
@@ -132,6 +132,9 @@ export const institutes = pgTable("institutes", {
   // Certificate template
   certImageUrl: text("cert_image_url"),
   certLayout: jsonb("cert_layout").$type<CertLayout>(),
+  // WhatsApp automation switches (null = all off). One small jsonb column
+  // instead of a settings table — keeps storage lean.
+  automation: jsonb("automation").$type<AutomationSettings>(),
   isActive: boolean("is_active").notNull().default(true),
   // False until the owner completes their profile setup (drives onboarding gate).
   onboarded: boolean("onboarded").notNull().default(false),
@@ -328,6 +331,29 @@ export const templates = pgTable("templates", {
   ...softDelete,
   ...timestamps,
 }, (t) => ({ byInstitute: index("templates_institute_idx").on(t.instituteId) }));
+
+// ── WhatsApp automation outbox ───────────────────────────────────────
+// Auto-queued reminders (fee due/overdue, absent, birthday) waiting for the
+// owner's one-tap send. Storage-lean by design: the unique dedupe key means a
+// reminder is queued at most ONCE ever, dismissed rows are deleted immediately,
+// and sent rows are purged by the daily cron after 60 days.
+export const messageOutbox = pgTable("message_outbox", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  instituteId: uuid("institute_id").notNull().references(() => institutes.id, { onDelete: "cascade" }),
+  studentId: uuid("student_id").references(() => students.id, { onDelete: "cascade" }),
+  studentName: text("student_name").notNull().default(""),
+  phone: text("phone").notNull(),
+  kind: text("kind").notNull(), // 'fee_due' | 'fee_overdue' | 'absent' | 'birthday'
+  body: text("body").notNull(), // final rendered message
+  status: text("status").notNull().default("queued"), // 'queued' | 'sent'
+  // e.g. "fee_due:<feeId>", "absent:<studentId>:<date>", "birthday:<studentId>:<year>"
+  dedupeKey: text("dedupe_key").notNull(),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  byInstitute: index("message_outbox_institute_idx").on(t.instituteId),
+  dedupe: uniqueIndex("message_outbox_dedupe").on(t.instituteId, t.dedupeKey),
+}));
 
 // ── Attendance ───────────────────────────────────────────────────────
 export const attendance = pgTable("attendance", {

@@ -32,11 +32,10 @@ export function StaffView({ data }: { data: StaffData }) {
       <PageHeader
         title="Staff Logins"
         description="Create login accounts for your teachers/staff. They sign in with their own username and password."
-        actions={<div className="flex gap-2">
+        actions={<div className="flex items-start gap-2">
           <ExportData filename="staff-logins" rows={data.staff} columns={[
             { header: "Name", value: (s) => s.fullName },
             { header: "Username", value: (s) => s.username },
-            { header: "Email", value: (s) => s.email },
             { header: "Status", value: (s) => (s.isActive ? "Active" : "Suspended") },
           ]} />
           <AddStaffDialog atLimit={atLimit} planName={data.planName} limit={data.limit} onDone={() => router.refresh()} />
@@ -63,7 +62,6 @@ export function StaffView({ data }: { data: StaffData }) {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Username (login)</TableHead>
-                <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className={`text-right ${stickyActionsHead}`}>Actions</TableHead>
               </TableRow>
@@ -73,13 +71,12 @@ export function StaffView({ data }: { data: StaffData }) {
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">{s.fullName || "—"}</TableCell>
                   <TableCell className="text-sm font-medium">{s.username}</TableCell>
-                  <TableCell className="text-sm">{s.email}</TableCell>
                   <TableCell>
                     <Badge variant={s.isActive ? "success" : "secondary"}>{s.isActive ? "Active" : "Suspended"}</Badge>
                   </TableCell>
                   <TableCell className={`text-right ${stickyActionsCell}`}>
                     <div className="flex justify-end gap-1.5">
-                      <ResetStaffDialog userId={s.id} name={s.fullName || s.email} onDone={() => router.refresh()} />
+                      <ResetStaffDialog userId={s.id} name={s.fullName || s.username} onDone={() => router.refresh()} />
                       <form action={setStaffActive}>
                         <input type="hidden" name="userId" value={s.id} />
                         <input type="hidden" name="active" value={s.isActive ? "false" : "true"} />
@@ -90,7 +87,7 @@ export function StaffView({ data }: { data: StaffData }) {
                         )}
                       </form>
                       <ConfirmDialog
-                        title={`Remove ${s.fullName || s.email}?`}
+                        title={`Remove ${s.fullName || s.username}?`}
                         description="This permanently deletes their login. They will no longer be able to sign in."
                         confirmLabel="Remove" destructive
                         onConfirm={async () => {
@@ -124,14 +121,16 @@ function AddStaffDialog({ atLimit, planName, limit, onDone }: { atLimit: boolean
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} disabled={atLimit} title={atLimit ? "Plan staff limit reached" : undefined}>
-        <UserPlus /> Add staff login
-      </Button>
-      {atLimit && (
-        <span className="ml-2 text-xs text-muted-foreground">
-          {planName} plan limit ({limit}) reached — upgrade to add more.
-        </span>
-      )}
+      <div className="flex flex-col items-end gap-1">
+        <Button onClick={() => setOpen(true)} disabled={atLimit} title={atLimit ? "Plan staff limit reached" : undefined}>
+          <UserPlus /> Add staff login
+        </Button>
+        {atLimit && (
+          <span className="max-w-56 text-right text-xs text-muted-foreground">
+            {planName} plan limit ({limit}) reached — upgrade to add more.
+          </span>
+        )}
+      </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -146,10 +145,6 @@ function AddStaffDialog({ atLimit, planName, limit, onDone }: { atLimit: boolean
             <div className="space-y-1.5">
               <Label htmlFor="username">Username (login)</Label>
               <Input id="username" name="username" required autoComplete="off" placeholder="teacher-username" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" required autoComplete="off" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password">Temporary password</Label>

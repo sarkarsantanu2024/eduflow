@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
 import { renderTemplate } from "@/lib/wa-link";
+import { queueAbsentAlerts } from "@/features/automation/actions";
 import {
   useCollection, useHydrated, useProfile, addItem, updateItem, newId,
   type Attendance, type Student,
@@ -84,6 +85,13 @@ export function AttendanceView() {
       }
     });
     toast.success("Attendance saved", { description: `${roster.length - absent.size} present · ${absent.size} absent` });
+    // If the center enabled the "Absent today" automation, queue alerts into
+    // the Reminders → Outbox (no-op otherwise; server checks the switch).
+    if (absent.size > 0) {
+      void queueAbsentAlerts(date, [...absent])
+        .then((n) => { if (n > 0) toast.info(`${n} absence alert${n === 1 ? "" : "s"} queued in WhatsApp Reminders`); })
+        .catch(() => {});
+    }
   }
 
   const absentStudents = roster.filter((s) => absent.has(s.id));
