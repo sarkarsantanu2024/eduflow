@@ -41,7 +41,7 @@ docs/                           architecture · database · api · roadmap · de
 | 5 | Batch management | ⚙️ schema + RLS; copy students pattern |
 | 6 | Fee management + PDF receipt | ⚙️ schema + RPCs; PDF gen = TODO |
 | 7 | Payment collection (Razorpay) | ✅ service + webhook; UI link button = TODO |
-| 8 | WhatsApp reminders + templates + scheduler | ✅ service + cron + templates table; UI = TODO |
+| 8 | WhatsApp reminders + templates + scheduler | ✅ full UI + Automation engine (daily cron queues fee due/overdue, absent, birthday into an Outbox; review & tap-send) |
 | 9 | Dashboard | ✅ metrics query + cards |
 
 Legend: ✅ implemented · ⚙️ foundation in place, follow the students pattern.
@@ -54,7 +54,7 @@ Legend: ✅ implemented · ⚙️ foundation in place, follow the students patte
 - [ ] Fee generation (monthly auto-bill job) + fee table UI
 - [ ] "Create payment link" action → Razorpay + send via WhatsApp
 - [ ] Receipt PDF generation (react-pdf) → `receipts` bucket → signed URL
-- [ ] Reminder composer + template CRUD + schedule UI; WhatsApp status webhook
+- [x] Reminder composer + template CRUD + automation rules UI (Outbox); WhatsApp status webhook = Phase 2 (Cloud API)
 - [ ] Dashboard charts (Recharts): collections trend, defaulters list
 - [ ] Subscription/billing screen + plan limits enforcement
 - [ ] RLS test suite (pgTAP) verifying cross-tenant isolation

@@ -60,12 +60,13 @@ export async function createStaff(formData: FormData): Promise<{ error?: string;
   const instituteId = await requireOwner();
   const fullName = String(formData.get("fullName") ?? "").trim();
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   if (!fullName) return { error: "Name is required" };
   if (!/^[a-z0-9._-]{3,40}$/.test(username)) return { error: "Username must be 3–40 chars (letters, numbers, . _ -)" };
-  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "Enter a valid email" };
   if (password.length < 8) return { error: "Password must be at least 8 characters" };
+  // users.email is NOT NULL UNIQUE but staff sign in with username only —
+  // synthesize a placeholder (username is unique, so this is too).
+  const email = `${username}@staff.eduflow.local`;
 
   // Enforce plan staff limit.
   const data = await listStaff();
@@ -76,8 +77,6 @@ export async function createStaff(formData: FormData): Promise<{ error?: string;
   // Username is the login — must be globally unique.
   const existingUsername = await db.query.users.findFirst({ where: eq(users.username, username) });
   if (existingUsername) return { error: "That username is already taken" };
-  const existing = await db.query.users.findFirst({ where: eq(users.email, email) });
-  if (existing) return { error: "An account with this email already exists" };
 
   await db.insert(users).values({
     username,

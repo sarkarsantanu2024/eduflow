@@ -310,6 +310,23 @@ export interface RecurringCharge {
   category: string; // expense category the auto-posted expense uses
 }
 
+/**
+ * WhatsApp automation switches, stored as one jsonb column on the institute
+ * (null = everything off). Phase 1: rules queue messages into the outbox; the
+ * owner still taps send (free wa.me flow).
+ */
+export interface AutomationSettings {
+  feeDue: boolean; // queue "Fee Due Reminder" N days before due date
+  feeDueDays: number; // the N above (default 3)
+  feeOverdue: boolean; // queue "Fee Overdue" once the due date passes unpaid
+  absent: boolean; // queue "Absent Today" when attendance is saved
+  birthday: boolean; // queue "Birthday Wish" on the student's birthday
+}
+
+export const DEFAULT_AUTOMATION: AutomationSettings = {
+  feeDue: false, feeDueDays: 3, feeOverdue: false, absent: false, birthday: false,
+};
+
 export interface Profile {
   businessName: string;
   businessType: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import {
   fetchDb, createRow, updateRow, deleteRow, softDeleteRow, restoreRow, saveProfile, clearInstituteData,
 } from "@/features/data/actions";
@@ -174,15 +174,15 @@ export function useActiveTenant(instituteId: string | null): void {
   }, [instituteId]);
 }
 
-/** True once the active institute's data has finished loading from the server. */
+/** True once the active institute's data has finished loading from the server.
+ *  Uses useSyncExternalStore so the hydration render always matches the server
+ *  HTML (`false`), even when another part of the tree finished loading first —
+ *  reading the mutable `status` directly here caused React hydration errors. */
 export function useHydrated(): boolean {
-  const [, force] = useState(0);
   useEffect(() => {
-    const unsub = subscribe(() => force((n) => n + 1));
     if (status === "idle") void hydrate();
-    return () => { unsub(); };
   }, []);
-  return status === "ready";
+  return useSyncExternalStore(subscribe, () => status === "ready", () => false);
 }
 
 // Kept for backward-compat with older imports.

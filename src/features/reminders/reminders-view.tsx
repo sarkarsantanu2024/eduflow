@@ -12,7 +12,9 @@ import { EmptyState } from "@/components/empty-state";
 import { FormDialog, type FormField } from "@/components/form-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
-import { renderTemplate } from "@/lib/wa-link";
+import { AutomationPanel } from "@/features/automation/automation-panel";
+import { renderTemplate, waLink } from "@/lib/wa-link";
+import { queueAnnouncement } from "@/features/automation/actions";
 import { getSector } from "@/lib/sectors";
 import { formatDate } from "@/lib/utils";
 import {
@@ -236,6 +238,17 @@ function SendPanel({
   const missing = tokens.filter((t) => !(vals[t] ?? "").trim());
   const groupMsg = composeMessage(body, { business: biz }, vals);
 
+  async function queueForAllParents() {
+    try {
+      const n = await queueAnnouncement(groupMsg);
+      toast.success(`Queued for ${n} parent${n === 1 ? "" : "s"}`, {
+        description: "Open the Outbox above — one tap per parent sends it from your WhatsApp.",
+      });
+    } catch {
+      toast.error("Couldn't queue — try again.");
+    }
+  }
+
   async function copyGroup() {
     try {
       await navigator.clipboard.writeText(groupMsg);
@@ -338,16 +351,26 @@ function SendPanel({
             )}
 
             <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="mb-1 text-sm font-medium">Post to your parents&apos; WhatsApp group</p>
+              <p className="mb-1 text-sm font-medium">Send it out</p>
               <p className="mb-2 text-xs text-muted-foreground">
-                WhatsApp can&apos;t let an app post into a group automatically. Copy the message, open your group, and paste — one tap.
+                <span className="font-medium text-foreground">Pick your group</span> opens WhatsApp with the message ready — just choose your parents&apos; group and press send. Or queue it for <span className="font-medium text-foreground">every parent individually</span> — more reliable than a group many parents keep muted.
               </p>
               {missing.length > 0 && (
                 <p className="mb-2 text-xs font-medium text-amber-600">Fill in: {missing.map(prettyToken).join(", ")}</p>
               )}
-              <Button size="sm" variant="outline" disabled={!groupMsg.trim() || missing.length > 0} onClick={copyGroup}>
-                <Copy /> Copy message
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" asChild disabled={!groupMsg.trim() || missing.length > 0}>
+                  <a href={waLink("", groupMsg)} target="_blank" rel="noopener noreferrer">
+                    <Users /> Open WhatsApp — pick your group
+                  </a>
+                </Button>
+                <Button size="sm" variant="outline" disabled={!groupMsg.trim() || missing.length > 0} onClick={queueForAllParents}>
+                  <UserRound /> Queue for every parent
+                </Button>
+                <Button size="sm" variant="ghost" disabled={!groupMsg.trim() || missing.length > 0} onClick={copyGroup}>
+                  <Copy /> Copy
+                </Button>
+              </div>
             </div>
           </>
         )}
@@ -356,7 +379,7 @@ function SendPanel({
   );
 }
 
-export function RemindersView() {
+export function RemindersView({ canEditAutomation = false }: { canEditAutomation?: boolean }) {
   const hydrated = useHydrated();
   const templates = useCollection("templates");
   const students = useCollection("students");
@@ -421,6 +444,8 @@ export function RemindersView() {
         description="Send a template to one parent, or post an announcement to your parents' group. Free — messages open in your own WhatsApp, you press send."
         actions={addBtn}
       />
+
+      {hydrated && <AutomationPanel canEdit={canEditAutomation} />}
 
       {hydrated && <SendPanel students={students} templates={templates} fees={fees} biz={biz} courseName={courseName} />}
 

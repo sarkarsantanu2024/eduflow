@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import {
   organizations, institutes, courses, teachers, batches, students, fees, payments, expenses,
   attendance, promotions, testScores, certificates, examRegs, performances,
-  materials, events, templates, users, subscriptions, subscriptionPlans,
+  materials, events, templates, users, subscriptions, subscriptionPlans, messageOutbox,
 } from "@/lib/db/schema";
 import { requireSuperAdmin } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
@@ -76,6 +76,8 @@ async function seedDemo(): Promise<void> {
       { id: "rc1", name: "Head Office royalty", basis: "percent", amount: 10, category: "Head Office" },
       { id: "rc2", name: "Room rent", basis: "fixed", amount: 6000, category: "Rent" },
     ],
+    // Automation switched ON so a sales demo shows the feature live.
+    automation: { feeDue: true, feeDueDays: 3, feeOverdue: true, absent: true, birthday: true },
   });
 
   // ── Subscription (Growth, active) ──
@@ -142,20 +144,37 @@ async function seedDemo(): Promise<void> {
   const fullName = (r: { firstName: string; lastName: string }) => `${r.firstName} ${r.lastName}`.trim();
   const active = studentRows.filter((_, i) => S[i]?.status === "active");
 
-  // ── Fees (June + July, mixed statuses) ──
+  // ── Fees (last month + this month, mixed statuses) ──
+  // Dated relative to TODAY so the Automation scan always has material: last
+  // month's unpaid fees are recently overdue, this month's fall due in 2 days
+  // (inside the default 3-day "fee due soon" window).
+  const demoDay = (offset: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return d.toISOString().slice(0, 10);
+  };
+  const monthLabel = (ymd: string) =>
+    new Date(`${ymd}T00:00:00`).toLocaleString("en-IN", { month: "long", year: "numeric" });
+  const prevMonth = new Date();
+  prevMonth.setMonth(prevMonth.getMonth() - 1);
+  const prevYm = prevMonth.toISOString().slice(0, 7);
+  const curYm = new Date().toISOString().slice(0, 7);
+  const overdueDate = demoDay(-6);
+  const dueSoonDate = demoDay(2);
+
   const feeValues: (typeof fees.$inferInsert)[] = [];
   active.forEach((s, i) => {
-    const paidJune = i % 4 !== 0; // most paid, some not
+    const paidPrev = i % 4 !== 0; // most paid, some not
     feeValues.push({
       instituteId: DEMO_INSTITUTE_ID, studentId: s.id, studentName: fullName(s), parentMobile: s.parentMobile,
-      kind: "monthly", period: "2026-06", title: "June 2026 Monthly Fee", type: "monthly",
-      amount: 800, amountPaid: paidJune ? 800 : (i % 4 === 0 && i > 0 ? 400 : 0),
-      status: paidJune ? "paid" : (i % 4 === 0 && i > 0 ? "partial" : "overdue"), dueDate: "2026-06-05",
+      kind: "monthly", period: prevYm, title: `${monthLabel(overdueDate)} Monthly Fee`, type: "monthly",
+      amount: 800, amountPaid: paidPrev ? 800 : (i % 4 === 0 && i > 0 ? 400 : 0),
+      status: paidPrev ? "paid" : (i % 4 === 0 && i > 0 ? "partial" : "overdue"), dueDate: overdueDate,
     });
     feeValues.push({
       instituteId: DEMO_INSTITUTE_ID, studentId: s.id, studentName: fullName(s), parentMobile: s.parentMobile,
-      kind: "monthly", period: "2026-07", title: "July 2026 Monthly Fee", type: "monthly",
-      amount: 800, amountPaid: 0, status: "pending", dueDate: "2026-07-05",
+      kind: "monthly", period: curYm, title: `${monthLabel(dueSoonDate)} Monthly Fee`, type: "monthly",
+      amount: 800, amountPaid: 0, status: "pending", dueDate: dueSoonDate,
     });
   });
   await db.insert(fees).values(feeValues);
@@ -243,9 +262,26 @@ async function seedDemo(): Promise<void> {
   // ── WhatsApp templates ──
   await db.insert(templates).values([
     { instituteId: DEMO_INSTITUTE_ID, name: "Fee Due Reminder", type: "fee_due", channel: "whatsapp", body: "Dear {{parent_name}}, the fee of ₹{{amount}} for {{student_name}} is due on {{due_date}}. — Bright Abacus" },
+    { instituteId: DEMO_INSTITUTE_ID, name: "Fee Overdue", type: "fee_overdue", channel: "whatsapp", body: "Dear {{parent_name}}, the fee of ₹{{amount}} for {{student_name}} is now overdue. Please ignore this message if already paid. — Bright Abacus" },
+    { instituteId: DEMO_INSTITUTE_ID, name: "Absent Today", type: "absent", channel: "whatsapp", body: "Dear {{parent_name}}, {{student_name}} was absent from class today. Kindly ensure regular attendance. — Bright Abacus" },
     { instituteId: DEMO_INSTITUTE_ID, name: "Birthday Wish", type: "birthday", channel: "whatsapp", body: "Happy Birthday {{student_name}}! 🎉 — Bright Abacus" },
     { instituteId: DEMO_INSTITUTE_ID, name: "Level Promotion", type: "promotion", body: "Congratulations! {{student_name}} is promoted to {{level}}. 🎉 — Bright Abacus" },
   ]);
+
+  // ── Automation Outbox (pre-queued so the demo shows the feature working) ──
+  const byFirst = (n: string) => active.find((s) => s.firstName === n);
+  const outboxSeed = [
+    { s: byFirst("Ananya"), kind: "fee_due", body: "Dear Sourav Roy, the fee of ₹800 for Ananya is due on 05 Jul. — Bright Abacus" },
+    { s: byFirst("Vivaan"), kind: "fee_overdue", body: "Dear Manoj Singh, the fee of ₹800 for Vivaan is now overdue. Please ignore this message if already paid. — Bright Abacus" },
+    { s: byFirst("Reyansh"), kind: "absent", body: "Dear Subir Das, Reyansh was absent from class today. Kindly ensure regular attendance. — Bright Abacus" },
+    { s: byFirst("Aarav"), kind: "birthday", body: "Happy Birthday Aarav! 🎉 — Bright Abacus" },
+  ].filter((r) => r.s);
+  await db.insert(messageOutbox).values(
+    outboxSeed.map((r) => ({
+      instituteId: DEMO_INSTITUTE_ID, studentId: r.s!.id, studentName: fullName(r.s!),
+      phone: r.s!.parentMobile ?? "", kind: r.kind, body: r.body, dedupeKey: `demo:${r.kind}:${r.s!.id}`,
+    })),
+  );
 
   // ── Second branch (so the Head-Office roll-up shows a real franchise) ──
   await db.insert(institutes).values({
