@@ -2,8 +2,9 @@ import { ShieldCheck } from "lucide-react";
 import { requireSuperAdmin } from "@/lib/auth";
 import { signOut } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
+import { AdminSidebar } from "@/components/admin-sidebar";
 
-/** Platform console shell — super-admin only, no tenant sidebar. */
+/** Platform console shell — super-admin only, with its own left nav. */
 export default async function AdminLayout({
   children,
 }: {
@@ -29,9 +30,12 @@ export default async function AdminLayout({
           </Button>
         </form>
       </header>
-      <main className="nice-scroll flex-1 overflow-auto">
-        <div className="w-full px-3 py-4 sm:px-8 sm:py-5">{children}</div>
-      </main>
+      <div className="flex flex-1 flex-col md:flex-row">
+        <AdminSidebar />
+        <main className="nice-scroll flex-1 overflow-auto">
+          <div className="w-full px-3 py-4 sm:px-8 sm:py-5">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }
