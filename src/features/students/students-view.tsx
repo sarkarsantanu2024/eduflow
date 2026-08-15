@@ -401,13 +401,16 @@ export function StudentsView() {
                         <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                           {formatDate(s.dob)}
                           {bday?.today && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-1.5 py-0.5 text-[11px] font-semibold text-pink-600">
-                              <Cake className="size-3.5 animate-bounce" /> Today
+                            <span className="inline-flex items-center gap-1 rounded-full bg-pink-500 px-2 py-0.5 text-[11px] font-semibold text-white">
+                              <Cake className="size-3.5 animate-bounce" /> Birthday today
                             </span>
                           )}
                           {bday?.soon && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-pink-500" title={`Birthday in ${bday.days} day${bday.days > 1 ? "s" : ""}`}>
-                              <Cake className="size-3.5 animate-pulse" /> in {bday.days}d
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full border border-pink-300 bg-pink-50 px-2 py-0.5 text-[11px] font-semibold text-pink-600"
+                              title={`Birthday ${bday.days === 1 ? "tomorrow" : `in ${bday.days} days`} — ${formatDate(s.dob)}`}
+                            >
+                              <Cake className="size-3.5" /> {bday.days === 1 ? "Tomorrow" : `In ${bday.days} days`}
                             </span>
                           )}
                         </span>

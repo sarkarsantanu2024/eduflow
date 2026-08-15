@@ -32,6 +32,24 @@
 <meta property="og:locale" content="en_IN" />
 <meta name="twitter:card" content="summary_large_image" />
 
+<!-- Google Analytics 4 — paste your Measurement ID below (G-XXXXXXXXXX).
+     The snippet stays inert until a real ID replaces the placeholder. -->
+<script>
+  (function () {
+    var GA_ID = "G-882P8P9QHM";
+    if (GA_ID === "G-XXXXXXXXXX" || !/^G-[A-Z0-9]+$/.test(GA_ID)) return;
+    var s = document.createElement("script");
+    s.async = true;
+    s.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_ID;
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    window.gtag = gtag;
+    gtag("js", new Date());
+    gtag("config", GA_ID);
+  })();
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />

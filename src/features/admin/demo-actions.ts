@@ -9,6 +9,7 @@ import {
   organizations, institutes, courses, teachers, batches, students, fees, payments, expenses,
   attendance, promotions, testScores, certificates, examRegs, performances,
   materials, events, templates, users, subscriptions, subscriptionPlans, messageOutbox,
+  adMaterials, stationery,
 } from "@/lib/db/schema";
 import { requireSuperAdmin } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
@@ -19,6 +20,7 @@ import {
   DEMO_INSTITUTE_NAME as DEMO_NAME, DEMO_ORG_NAME, DEMO_HO_USERNAME, DEMO_HO_PASSWORD,
 } from "@/lib/demo-tenant";
 import { getSector } from "@/lib/sectors";
+import { queueForInstitute } from "@/features/automation/engine";
 
 /**
  * DEMO MODE — a real but isolated tenant the super-admin can drop into for
@@ -26,6 +28,18 @@ import { getSector } from "@/lib/sectors";
  * only ever touches this one center and never a real customer. Every module is
  * populated so a demo walks through the whole product.
  */
+
+/** ymd `offset` days from today — keeps demo fee dates fresh on any demo day. */
+function demoDay(offset: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0, 10);
+}
+function demoMonthLabel(ymd: string): string {
+  return new Date(`${ymd}T00:00:00`).toLocaleString("en-IN", { month: "long", year: "numeric" });
+}
+/** All automation rules on — every demo center shows the feature live. */
+const DEMO_AUTOMATION = { feeDue: true, feeDueDays: 3, feeOverdue: true, absent: true, birthday: true };
 
 /** True if the demo tenant is fully seeded (org + main branch present). */
 async function demoExists(): Promise<boolean> {
@@ -77,7 +91,7 @@ async function seedDemo(): Promise<void> {
       { id: "rc2", name: "Room rent", basis: "fixed", amount: 6000, category: "Rent" },
     ],
     // Automation switched ON so a sales demo shows the feature live.
-    automation: { feeDue: true, feeDueDays: 3, feeOverdue: true, absent: true, birthday: true },
+    automation: DEMO_AUTOMATION,
   });
 
   // ── Subscription (Growth, active) ──
@@ -148,13 +162,6 @@ async function seedDemo(): Promise<void> {
   // Dated relative to TODAY so the Automation scan always has material: last
   // month's unpaid fees are recently overdue, this month's fall due in 2 days
   // (inside the default 3-day "fee due soon" window).
-  const demoDay = (offset: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() + offset);
-    return d.toISOString().slice(0, 10);
-  };
-  const monthLabel = (ymd: string) =>
-    new Date(`${ymd}T00:00:00`).toLocaleString("en-IN", { month: "long", year: "numeric" });
   const prevMonth = new Date();
   prevMonth.setMonth(prevMonth.getMonth() - 1);
   const prevYm = prevMonth.toISOString().slice(0, 7);
@@ -167,13 +174,13 @@ async function seedDemo(): Promise<void> {
     const paidPrev = i % 4 !== 0; // most paid, some not
     feeValues.push({
       instituteId: DEMO_INSTITUTE_ID, studentId: s.id, studentName: fullName(s), parentMobile: s.parentMobile,
-      kind: "monthly", period: prevYm, title: `${monthLabel(overdueDate)} Monthly Fee`, type: "monthly",
+      kind: "monthly", period: prevYm, title: `${demoMonthLabel(overdueDate)} Monthly Fee`, type: "monthly",
       amount: 800, amountPaid: paidPrev ? 800 : (i % 4 === 0 && i > 0 ? 400 : 0),
       status: paidPrev ? "paid" : (i % 4 === 0 && i > 0 ? "partial" : "overdue"), dueDate: overdueDate,
     });
     feeValues.push({
       instituteId: DEMO_INSTITUTE_ID, studentId: s.id, studentName: fullName(s), parentMobile: s.parentMobile,
-      kind: "monthly", period: curYm, title: `${monthLabel(dueSoonDate)} Monthly Fee`, type: "monthly",
+      kind: "monthly", period: curYm, title: `${demoMonthLabel(dueSoonDate)} Monthly Fee`, type: "monthly",
       amount: 800, amountPaid: 0, status: "pending", dueDate: dueSoonDate,
     });
   });
@@ -253,10 +260,27 @@ async function seedDemo(): Promise<void> {
     })),
   );
 
+  // ── Ad materials & stationery (so the Ad & Stationery module isn't empty) ──
+  await db.insert(adMaterials).values([
+    { instituteId: DEMO_INSTITUTE_ID, date: demoDay(-20), banner: 2, leaflet: 500, sunPack: 0, poster: 20, voice: 0, other: "", addedBy: "Priya Menon" },
+    { instituteId: DEMO_INSTITUTE_ID, date: demoDay(-5), banner: 0, leaflet: 0, sunPack: 1, poster: 10, voice: 1, other: "Auto-rickshaw announcement", addedBy: "Priya Menon" },
+  ]);
+  await db.insert(stationery).values([
+    { instituteId: DEMO_INSTITUTE_ID, date: demoDay(-20), stationery: 24, gift: 0, other: "Practice books batch A", addedBy: "Priya Menon" },
+    { instituteId: DEMO_INSTITUTE_ID, date: demoDay(-3), stationery: 0, gift: 12, other: "Birthday return gifts", addedBy: "Priya Menon" },
+  ]);
+
+  // ── A teacher staff login (shows the Staff Logins module in action) ──
+  await db.insert(users).values({
+    instituteId: DEMO_INSTITUTE_ID, role: "teacher",
+    username: "demo-abacus-teacher", email: "demo-abacus-teacher@noemail.eduflow.local",
+    fullName: "Anjali Sharma", passwordHash: await hashPassword(DEMO_CENTER_PASSWORD),
+  });
+
   // ── Events ──
   await db.insert(events).values([
     { instituteId: DEMO_INSTITUTE_ID, title: "Annual Day 2026", date: "2026-12-20", venue: "City Auditorium", note: "Prize distribution + performances" },
-    { instituteId: DEMO_INSTITUTE_ID, title: "Free Demo Class", date: "2026-07-15", venue: "Center", note: "Open house for new admissions" },
+    { instituteId: DEMO_INSTITUTE_ID, title: "Free Demo Class", date: demoDay(14), venue: "Center", note: "Open house for new admissions" },
   ]);
 
   // ── WhatsApp templates ──
@@ -455,6 +479,8 @@ async function seedCenter(center: DemoCenter): Promise<void> {
     onboarded: true,
     isActive: true,
     recurringCharges: [{ id: "rc1", name: "Room rent", basis: "fixed", amount: 6000, category: "Rent" }],
+    // Every sector demo shows WhatsApp Automation live too.
+    automation: DEMO_AUTOMATION,
   });
 
   // ── Owner login, so a prospect can sign in and drive it themselves ──
@@ -545,19 +571,26 @@ async function seedCenter(center: DemoCenter): Promise<void> {
   const active = studentRows.filter((_, i) => statusOf(i) === "active");
   const fee = center.monthlyFee;
 
-  // ── Fees (June paid/overdue mix + July pending) & payments ──
+  // ── Fees (last month paid/overdue mix + this month pending) & payments ──
+  // Relative dates so the Automation Outbox always has material on demo day.
+  const ctrOverdueDate = demoDay(-6);
+  const ctrDueSoonDate = demoDay(2);
+  const ctrPrevMonth = new Date();
+  ctrPrevMonth.setMonth(ctrPrevMonth.getMonth() - 1);
+  const ctrPrevYm = ctrPrevMonth.toISOString().slice(0, 7);
+  const ctrCurYm = new Date().toISOString().slice(0, 7);
   const feeValues: (typeof fees.$inferInsert)[] = [];
   active.forEach((s, i) => {
     const paid = i % 4 !== 0;
     feeValues.push({
       instituteId: iid, studentId: s.id, studentName: name(s), parentMobile: s.parentMobile,
-      kind: "monthly", period: "2026-06", title: "June 2026 Monthly Fee", type: "monthly",
-      amount: fee, amountPaid: paid ? fee : 0, status: paid ? "paid" : "overdue", dueDate: "2026-06-05",
+      kind: "monthly", period: ctrPrevYm, title: `${demoMonthLabel(ctrOverdueDate)} Monthly Fee`, type: "monthly",
+      amount: fee, amountPaid: paid ? fee : 0, status: paid ? "paid" : "overdue", dueDate: ctrOverdueDate,
     });
     feeValues.push({
       instituteId: iid, studentId: s.id, studentName: name(s), parentMobile: s.parentMobile,
-      kind: "monthly", period: "2026-07", title: "July 2026 Monthly Fee", type: "monthly",
-      amount: fee, amountPaid: 0, status: "pending", dueDate: "2026-07-05",
+      kind: "monthly", period: ctrCurYm, title: `${demoMonthLabel(ctrDueSoonDate)} Monthly Fee`, type: "monthly",
+      amount: fee, amountPaid: 0, status: "pending", dueDate: ctrDueSoonDate,
     });
   });
 
@@ -568,18 +601,18 @@ async function seedCenter(center: DemoCenter): Promise<void> {
     active.slice(0, 4).forEach((s, i) => {
       feeValues.push({
         instituteId: iid, studentId: s.id, studentName: name(s), parentMobile: s.parentMobile,
-        kind: "other", period: "2026-07", title: `Second activity — ${second[i % second.length]}`,
+        kind: "other", period: ctrCurYm, title: `Second activity — ${second[i % second.length]}`,
         type: "activity", amount: 600, amountPaid: i % 2 === 0 ? 600 : 0,
-        status: i % 2 === 0 ? "paid" : "pending", dueDate: "2026-07-10",
+        status: i % 2 === 0 ? "paid" : "pending", dueDate: demoDay(5),
       });
     });
     active.slice(4, 7).forEach((s, i) => {
       feeValues.push({
         instituteId: iid, studentId: s.id, studentName: name(s), parentMobile: s.parentMobile,
-        kind: "other", period: "2026-07",
+        kind: "other", period: ctrCurYm,
         title: ["Annual function costume", "Exam board fee", "Activity kit"][i % 3] ?? "Extra charge",
         type: "other", amount: [500, 600, 350][i % 3] ?? 500,
-        amountPaid: 0, status: "pending", dueDate: "2026-07-20",
+        amountPaid: 0, status: "pending", dueDate: demoDay(12),
       });
     });
   }
@@ -729,6 +762,39 @@ async function seedCenter(center: DemoCenter): Promise<void> {
         ];
     await db.insert(events).values(rows.map((r) => ({ instituteId: iid, ...r })));
   }
+
+  // ── Ad materials & stationery (so the Ad & Stationery module isn't empty) ──
+  await db.insert(adMaterials).values([
+    { instituteId: iid, date: demoDay(-20), banner: 2, leaflet: 500, sunPack: 0, poster: 20, voice: 0, other: "", addedBy: center.ownerName },
+    { instituteId: iid, date: demoDay(-5), banner: 0, leaflet: 0, sunPack: 1, poster: 10, voice: 1, other: "Auto-rickshaw announcement", addedBy: center.ownerName },
+  ]);
+  await db.insert(stationery).values([
+    { instituteId: iid, date: demoDay(-20), stationery: 24, gift: 0, other: "Practice books", addedBy: center.ownerName },
+    { instituteId: iid, date: demoDay(-3), stationery: 0, gift: 12, other: "Birthday return gifts", addedBy: center.ownerName },
+  ]);
+
+  // ── A teacher staff login (shows the Staff Logins module in action) ──
+  await db.insert(users).values({
+    instituteId: iid, role: "teacher",
+    username: `${demoCenterUsername(center.sector)}-teacher`,
+    email: `${demoCenterUsername(center.sector)}-teacher@noemail.eduflow.local`,
+    fullName: staff[0]?.[0] ?? "Demo Teacher", passwordHash: await hashPassword(DEMO_CENTER_PASSWORD),
+  });
+
+  // ── Fill the Automation Outbox exactly like the daily cron would, plus one
+  // absent + one birthday example the scan alone can't produce on demo day ──
+  const bizName = center.name.replace("▶ Demo — ", "");
+  await queueForInstitute({ id: iid, name: bizName, automation: DEMO_AUTOMATION });
+  const outboxExtras = [
+    { s: active[5], kind: "absent", body: `Dear Parent, ${active[5]?.firstName} was absent from class today. Kindly ensure regular attendance. — ${bizName}` },
+    { s: active[0], kind: "birthday", body: `Happy Birthday ${active[0]?.firstName}! 🎉 — ${bizName}` },
+  ].filter((r) => r.s);
+  await db.insert(messageOutbox).values(
+    outboxExtras.map((r) => ({
+      instituteId: iid, studentId: r.s!.id, studentName: name(r.s!),
+      phone: r.s!.parentMobile ?? "", kind: r.kind, body: r.body, dedupeKey: `demo:${r.kind}:${r.s!.id}`,
+    })),
+  );
 }
 
 /** Which demo centers are seeded — drives the "Ready / Not seeded" badges. */
