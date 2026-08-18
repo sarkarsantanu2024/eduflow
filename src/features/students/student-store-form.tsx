@@ -74,6 +74,10 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
       toast.error("Student ID and First name are required");
       return;
     }
+    if (!form.photo) {
+      toast.error("Student photo is required", { description: "Tap the camera icon at the top of the form to upload one — it's used on the ID card." });
+      return;
+    }
     // Capacity is prepaid — check before writing so the owner gets a clear
     // message instead of an optimistic row that silently disappears.
     if (!existing) {
@@ -155,7 +159,9 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
                 <input type="file" accept="image/*" hidden onChange={onPhoto} />
               </label>
             </div>
-            <p className="text-sm text-muted-foreground">Upload the student&apos;s photo (optional).</p>
+            <p className="text-sm text-muted-foreground">
+              Upload the student&apos;s photo <span className="font-medium text-destructive">*</span> — required, and printed on the ID card.
+            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

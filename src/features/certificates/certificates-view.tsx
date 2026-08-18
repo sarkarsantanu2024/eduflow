@@ -11,7 +11,8 @@ import { FormDialog } from "@/components/form-dialog";
 import { CertDesigner } from "@/features/certificates/cert-designer";
 import { downloadCertPdf, downloadAllCertsPdf } from "@/features/certificates/cert-pdf";
 import {
-  useCollection, useHydrated, useProfile, addItem, newId, type Certificate,
+  useCollection, useHydrated, useProfile, addItem, newId,
+  DEFAULT_ID_CARD_DESIGN, type Certificate, type Profile,
 } from "@/lib/store/local-db";
 import { formatDate } from "@/lib/utils";
 
@@ -25,24 +26,36 @@ function verifyUrl(serial: string) {
   return `${origin}/verify/${serial}`;
 }
 
-/** Open a print-ready certificate in a new window (Save as PDF from the print dialog). */
-function printCertificate(cert: Certificate, biz: string) {
+/** Open a print-ready certificate in a new window (Save as PDF from the print dialog).
+ *  Uses the center's global branding (logo, name, tagline, website, brand colour)
+ *  — the same branding set on the ID Cards page. */
+function printCertificate(cert: Certificate, profile: Profile) {
+  const d = profile.idCardDesign ?? DEFAULT_ID_CARD_DESIGN;
+  const biz = d.companyName || profile.businessName || "Your Institute";
+  const logo = d.logo || profile.avatar;
+  const accent = d.headerBg || "#c2872a";
+  const website = d.website || profile.website;
   const url = verifyUrl(cert.serial);
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>${cert.serial}</title>
   <style>
     *{box-sizing:border-box;font-family:Georgia,'Times New Roman',serif}
     body{margin:0;padding:40px;background:#fff;color:#1f2937}
-    .cert{border:10px double #c2872a;border-radius:14px;padding:48px;text-align:center;max-width:820px;margin:0 auto}
-    .biz{font-size:26px;font-weight:bold;letter-spacing:1px;color:#b45309}
+    .cert{border:10px double ${accent};border-radius:14px;padding:48px;text-align:center;max-width:820px;margin:0 auto}
+    .logo{height:64px;max-width:200px;object-fit:contain;margin-bottom:10px}
+    .biz{font-size:26px;font-weight:bold;letter-spacing:1px;color:${accent}}
+    .tagline{font-size:13px;font-style:italic;color:#6b7280;margin-top:2px}
     .title{font-size:18px;letter-spacing:6px;color:#6b7280;margin:18px 0 6px;text-transform:uppercase}
     .name{font-size:40px;font-weight:bold;margin:18px 0;color:#111827}
     .line{font-size:18px;color:#374151;margin:6px 0}
     .row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:48px}
     .serial{font-size:12px;color:#6b7280}
     .qr{text-align:center;font-size:11px;color:#6b7280}
+    .site{margin-top:22px;font-size:12px;color:#6b7280;letter-spacing:0.5px}
   </style></head><body>
   <div class="cert">
+    ${logo ? `<img class="logo" src="${logo}" alt="" />` : ""}
     <div class="biz">${biz}</div>
+    ${d.tagline ? `<div class="tagline">${d.tagline}</div>` : ""}
     <div class="title">Certificate of Completion</div>
     <div class="line">This is to certify that</div>
     <div class="name">${cert.studentName}</div>
@@ -58,6 +71,7 @@ function printCertificate(cert: Certificate, biz: string) {
         Scan to verify<br/><span class="serial">${cert.serial}</span>
       </div>
     </div>
+    ${website ? `<div class="site">${website}</div>` : ""}
   </div>
   <script>window.onload=function(){setTimeout(function(){window.print()},300)}</script>
   </body></html>`;
@@ -81,7 +95,7 @@ export function CertificatesView() {
       const ok = await downloadCertPdf(c, profile);
       if (ok) { toast.success("Certificate PDF downloaded"); return; }
     }
-    printCertificate(c, biz);
+    printCertificate(c, profile);
   }
 
   async function downloadAll() {

@@ -42,6 +42,7 @@ const PLAN_RANK: Record<string, number> = {
 const MODULE_MIN_RANK: Partial<Record<ModuleKey, number>> = {
   attendance: 0, // Free+ — a center can't run a day without it
   certificates: 1, // Starter+ — listed on the Starter card alongside ID cards
+  idCards: 1, // Starter+ — "Student ID cards" on the Starter card
   tests: 2, // Growth+ — the published "exams, tests & rank lists" block
   examBoards: 2, // Growth+
   promotions: 2, // Growth+ — "student promotion"

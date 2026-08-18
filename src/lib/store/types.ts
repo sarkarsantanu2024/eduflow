@@ -294,6 +294,27 @@ export const DEFAULT_CERT_LAYOUT: CertLayout = {
 };
 
 /**
+ * Institute-wide ID-card branding (header band + card colours), set once on the
+ * ID Cards page and stored on the institute so every device prints the same
+ * card. Branding fields are overrides — blank means "use the Profile values" —
+ * because the name/logo printed on a card can differ from the registered ones.
+ */
+export interface IdCardDesign {
+  companyName: string;
+  logo: string; // uploaded image URL; "" = use profile avatar
+  tagline: string;
+  website: string;
+  headerBg: string;
+  headerText: string;
+  cardBg: string;
+}
+
+export const DEFAULT_ID_CARD_DESIGN: IdCardDesign = {
+  companyName: "", logo: "", tagline: "", website: "",
+  headerBg: "#E87D2E", headerText: "#FFFFFF", cardBg: "#FFF164",
+};
+
+/**
  * A recurring monthly cost the center owes someone (Head Office royalty, school
  * room rent, a fixed subscription…). One model covers every case via `basis`:
  *  - fixed:       a flat ₹/month
@@ -353,6 +374,7 @@ export interface Profile {
   whatsapp: string;
   certImage: string;
   certLayout: CertLayout;
+  idCardDesign: IdCardDesign;
 }
 
 export interface Db {
@@ -386,7 +408,7 @@ export const EMPTY_PROFILE: Profile = {
   businessName: "", businessType: "abacus", ownerName: "", email: "", phone: "",
   gst: "", city: "", address: "", monthlyFee: 0, admissionFee: 0, reactivationFee: 0, hoRoyaltyPerStudent: 0, hoRoyaltyPercent: 0, recurringCharges: [], website: "", extraLink: "", upiId: "", qrImage: "", avatar: "",
   facebook: "", instagram: "", youtube: "", whatsapp: "",
-  certImage: "", certLayout: DEFAULT_CERT_LAYOUT,
+  certImage: "", certLayout: DEFAULT_CERT_LAYOUT, idCardDesign: DEFAULT_ID_CARD_DESIGN,
 };
 
 export const EMPTY_DB: Db = {
