@@ -19,13 +19,14 @@ export type ModuleKey =
   | "promotions" // level / grade promotion engine
   | "tests" // test scores + rank lists
   | "certificates" // issue / print / QR-verify certificates
+  | "idCards" // print student ID cards (single or bulk)
   | "examBoards" // external exam-board registration (NIELIT, BSP, IGE…)
   | "performance" // competitions / recitals / contests log
   | "materials" // kit / costume / material issuance
   | "events"; // annual function / exhibition
 
 export const ALL_MODULES: ModuleKey[] = [
-  "attendance", "promotions", "tests", "certificates", "examBoards", "performance", "materials", "events",
+  "attendance", "promotions", "tests", "certificates", "idCards", "examBoards", "performance", "materials", "events",
 ];
 
 /** Human-readable module labels (used by the Profile module preview). */
@@ -34,6 +35,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   promotions: "Level / Grade promotion",
   tests: "Tests & rank lists",
   certificates: "Certificates",
+  idCards: "Student ID cards",
   examBoards: "Exam-board registration",
   performance: "Performance / competitions",
   materials: "Materials / kit",
@@ -89,7 +91,7 @@ export const SECTORS: SectorConfig[] = [
     label: "Abacus Center",
     tagline: "Levels, speed tests, competitions & graduation certificates.",
     member: "Student", members: "Students", courses: "Levels", batches: "Batches",
-    modules: ["attendance", "promotions", "certificates", "examBoards", "performance", "materials"],
+    modules: ["attendance", "promotions", "certificates", "idCards", "examBoards", "performance", "materials"],
     seedCourses: [
       { name: "Basic", description: "Single digit add / subtract chains" },
       { name: "Kids 1", description: "Small numbers, short chains" },
@@ -118,7 +120,7 @@ export const SECTORS: SectorConfig[] = [
     label: "Coaching Center",
     tagline: "Subject-wise batches, test ranks & board-exam tracking.",
     member: "Student", members: "Students", courses: "Subjects", batches: "Batches",
-    modules: ["attendance", "tests", "examBoards"],
+    modules: ["attendance", "tests", "idCards", "examBoards"],
     seedCourses: [
       { name: "Physics", description: "Class 11–12 / WBJEE / NEET" },
       { name: "Chemistry", description: "Class 11–12 / WBJEE / NEET" },
@@ -138,7 +140,7 @@ export const SECTORS: SectorConfig[] = [
     label: "Computer Training Institute",
     tagline: "Diploma courses (DCA/Tally), lab batches & verified certificates.",
     member: "Student", members: "Students", courses: "Courses", batches: "Batches",
-    modules: ["attendance", "promotions", "certificates", "examBoards"],
+    modules: ["attendance", "promotions", "certificates", "idCards", "examBoards"],
     seedCourses: [
       { name: "DCA", description: "Diploma in Computer Application · 6 months" },
       { name: "ADCA", description: "Advanced Diploma · 12 months" },
@@ -160,7 +162,7 @@ export const SECTORS: SectorConfig[] = [
     label: "Dance School",
     tagline: "Dance forms, grade exams, recitals & the annual function.",
     member: "Student", members: "Students", courses: "Dance Forms", batches: "Batches",
-    modules: ["attendance", "promotions", "examBoards", "performance", "materials", "events"],
+    modules: ["attendance", "promotions", "idCards", "examBoards", "performance", "materials", "events"],
     seedCourses: [
       { name: "Kathak", description: "Classical · graded" },
       { name: "Bharatanatyam", description: "Classical · graded" },
@@ -181,7 +183,7 @@ export const SECTORS: SectorConfig[] = [
     label: "Drawing / Art School",
     tagline: "Mediums, graded art exams, contests & exhibitions.",
     member: "Student", members: "Students", courses: "Courses", batches: "Batches",
-    modules: ["attendance", "promotions", "examBoards", "performance", "materials", "events"],
+    modules: ["attendance", "promotions", "idCards", "examBoards", "performance", "materials", "events"],
     seedCourses: [
       { name: "Pencil Sketching", description: "Shading & still life" },
       { name: "Watercolour", description: "Wash & landscape" },
@@ -201,7 +203,7 @@ export const SECTORS: SectorConfig[] = [
     label: "Spoken English Center",
     tagline: "Proficiency modules, level promotion & daily practice.",
     member: "Student", members: "Students", courses: "Modules", batches: "Batches",
-    modules: ["attendance", "promotions", "certificates"],
+    modules: ["attendance", "promotions", "certificates", "idCards"],
     seedCourses: [
       { name: "Foundation (Basic)", description: "Grammar & vocabulary base" },
       { name: "Fluency (Intermediate)", description: "Conversation practice" },
@@ -221,7 +223,7 @@ export const SECTORS: SectorConfig[] = [
     label: "Tuition Center",
     tagline: "Multi-subject batches, fees, attendance & test marks.",
     member: "Student", members: "Students", courses: "Subjects", batches: "Batches",
-    modules: ["attendance", "tests"],
+    modules: ["attendance", "tests", "idCards"],
     seedCourses: [
       { name: "Mathematics", description: "Class 6–12" },
       { name: "Science", description: "Class 6–10" },
@@ -276,7 +278,7 @@ export const SECTORS: SectorConfig[] = [
     label: "Other / General",
     tagline: "A flexible setup for any small institute.",
     member: "Member", members: "Members", courses: "Courses", batches: "Batches",
-    modules: ["attendance"],
+    modules: ["attendance", "idCards"],
     seedCourses: [
       { name: "Course 1", description: "Sample course" },
       { name: "Course 2", description: "Sample course" },

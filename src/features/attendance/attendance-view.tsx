@@ -42,6 +42,12 @@ export function AttendanceView() {
     () => students.filter((s) => s.batchId === activeBatch && s.status === "active"),
     [students, activeBatch],
   );
+  // Active students with no batch never appear in ANY roster — surface them
+  // instead of letting them silently disappear from attendance.
+  const unassigned = useMemo(
+    () => students.filter((s) => s.status === "active" && !s.batchId).length,
+    [students],
+  );
 
   // Which students are currently marked absent (seeded from saved records).
   const savedAbsent = useMemo(() => {
@@ -136,6 +142,19 @@ export function AttendanceView() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Students that can never show up here, whatever batch is picked */}
+      {hydrated && unassigned > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+          <span>
+            <strong>{unassigned} active student{unassigned > 1 ? "s have" : " has"} no batch assigned</strong>
+            {" "}— they won&apos;t appear in any batch&apos;s attendance. Open each student and set their Batch.
+          </span>
+          <Button size="sm" variant="outline" asChild>
+            <a href="/students">Fix in Students</a>
+          </Button>
+        </div>
+      )}
 
       {/* Roster */}
       {!hydrated ? null : roster.length === 0 ? (

@@ -2,7 +2,7 @@ import {
   pgTable, pgEnum, uuid, text, integer, boolean, timestamp, date, jsonb,
   doublePrecision, uniqueIndex, index,
 } from "drizzle-orm/pg-core";
-import type { AutomationSettings, CertLayout, RecurringCharge } from "../store/types";
+import type { AutomationSettings, CertLayout, IdCardDesign, RecurringCharge } from "../store/types";
 
 /**
  * EduFlow database schema (Neon Postgres via Drizzle).
@@ -132,6 +132,7 @@ export const institutes = pgTable("institutes", {
   // Certificate template
   certImageUrl: text("cert_image_url"),
   certLayout: jsonb("cert_layout").$type<CertLayout>(),
+  idCardDesign: jsonb("id_card_design").$type<IdCardDesign>(),
   // WhatsApp automation switches (null = all off). One small jsonb column
   // instead of a settings table — keeps storage lean.
   automation: jsonb("automation").$type<AutomationSettings>(),

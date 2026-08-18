@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, isNull, isNotNull } from "drizzle-orm";
+import { and, desc, eq, isNull, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   institutes, students, courses, batches, templates, fees, payments, expenses,
@@ -10,7 +10,7 @@ import {
 import { getActiveInstituteId, requireActiveInstituteId } from "@/lib/tenant";
 import { checkStudentCapacity, getStudentUsage, type StudentUsage } from "@/lib/plan-limits";
 import {
-  EMPTY_DB, EMPTY_PROFILE, DEFAULT_CERT_LAYOUT,
+  EMPTY_DB, EMPTY_PROFILE, DEFAULT_CERT_LAYOUT, DEFAULT_ID_CARD_DESIGN,
   type Db, type Profile, type CollectionName,
 } from "@/lib/store/types";
 
@@ -60,8 +60,12 @@ function toDb(collection: CollectionName, item: Record<string, unknown>): Record
     const key = cfg.rename[k] ?? k;
     out[key] = v;
   }
+  // Only normalise fields the caller actually sent: a PARTIAL patch (e.g.
+  // updating just `welcomeKit`) must never touch absent columns — turning
+  // "absent" into NULL here once wiped dob/course/batch on every student a
+  // partial update touched.
   for (const f of cfg.nullEmpty) {
-    if (out[f] === "" || out[f] === undefined) out[f] = null;
+    if (f in out && (out[f] === "" || out[f] === undefined)) out[f] = null;
   }
   return out;
 }
@@ -96,7 +100,11 @@ export async function fetchDb(): Promise<Db> {
         const where = SOFT_DELETE.has(name)
           ? and(eq(t.instituteId, instituteId), isNull(t.deletedAt))
           : eq(t.instituteId, instituteId);
-        const rows = await db.select().from(t).where(where);
+        // Stable order: newest first, consistent on every page and every load.
+        // Without an ORDER BY, Postgres returns rows in arbitrary order that
+        // reshuffles whenever a row is updated — lists then look "out of sync"
+        // between pages (Students vs ID Cards) from one load to the next.
+        const rows = await db.select().from(t).where(where).orderBy(desc(t.createdAt));
         result[name] = rows.map((r: Record<string, unknown>) => fromDb(name, r));
       } catch (err) {
         // One collection failing (e.g. a pending migration) must never blank the
@@ -154,6 +162,7 @@ export async function fetchProfile(instituteIdArg?: string): Promise<Profile> {
     whatsapp: inst.whatsapp ?? "",
     certImage: inst.certImageUrl ?? "",
     certLayout: inst.certLayout ?? DEFAULT_CERT_LAYOUT,
+    idCardDesign: inst.idCardDesign ?? DEFAULT_ID_CARD_DESIGN,
   };
 }
 
@@ -280,6 +289,7 @@ const PROFILE_MAP: Partial<Record<keyof Profile, string>> = {
   admissionFee: "admissionFee", reactivationFee: "reactivationFee", hoRoyaltyPerStudent: "hoRoyaltyPerStudent", hoRoyaltyPercent: "hoRoyaltyPercent", recurringCharges: "recurringCharges", website: "website", extraLink: "extraLink", upiId: "upiId", qrImage: "qrImageUrl",
   avatar: "avatarUrl", facebook: "facebook", instagram: "instagram", youtube: "youtube",
   whatsapp: "whatsapp", certImage: "certImageUrl", certLayout: "certLayout",
+  idCardDesign: "idCardDesign",
 };
 
 /** Save the active institute's profile. Marks the center as onboarded. */

@@ -70,11 +70,13 @@ export function StudentsView() {
   const hydrated = useHydrated();
   const students = useCollection("students");
   const courses = useCollection("courses");
+  const batches = useCollection("batches");
   const profile = useProfile();
   const { member, members } = getLabels(profile.businessType);
   const courseName = (id: string) => courses.find((c) => c.id === id)?.name ?? "—";
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
+  const [batchFilter, setBatchFilter] = useState("all"); // "all" | "none" | batch id
   const [page, setPage] = useState(1);
   const [importData, setImportData] = useState<{ headers: string[]; rows: Record<string, unknown>[] } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -204,11 +206,15 @@ export function StudentsView() {
   }
 
   // Remove duplicate students (same name + mobile), keeping the first of each.
+  // Search matches the FULL name too (e.g. "Tanish Das"), with whitespace
+  // normalised on both sides — imported names often carry stray spaces.
+  const term = search.trim().toLowerCase().replace(/\s+/g, " ");
   const filtered = students.filter((s) => {
     if (status !== "all" && s.status !== status) return false;
-    const term = search.trim().toLowerCase();
+    if (batchFilter === "none" ? s.batchId : batchFilter !== "all" && s.batchId !== batchFilter) return false;
     if (!term) return true;
-    return [s.firstName, s.lastName, s.code, s.parentMobile, s.fatherContact]
+    const fullName = `${s.firstName} ${s.lastName}`.replace(/\s+/g, " ").trim();
+    return [fullName, s.code, s.parentMobile, s.fatherContact]
       .filter(Boolean).some((v) => String(v).toLowerCase().includes(term));
   });
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -310,6 +316,12 @@ export function StudentsView() {
               <option value="all">All statuses</option><option value="active">Active</option>
               <option value="inactive">Inactive</option><option value="graduated">Graduated</option>
               <option value="dropped">Dropped</option>
+            </select>
+            <select className="h-10 rounded-lg border border-input bg-card px-3 text-sm shadow-sm"
+              value={batchFilter} onChange={(e) => { setBatchFilter(e.target.value); setPage(1); }}>
+              <option value="all">All batches</option>
+              <option value="none">No batch assigned</option>
+              {batches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
 

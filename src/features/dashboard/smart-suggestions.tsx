@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   Lightbulb, MessageCircle, ClipboardCheck, UserMinus, Cake, ScrollText, TrendingUp, IndianRupee,
-  TrendingDown, PiggyBank,
+  TrendingDown, PiggyBank, IdCard,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -113,7 +113,20 @@ export function SmartSuggestions() {
     });
   }
 
-  // 5) Upcoming exam-board deadlines (sectors that use them).
+  // 5) ID cards not generated yet — parents notice a missing card fast.
+  if (modules.includes("idCards")) {
+    const noCard = students.filter((s) => s.status === "active" && !s.welcomeKit?.idCard).length;
+    if (noCard > 0) {
+      suggestions.push({
+        key: "idcards", icon: IdCard, tone: "info",
+        title: `${noCard} student${noCard > 1 ? "s don't" : " doesn't"} have an ID card yet`,
+        detail: "Generate print-ready cards in one click — single or the whole center in bulk.",
+        cta: "Generate ID cards", href: "/id-cards",
+      });
+    }
+  }
+
+  // 6) Upcoming exam-board deadlines (sectors that use them).
   if (modules.includes("examBoards")) {
     const in14 = new Date(`${today}T00:00:00`); in14.setDate(in14.getDate() + 14);
     const soon = examRegs.filter((e) => e.examDate && e.examDate >= today && e.examDate <= in14.toISOString().slice(0, 10)).length;

@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, BookOpen, CalendarClock, Receipt,
   MessageSquare, LifeBuoy, Wallet, Coins, ClipboardCheck, TrendingUp,
-  Trophy, Award, ScrollText, Package, PartyPopper, GraduationCap, KeyRound, Megaphone, Trash2, type LucideIcon,
+  Trophy, Award, ScrollText, Package, PartyPopper, GraduationCap, KeyRound, Megaphone, Trash2, IdCard, type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/types/database.types";
 import type { ModuleKey } from "@/lib/sectors";
@@ -47,6 +47,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Promotions", href: "/promotions", icon: TrendingUp, roles: ["institute_admin", "teacher"], module: "promotions" },
   { title: "Tests & Ranks", href: "/tests", icon: Trophy, roles: ["institute_admin", "teacher"], module: "tests" },
   { title: "Certificates", href: "/certificates", icon: Award, roles: ["institute_admin"], module: "certificates" },
+  { title: "ID Cards", href: "/id-cards", icon: IdCard, roles: ["institute_admin"], module: "idCards" },
   { title: "Exam Boards", href: "/exam-boards", icon: ScrollText, roles: ["institute_admin"], module: "examBoards" },
   { title: "Performance", href: "/performance", icon: Trophy, roles: ["institute_admin", "teacher"], module: "performance" },
   { title: "Materials", href: "/materials", icon: Package, roles: ["institute_admin"], module: "materials" },
