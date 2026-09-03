@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { and, desc, eq, isNull, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
@@ -300,7 +301,19 @@ export async function saveProfile(patch: Partial<Profile>): Promise<void> {
     const col = PROFILE_MAP[k as keyof Profile];
     if (col) values[col] = v;
   }
+  // Was this the save that completes onboarding? The dashboard layout caches
+  // `needsOnboarding` as an RSC prop, so without a revalidate the onboarding
+  // gate keeps bouncing the owner back to /profile for the rest of the session
+  // even though the DB already says they're done.
+  const [before] = await db
+    .select({ onboarded: institutes.onboarded })
+    .from(institutes)
+    .where(eq(institutes.id, instituteId))
+    .limit(1);
+
   await db.update(institutes).set(values).where(eq(institutes.id, instituteId));
+
+  if (before && before.onboarded === false) revalidatePath("/", "layout");
 }
 
 /** Delete ALL of the active institute's records (keeps the institute + profile). */

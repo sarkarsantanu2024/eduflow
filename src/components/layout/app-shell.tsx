@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
+import { toast } from "sonner";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { cn } from "@/lib/utils";
@@ -46,9 +47,15 @@ export function AppShell({
   // signed-in center changes so the previous user's data never carries over.
   useActiveTenant(activeInstituteId);
 
-  // New center owners must finish their profile before using the app.
+  // New center owners must finish their profile before using the app. Say so —
+  // a silent bounce back to /profile just looks like the app is broken.
   useEffect(() => {
     if (needsOnboarding && pathname !== "/profile") {
+      toast.info("Finish setting up your centre first", {
+        description:
+          "Fill in your business details and tap Save changes — the rest of EduFlow unlocks straight after.",
+        duration: 8000,
+      });
       router.replace("/profile");
     }
   }, [needsOnboarding, pathname, router]);

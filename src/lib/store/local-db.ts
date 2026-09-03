@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
+import { toast } from "sonner";
 import {
   fetchDb, createRow, updateRow, deleteRow, softDeleteRow, restoreRow, saveProfile, clearInstituteData,
 } from "@/features/data/actions";
@@ -68,14 +69,42 @@ export function newId(_prefix?: string): string {
 }
 
 // ── mutations (optimistic local update + background persist) ─────────
+
+/**
+ * A background write failed. Re-syncing alone is not enough: the optimistic row
+ * disappears from the list and the owner is left thinking the app lost their
+ * work (or that "adding a student doesn't work"). Always say what happened.
+ *
+ * Next.js redacts server-action error messages in production, so `err.message`
+ * is only useful in dev — the fallback copy has to stand on its own.
+ */
+function writeFailed(what: string) {
+  return (err: unknown) => {
+    const detail = err instanceof Error ? err.message : "";
+    const redacted = !detail || /server components render|digest/i.test(detail);
+    toast.error(`Couldn't save ${what}`, {
+      description: redacted
+        ? "The change was rolled back. Check your connection and try again — if it keeps happening, the record may clash with an existing one (e.g. a duplicate ID)."
+        : detail,
+      duration: 12000,
+    });
+    reloadDb();
+  };
+}
+
 export function addItem<T extends { id: string }>(name: CollectionName, item: T) {
   setDb({ ...mem, [name]: [item, ...(mem[name] as unknown as T[])] });
-  void createRow(name, item as unknown as Record<string, unknown>).catch(reloadDb);
+  void createRow(name, item as unknown as Record<string, unknown>).catch(writeFailed(`this ${singular(name)}`));
 }
 
 export function updateItem<T extends { id: string }>(name: CollectionName, id: string, patch: Partial<T>) {
   setDb({ ...mem, [name]: (mem[name] as unknown as T[]).map((x) => (x.id === id ? { ...x, ...patch } : x)) });
-  void updateRow(name, id, patch as Record<string, unknown>).catch(reloadDb);
+  void updateRow(name, id, patch as Record<string, unknown>).catch(writeFailed(`this ${singular(name)}`));
+}
+
+/** "students" → "student", for readable error copy. */
+function singular(name: CollectionName): string {
+  return name.endsWith("s") ? name.slice(0, -1) : name;
 }
 
 /** Delete a row. Core entities (students, fees, payments, expenses, materials)
@@ -83,7 +112,7 @@ export function updateItem<T extends { id: string }>(name: CollectionName, id: s
  *  way the row leaves the active view immediately. */
 export function removeItem(name: CollectionName, id: string) {
   setDb({ ...mem, [name]: (mem[name] as { id: string }[]).filter((x) => x.id !== id) });
-  void softDeleteRow(name, id).catch(reloadDb);
+  void softDeleteRow(name, id).catch(writeFailed(`this ${singular(name)}`));
 }
 
 /** Restore a trashed row, then re-hydrate so it reappears in its section. */
@@ -99,7 +128,7 @@ export async function permanentlyDelete(name: CollectionName, id: string) {
 
 export function setProfile(patch: Partial<Profile>) {
   setDb({ ...mem, profile: { ...mem.profile, ...patch } });
-  void saveProfile(patch).catch(reloadDb);
+  void saveProfile(patch).catch(writeFailed("your profile"));
 }
 
 /** Clear ALL records for the active institute (keeps the institute itself). */
