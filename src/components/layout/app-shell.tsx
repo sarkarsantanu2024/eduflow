@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
-import { toast } from "sonner";
+import { OnboardingGateDialog } from "./onboarding-gate";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { cn } from "@/lib/utils";
@@ -47,18 +47,18 @@ export function AppShell({
   // signed-in center changes so the previous user's data never carries over.
   useActiveTenant(activeInstituteId);
 
-  // New center owners must finish their profile before using the app. Say so —
-  // a silent bounce back to /profile just looks like the app is broken.
+  // New center owners must finish their profile before using the app. The
+  // redirect alone reads as a broken app, so we explain it in a dismissible
+  // modal. This component lives in the layout, so `gateOpen` survives the
+  // client navigation and the modal is still up once we land on /profile.
+  const blocked = needsOnboarding && pathname !== "/profile";
+  const [gateOpen, setGateOpen] = useState(false);
   useEffect(() => {
-    if (needsOnboarding && pathname !== "/profile") {
-      toast.info("Finish setting up your centre first", {
-        description:
-          "Fill in your business details and tap Save changes — the rest of EduFlow unlocks straight after.",
-        duration: 8000,
-      });
+    if (blocked) {
+      setGateOpen(true);
       router.replace("/profile");
     }
-  }, [needsOnboarding, pathname, router]);
+  }, [blocked, router]);
 
   function toggle() {
     if (
@@ -117,9 +117,16 @@ export function AppShell({
           </div>
         )}
         <main className="nice-scroll flex-1 overflow-auto">
-          <div className="w-full px-3 py-4 sm:px-8 sm:py-5">{children}</div>
+          <div className="w-full px-3 py-4 sm:px-8 sm:py-5">
+            {/* Don't paint the blocked page while the redirect is in flight —
+                flashing "No students yet" and then bouncing away is worse than
+                showing nothing for a moment. */}
+            {blocked ? null : children}
+          </div>
         </main>
       </div>
+
+      <OnboardingGateDialog open={gateOpen} onOpenChange={setGateOpen} />
     </div>
   );
 }
