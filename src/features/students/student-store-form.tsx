@@ -78,6 +78,17 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
       toast.error("Student photo is required", { description: "Tap the camera icon at the top of the form to upload one — it's used on the ID card." });
       return;
     }
+    // Student ID is unique per centre in the database. Catch a clash here, or
+    // the insert is rejected server-side and the optimistic row just vanishes.
+    const code = form.code.trim();
+    const clash = students.find((s) => s.id !== existing?.id && s.code.trim() === code);
+    if (clash) {
+      toast.error("That Student ID is already taken", {
+        description: `${`${clash.firstName} ${clash.lastName}`.trim() || "Another record"} already uses ${code}. Give this ${member.toLowerCase()} a different ID.`,
+        duration: 10000,
+      });
+      return;
+    }
     // Capacity is prepaid — check before writing so the owner gets a clear
     // message instead of an optimistic row that silently disappears.
     if (!existing) {
@@ -91,6 +102,7 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
     // sync parent fields for reminders/fees
     const payload = {
       ...form,
+      code,
       centreName: profile.businessName || form.centreName,
       parentName: form.parentName || form.fatherName || form.motherName,
       parentMobile: form.parentMobile || form.fatherContact || form.motherContact,
