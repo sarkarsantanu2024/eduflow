@@ -6,15 +6,13 @@
  * ("MMA-Barasat-OO5"). The ID is now built from things the record already
  * knows, so it is consistent across a centre and readable at a glance.
  *
- *   MMA-Barasat-2609-005
- *   │   │        │    └─ 3-digit serial within that centre, branch and month
- *   │   │        └────── admission month (YYMM), so the ID says when they joined
- *   │   └─────────────── branch / city from the centre profile (omitted if unset)
- *   └─────────────────── initials of the centre name
+ *   MMA-Dumdum-001
+ *   │   │      └─ running serial for that centre and branch
+ *   │   └──────── branch / city from the centre profile (omitted if unset)
+ *   └──────────── initials of the centre name
  *
- * The serial restarts each month, which is fine: the YYMM segment keeps the
- * whole ID unique, and "the fifth admission of September" is a more useful
- * number to an owner than a running total since the centre opened.
+ * The serial is a running total, not per-month, so it never repeats and the
+ * number doubles as "how many admissions this branch has taken".
  */
 
 /** Initials of the centre name: "Maa Manasa Abacus" → "MMA". */
@@ -38,36 +36,35 @@ export function branchPart(city: string): string {
     .replace(/^./, (c) => c.toUpperCase());
 }
 
-/** "2026-09-14" → "2609". Falls back to today when the date is not set yet. */
-function yearMonth(admissionDate: string): string {
-  const d = /^\d{4}-\d{2}/.test(admissionDate) ? admissionDate : new Date().toISOString().slice(0, 10);
-  return d.slice(2, 4) + d.slice(5, 7);
-}
-
-/** Everything before the serial, e.g. "MMA-Barasat-2609-". */
-export function codeStem(businessName: string, city: string, admissionDate: string): string {
+/** Everything before the serial, e.g. "MMA-Dumdum-". */
+export function codeStem(businessName: string, city: string): string {
   const branch = branchPart(city);
-  return [centrePrefix(businessName), branch, yearMonth(admissionDate)].filter(Boolean).join("-") + "-";
+  return [centrePrefix(businessName), branch].filter(Boolean).join("-") + "-";
 }
 
 /**
- * Next free ID for this centre / branch / admission month.
+ * Next free ID for this centre and branch.
  * `taken` is every code already in use, so the result never collides even if
  * an owner previously typed something by hand in the same shape.
  */
 export function nextStudentCode(
   businessName: string,
   city: string,
-  admissionDate: string,
   taken: Iterable<string>,
 ): string {
-  const stem = codeStem(businessName, city, admissionDate);
+  const stem = codeStem(businessName, city);
   const used = new Set(Array.from(taken, (c) => c.trim().toUpperCase()));
 
   let highest = 0;
   for (const code of used) {
     if (!code.startsWith(stem.toUpperCase())) continue;
-    const n = Number.parseInt(code.slice(stem.length), 10);
+    const tail = code.slice(stem.length);
+    // Only a pure number continues the series. This skips IDs from the earlier
+    // dated format ("MMA-Dumdum-2609-004"), where a plain parseInt would read
+    // 2609 and hand the next admission "MMA-Dumdum-2610". Those IDs stay valid
+    // on the cards already printed; they just don't drive the counter.
+    if (!/^\d+$/.test(tail)) continue;
+    const n = Number.parseInt(tail, 10);
     if (Number.isFinite(n) && n > highest) highest = n;
   }
 
