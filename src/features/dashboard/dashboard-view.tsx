@@ -38,9 +38,18 @@ export function DashboardView() {
     chaseable.filter((f) => f.status !== "paid").map((f) => f.studentId).filter(Boolean),
   ).size;
 
+  // Collection rate compares like with like: of everything ever billed, how
+  // much has been paid. It used to divide THIS MONTH's collection by this
+  // month's collection plus ALL-TIME pending, so any centre carrying a backlog
+  // was stuck near 0% no matter how well it collected.
+  const billedTotal = chaseable.reduce((s, f) => s + f.amount, 0);
+  const collectedTotal = chaseable.reduce((s, f) => s + f.amountPaid, 0);
+
   const metrics = {
     totalStudents: students.length,
     activeStudents: students.filter((s) => s.status === "active").length,
+    droppedStudents: students.filter((s) => s.status === "dropped").length,
+    billedTotal, collectedTotal,
     todayCollection, monthCollection, pendingAmount, defaultersCount,
   };
 
