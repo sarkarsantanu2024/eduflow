@@ -20,7 +20,7 @@ export function ChangePasswordCard() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form action={action} className="grid max-w-md gap-4" autoComplete="off">
+        <form action={action} className="grid gap-4 sm:grid-cols-3" autoComplete="off">
           <div className="space-y-1.5">
             <Label htmlFor="currentPassword">Current password</Label>
             <Input id="currentPassword" name="currentPassword" type="password" autoComplete="off" placeholder="••••••••" />
@@ -33,9 +33,9 @@ export function ChangePasswordCard() {
             <Label htmlFor="confirmPassword">Confirm new password</Label>
             <Input id="confirmPassword" name="confirmPassword" type="password" autoComplete="off" required minLength={8} />
           </div>
-          {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
-          {state?.ok && <p className="text-sm text-emerald-600">Password updated successfully.</p>}
-          <div>
+          {state?.error && <p className="text-sm text-destructive sm:col-span-3">{state.error}</p>}
+          {state?.ok && <p className="text-sm text-emerald-600 sm:col-span-3">Password updated successfully.</p>}
+          <div className="sm:col-span-3">
             <Button type="submit" disabled={pending}>{pending ? "Updating…" : "Update password"}</Button>
           </div>
         </form>

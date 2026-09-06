@@ -21,7 +21,7 @@ export const DEMO_ABACUS_IDS = [DEMO_INSTITUTE_ID, DEMO_BRANCH_2_ID];
  * value must match an entry in src/lib/sectors.ts.
  */
 export type DemoSectorKey =
-  | "coaching" | "computer" | "dance" | "drawing" | "spoken_english" | "tuition" | "activity" | "other";
+  | "coaching" | "computer" | "dance" | "drawing" | "spoken_english" | "tuition" | "yoga" | "activity" | "other";
 
 export interface DemoCenter {
   sector: DemoSectorKey;
@@ -48,6 +48,7 @@ export const DEMO_CENTERS: DemoCenter[] = [
   { sector: "drawing", id: "d3300000-0000-4000-8000-000000000104", name: "▶ Demo — Rangoli Art School", slug: "demo-rangoli-art", ownerName: "Kavita Desai", city: "Ahmedabad", prefix: "RNG", monthlyFee: 800, admissionFee: 500, upiId: "rangoliart@upi", planCode: "growth" },
   { sector: "spoken_english", id: "d3300000-0000-4000-8000-000000000105", name: "▶ Demo — FluentSpeak English Center", slug: "demo-fluentspeak-english", ownerName: "Arun Nambiar", city: "Bengaluru", prefix: "FLS", monthlyFee: 1100, admissionFee: 800, upiId: "fluentspeak@upi", planCode: "growth" },
   { sector: "tuition", id: "d3300000-0000-4000-8000-000000000106", name: "▶ Demo — Vidya Tuition Center", slug: "demo-vidya-tuition", ownerName: "Ramesh Yadav", city: "Lucknow", prefix: "VDY", monthlyFee: 700, admissionFee: 300, upiId: "vidyatuition@upi", planCode: "starter" },
+  { sector: "yoga", id: "d3300000-0000-4000-8000-000000000109", name: "▶ Demo — Prana Yoga Studio", slug: "demo-prana-yoga", ownerName: "Anjali Iyer", city: "Rishikesh", prefix: "PRN", monthlyFee: 1300, admissionFee: 500, upiId: "pranayoga@upi", planCode: "growth", studentCount: 14 },
   { sector: "activity", id: "d3300000-0000-4000-8000-000000000108", name: "▶ Demo — Sparkle Multi-Activity Center", slug: "demo-sparkle-activity", ownerName: "Neha Agarwal", city: "Kolkata", prefix: "SPK", monthlyFee: 1000, admissionFee: 800, upiId: "sparkleactivity@upi", planCode: "business", studentCount: 18 },
   { sector: "other", id: "d3300000-0000-4000-8000-000000000107", name: "▶ Demo — Harmony Music & Skills Academy", slug: "demo-harmony-academy", ownerName: "Joseph Fernandes", city: "Goa", prefix: "HRM", monthlyFee: 900, admissionFee: 600, upiId: "harmonyacademy@upi", planCode: "starter" },
 ];

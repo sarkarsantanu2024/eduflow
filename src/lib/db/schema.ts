@@ -36,7 +36,7 @@ export const paymentStatus = pgEnum("payment_status", ["success", "pending"]);
 // schema pushes stay non-destructive; `music`/`computer_training` are unused.)
 export const instituteType = pgEnum("institute_type", [
   "abacus", "coaching", "computer", "computer_training", "dance", "drawing",
-  "music", "spoken_english", "tuition", "activity", "other",
+  "music", "spoken_english", "tuition", "yoga", "activity", "other",
 ]);
 export const subscriptionStatus = pgEnum("subscription_status", [
   "trialing", "active", "past_due", "canceled", "expired",

@@ -17,16 +17,15 @@ export function DemoModeCard() {
 
   return (
     <Card className="border-primary/30 bg-primary/5">
-      <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+      <CardContent className="flex h-full flex-col gap-3 p-5">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
           <Sparkles className="size-5" />
         </span>
         <div className="flex-1">
           <h3 className="font-bold">Demo mode</h3>
           <p className="text-sm text-muted-foreground">
-            Enter a fully-populated sample center (students, fees, tests, certificates, reports…) to
-            walk a prospect through the whole product. It&apos;s an isolated demo tenant — nothing here
-            affects real customers. Use <strong>Reset</strong> to start the next demo fresh.
+            A fully-populated sample center to walk a prospect through the whole product.
+            Isolated — nothing here affects real customers. <strong>Reset</strong> starts the next demo fresh.
           </p>
           {state?.ok && <p className="mt-1 text-sm text-emerald-600">Demo data reset.</p>}
           {state?.error && <p className="mt-1 text-sm text-destructive">{state.error}</p>}
@@ -40,13 +39,13 @@ export function DemoModeCard() {
           )}
         </div>
         <div className="flex shrink-0 gap-2">
-          <form action={resetAction}>
-            <Button type="submit" variant="outline" disabled={resetting}>
+          <form action={resetAction} className="flex-1">
+            <Button type="submit" variant="outline" disabled={resetting} className="w-full">
               <RefreshCw className={`size-4 ${resetting ? "animate-spin" : ""}`} /> {resetting ? "Resetting…" : "Reset"}
             </Button>
           </form>
-          <form action={enterDemoMode}>
-            <Button type="submit">
+          <form action={enterDemoMode} className="flex-[1.4]">
+            <Button type="submit" className="w-full">
               <PlayCircle className="size-4" /> Enter demo mode
             </Button>
           </form>
