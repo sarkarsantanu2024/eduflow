@@ -21,7 +21,13 @@ export const config = {
      *   - `txt|xml|webmanifest` so /robots.txt and /sitemap.xml are served
      *     from public/ instead of being redirected to /login — a crawler
      *     asking for robots.txt must never get an auth redirect.
+     *   - `css|js|map` and the font types, so static assets served straight
+     *     from public/ are never gated. This bit us: /site.css (the marketing
+     *     page's own stylesheet, added when the Tailwind CDN was removed) was
+     *     answered with a 307 to /login, so the homepage rendered with no CSS
+     *     at all. Anything under public/ that a browser fetches must be listed
+     *     here — _next/static covers the app's own bundles, not public/.
      */
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|html|txt|xml|webmanifest)$).+)",
+    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|html|txt|xml|webmanifest|css|js|mjs|map|woff|woff2|ttf|otf)$).+)",
   ],
 };

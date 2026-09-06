@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ import {
 } from "@/lib/store/local-db";
 import { uploadImageFile } from "@/features/uploads/upload-client";
 import { checkStudentCapacityAction } from "@/features/data/actions";
+import { nextStudentCode } from "@/features/students/student-code";
 import { getLabels } from "@/lib/constants";
 
 const selectClass =
@@ -28,6 +29,27 @@ const blank: Omit<Student, "id"> = {
   fatherName: "", fatherContact: "", motherName: "", motherContact: "",
   parentName: "", parentMobile: "", parentEmail: "", photo: "", status: "active",
 };
+
+/**
+ * Fields an admission cannot be saved without. Centre name is absent because
+ * it is filled from the profile and shown read-only, and Status/Gender already
+ * default to a valid value.
+ */
+const REQUIRED_FIELDS: Array<[keyof Omit<Student, "id">, string]> = [
+  ["code", "Student ID"],
+  ["firstName", "First name"],
+  ["dob", "Date of birth"],
+  ["admissionDate", "Admission date"],
+  ["courseId", "Course/Level"],
+  ["batchId", "Batch"],
+  ["schoolName", "School name"],
+  ["pincode", "Pincode"],
+  ["address", "Address"],
+  ["fatherName", "Father's name"],
+  ["fatherContact", "Father's contact"],
+  ["motherName", "Mother's name"],
+  ["motherContact", "Mother's contact"],
+];
 
 export function StudentStoreForm({ studentId }: { studentId?: string }) {
   const router = useRouter();
@@ -45,7 +67,13 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
   const [advanceMonth, setAdvanceMonth] = useState(true);
 
   const existing = studentId ? students.find((s) => s.id === studentId) : undefined;
-  const [form, setForm] = useState<Omit<Student, "id">>(existing ? { ...existing } : blank);
+  const [form, setForm] = useState<Omit<Student, "id">>(
+    existing ? { ...existing } : { ...blank, admissionDate: today, monthlyFee: profileMonthlyFee },
+  );
+  // The ID is generated from centre, branch and admission month. An owner can
+  // still take it over — some centres carry a numbering scheme from paper —
+  // but they have to ask for it, so the default stays consistent.
+  const [codeManual, setCodeManual] = useState(false);
   // One-time admission fee raised at admission. Blank = use the centre default;
   // editable so an owner can waive it (0) or adjust for a specific admission.
   const [admissionFee, setAdmissionFee] = useState<number | "">("");
@@ -53,6 +81,18 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
+
+  // Keep the generated ID in step with the admission month while the owner is
+  // still filling the form. Never touches an existing student (their ID is
+  // printed on a card and referenced in receipts) or a hand-entered one.
+  const autoCode = useMemo(
+    () => nextStudentCode(profile.businessName, profile.city, form.admissionDate, students.map((s) => s.code)),
+    [profile.businessName, profile.city, form.admissionDate, students],
+  );
+  useEffect(() => {
+    if (existing || codeManual) return;
+    setForm((f) => (f.code === autoCode ? f : { ...f, code: autoCode }));
+  }, [autoCode, existing, codeManual]);
 
   async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -70,8 +110,20 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.code.trim() || !form.firstName.trim()) {
-      toast.error("Student ID and First name are required");
+    // Everything an admission record needs to be useful later: the ID card, the
+    // fee reminder, the certificate and the parent contact all depend on these.
+    // Named individually so the owner is told exactly what is missing rather
+    // than hunting a long form for a red box.
+    const missing = REQUIRED_FIELDS.filter(([key]) => !String(form[key] ?? "").trim()).map(([, label]) => label);
+    if (missing.length) {
+      toast.error(`${missing.length} required field${missing.length > 1 ? "s" : ""} still empty`, {
+        description: missing.join(", "),
+        duration: 10000,
+      });
+      return;
+    }
+    if (!/^\d{6}$/.test(form.pincode.trim())) {
+      toast.error("Pincode must be 6 digits");
       return;
     }
     if (!form.photo) {
@@ -177,7 +229,28 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Student ID *"><Input value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="MMA-0001" /></Field>
+            <Field label="Student ID *">
+              <div className="flex gap-2">
+                <Input
+                  value={form.code}
+                  onChange={(e) => set("code", e.target.value)}
+                  readOnly={!codeManual && !existing}
+                  className={!codeManual && !existing ? "cursor-not-allowed bg-muted/50" : undefined}
+                  title={!codeManual && !existing ? "Generated from your centre, branch and the admission month" : undefined}
+                />
+                {!existing && (
+                  <Button type="button" variant="outline" className="shrink-0"
+                    onClick={() => { if (codeManual) { setCodeManual(false); set("code", autoCode); } else setCodeManual(true); }}>
+                    {codeManual ? "Auto" : "Edit"}
+                  </Button>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {existing ? "Existing IDs are not renumbered — it is printed on the ID card."
+                  : codeManual ? "Typing your own. Tap Auto to go back to the generated ID."
+                  : "Generated from your centre name, branch and admission month."}
+              </p>
+            </Field>
             <Field label="Status">
               <select className={selectClass} value={form.status} onChange={(e) => set("status", e.target.value as Student["status"])}>
                 <option value="active">Active</option><option value="inactive">Inactive</option>
@@ -192,12 +265,12 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
                 <option value="female">Female</option><option value="other">Other</option>
               </select>
             </Field>
-            <Field label="Date of birth"><Input type="date" value={form.dob} onChange={(e) => set("dob", e.target.value)} /></Field>
-            <Field label="Admission date"><Input type="date" value={form.admissionDate} onChange={(e) => set("admissionDate", e.target.value)} /></Field>
-            <Field label="Centre name">
+            <Field label="Date of birth *"><Input type="date" value={form.dob} onChange={(e) => set("dob", e.target.value)} /></Field>
+            <Field label="Admission date *"><Input type="date" value={form.admissionDate} onChange={(e) => set("admissionDate", e.target.value)} /></Field>
+            <Field label="Centre name *">
               <Input value={profile.businessName} readOnly className="cursor-not-allowed bg-muted/50" title="Your centre — change it in Profile" />
             </Field>
-            <Field label="Course/Level">
+            <Field label="Course/Level *">
               <select className={selectClass} value={form.courseId} onChange={(e) => set("courseId", e.target.value)}>
                 <option value="">{courses.length === 0 ? "No levels yet — add them on the Levels page" : "Select course/level…"}</option>
                 {courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -209,7 +282,7 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
                 </p>
               )}
             </Field>
-            <Field label="Batch">
+            <Field label="Batch *">
               <select className={selectClass} value={form.batchId} onChange={(e) => set("batchId", e.target.value)}>
                 <option value="">Select batch…</option>
                 {batches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -217,7 +290,12 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
             </Field>
             <Field label="Monthly fee (₹)">
               <Input type="number" value={form.monthlyFee || ""} onChange={(e) => set("monthlyFee", Number(e.target.value) || 0)}
-                placeholder={`Center default (${profileMonthlyFee})`} />
+                placeholder={`Centre default (${profileMonthlyFee})`} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                {profileMonthlyFee > 0
+                  ? <>Filled from your centre fee (₹{profileMonthlyFee}). Change it here for this {member.toLowerCase()} only.</>
+                  : <>No centre fee set yet — add one in <a href="/profile" className="font-medium text-primary underline">Profile</a>.</>}
+              </p>
             </Field>
             {!existing && (
               <Field label="Admission fee (₹)">
@@ -241,11 +319,12 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
       <Card>
         <CardHeader><CardTitle>School & address</CardTitle></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <Field label="School name"><Input value={form.schoolName} onChange={(e) => set("schoolName", e.target.value)} /></Field>
+          <Field label="School name *"><Input value={form.schoolName} onChange={(e) => set("schoolName", e.target.value)} /></Field>
           <Field label="Class"><Input value={form.schoolClass} onChange={(e) => set("schoolClass", e.target.value)} /></Field>
           <Field label="City"><Input value={form.city} onChange={(e) => set("city", e.target.value)} /></Field>
-          <Field label="Pincode"><Input value={form.pincode} onChange={(e) => set("pincode", e.target.value)} /></Field>
-          <Field label="Address" full>
+          <Field label="Pincode *"><Input value={form.pincode} inputMode="numeric" maxLength={6}
+            onChange={(e) => set("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="700124" /></Field>
+          <Field label="Address *" full>
             <textarea className={`${selectClass} min-h-20 py-2`} value={form.address} onChange={(e) => set("address", e.target.value)} />
           </Field>
         </CardContent>
@@ -255,10 +334,10 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
       <Card>
         <CardHeader><CardTitle>Parent / guardian details</CardTitle></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <Field label="Father's name"><Input value={form.fatherName} onChange={(e) => set("fatherName", e.target.value)} /></Field>
-          <Field label="Father's contact"><Input value={form.fatherContact} onChange={(e) => set("fatherContact", e.target.value)} placeholder="+9198…" /></Field>
-          <Field label="Mother's name"><Input value={form.motherName} onChange={(e) => set("motherName", e.target.value)} /></Field>
-          <Field label="Mother's contact"><Input value={form.motherContact} onChange={(e) => set("motherContact", e.target.value)} placeholder="+9198…" /></Field>
+          <Field label="Father's name *"><Input value={form.fatherName} onChange={(e) => set("fatherName", e.target.value)} /></Field>
+          <Field label="Father's contact *"><Input value={form.fatherContact} onChange={(e) => set("fatherContact", e.target.value)} placeholder="+9198…" /></Field>
+          <Field label="Mother's name *"><Input value={form.motherName} onChange={(e) => set("motherName", e.target.value)} /></Field>
+          <Field label="Mother's contact *"><Input value={form.motherContact} onChange={(e) => set("motherContact", e.target.value)} placeholder="+9198…" /></Field>
           <Field label="Parent email"><Input type="email" value={form.parentEmail} onChange={(e) => set("parentEmail", e.target.value)} /></Field>
         </CardContent>
       </Card>

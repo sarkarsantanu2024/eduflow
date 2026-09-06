@@ -31,6 +31,7 @@ import { SeatMeter } from "@/features/capacity/seat-meter";
 import { ExportData } from "@/components/export-data";
 import { PosterPackDialog } from "@/features/students/welcome-pack-dialog";
 import { extractStudentFromPdf } from "@/features/students/student-pdf";
+import { nextStudentCode } from "@/features/students/student-code";
 
 const statusVariant: Record<StudentStatus, "success" | "secondary" | "warning" | "destructive"> = {
   active: "success", inactive: "secondary", graduated: "warning", dropped: "destructive",
@@ -150,13 +151,15 @@ export function StudentsView() {
   // the owner guessing which rows landed, so we refuse it outright and say
   // exactly how many slots are free.
   async function importStudents(records: ImportedStudent[]) {
-    const prefix = (profile.businessName || "STU").split(/\s+/).map((w) => w[0]).join("").replace(/[^A-Za-z]/g, "").slice(0, 4).toUpperCase() || "STU";
     const courseByName = new Map(courses.map((c) => [c.name.trim().toLowerCase(), c.id]));
     // A student is a duplicate if the same name + mobile already exists.
     const existingKeys = new Set(students.map(studentKey));
     const seen = new Set<string>();
-    let n = students.length;
     let imported = 0, skipped = 0;
+    // Imported students get the same generated ID shape as ones added by hand
+    // (centre-branch-month-serial). Codes issued during this loop are added to
+    // the pool as we go, so a 200-row file cannot hand out the same ID twice.
+    const issued = new Set(students.map((st) => st.code).filter(Boolean));
 
     // Count only the rows that would actually be created (duplicates are free).
     const fresh = new Set<string>();
@@ -188,8 +191,11 @@ export function StudentsView() {
         if (!cid) { cid = newId("course"); addItem("courses", { id: cid, name: levelName, description: "" }); courseByName.set(k, cid); }
         courseId = cid;
       }
-      n += 1;
-      const code = rest.code || `${prefix}-${String(n).padStart(4, "0")}`;
+      // A code in the file wins — the owner's existing numbering is theirs to
+      // keep. Otherwise generate one from the row's own admission date.
+      const code = rest.code?.trim()
+        || nextStudentCode(profile.businessName, profile.city, rest.admissionDate ?? "", issued);
+      issued.add(code);
       addItem<Student>("students", { id: newId("student"), ...rest, courseId, code });
       imported += 1;
     });

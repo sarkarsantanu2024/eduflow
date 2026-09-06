@@ -16,8 +16,11 @@ import { getLabels } from "@/lib/constants";
 function fields(b?: Batch): FormField[] {
   return [
     { name: "name", label: "Batch name", required: true, defaultValue: b?.name },
-    { name: "timing", label: "Timing", placeholder: "5:00 PM - 6:30 PM", defaultValue: b?.timing },
-    { name: "days", label: "Days", placeholder: "Mon, Wed, Fri", defaultValue: b?.days },
+    // Clock inputs and day chips rather than free text: typed timings arrived
+    // in a different shape from every owner ("4p.m. - 6p.m.", "5:00 PM - 6:30
+    // PM"), which made batch lists impossible to read at a glance.
+    { name: "timing", label: "Timing", type: "timerange", defaultValue: b?.timing },
+    { name: "days", label: "Days", type: "days", defaultValue: b?.days },
     { name: "capacity", label: "Capacity", type: "number", defaultValue: b?.capacity },
   ];
 }
