@@ -8,6 +8,20 @@ import { requireActiveInstituteId } from "@/lib/tenant";
 import { renderTemplate } from "@/lib/wa-link";
 import { DEFAULT_AUTOMATION, type AutomationSettings } from "@/lib/store/types";
 import { enqueue, istToday, normalizeSettings, queueForInstitute, templatesByType } from "./engine";
+import { runMonthlyBilling, type BillingResult } from "./billing";
+
+/**
+ * Generate this month's fees and auto-expenses for the active center, now.
+ *
+ * The daily cron does this for every center, but a center that signed up this
+ * morning shouldn't wait until tomorrow to see its fee list — so the Fees page
+ * calls this once on mount. It is idempotent at the database level (see
+ * billing.ts), so calling it from several tabs at once is harmless.
+ */
+export async function ensureMonthlyBilling(): Promise<BillingResult> {
+  const instituteId = await requireActiveInstituteId();
+  return runMonthlyBilling(instituteId);
+}
 
 export type OutboxRow = {
   id: string;
@@ -116,10 +130,17 @@ export async function markFeePaidFromOutbox(
 
   const remaining = Math.max(0, fee.amount - fee.amountPaid);
   if (remaining > 0) {
-    await db.update(fees).set({ amountPaid: fee.amount, status: "paid" }).where(eq(fees.id, fee.id));
-    await db.insert(payments).values({
-      instituteId, studentId: fee.studentId, studentName: fee.studentName,
-      amount: remaining, method, status: "success", source: "fee", date: istToday().ymd,
+    // Atomic: marking the fee paid and recording the payment must both happen
+    // or neither. Split across two statements, a failure between them left the
+    // fee reading as collected with no payment row — money that shows as
+    // received on the student's balance but is missing from the collection
+    // report and the P&L.
+    await db.transaction(async (tx) => {
+      await tx.update(fees).set({ amountPaid: fee.amount, status: "paid" }).where(eq(fees.id, fee.id));
+      await tx.insert(payments).values({
+        instituteId, studentId: fee.studentId, studentName: fee.studentName,
+        amount: remaining, method, status: "success", source: "fee", date: istToday().ymd,
+      });
     });
   }
   await db.delete(messageOutbox).where(eq(messageOutbox.id, row.id));

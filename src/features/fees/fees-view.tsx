@@ -24,9 +24,11 @@ import {
   stickyActionsHead, stickyActionsCell,
 } from "@/components/ui/table";
 import {
-  useCollection, useHydrated, useProfile, addItem, updateItem, removeItem, setProfile, newId, effectiveFee,
-  type Fee, type Payment, type Student, type Expense, type Material, type RecurringCharge,
+  useCollection, useHydrated, useProfile, addItem, updateItem, removeItem, setProfile, newId,
+  reloadDb,
+  type Fee, type Payment, type Student, type Material, type RecurringCharge,
 } from "@/lib/store/local-db";
+import { ensureMonthlyBilling } from "@/features/automation/actions";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 const periodLabel = (period: string) =>
@@ -145,34 +147,24 @@ export function FeesView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, fees]);
 
-  // ── monthly: auto-generate this month's fee for every active student ──
-  // Runs silently and self-heals: each active student without a fee for the
-  // current period gets one. No button, no manual step — like rent that's simply
-  // "due" each month. When the month rolls over, the new month is added on next visit.
-  // A per-session guard means a student+period is attempted at most once, so a
-  // failed insert can never turn into a retry storm.
-  const attempted = useRef<Set<string>>(new Set());
+  // ── monthly billing ──
+  // Fees, recurring charges and teacher salary are generated SERVER-SIDE (see
+  // features/automation/billing.ts) and are idempotent at the database level.
+  // They used to be three useEffect hooks right here, deduping against this
+  // browser's cached copy of the data — so two tabs open at once produced two
+  // real charges against the same parent, and a month where nobody opened this
+  // page produced no fees at all.
+  //
+  // The daily cron already does this for every center; this call just means a
+  // brand-new center sees its fees immediately instead of tomorrow.
+  const billingRequested = useRef(false);
   useEffect(() => {
-    if (!hydrated) return;
-    const missing = students.filter(
-      (s) =>
-        s.status === "active" &&
-        !attempted.current.has(`${s.id}_${ym}`) &&
-        !fees.some((f) => f.kind === "monthly" && f.studentId === s.id && f.period === ym),
-    );
-    if (missing.length === 0) return;
-    missing.forEach((s) => {
-      attempted.current.add(`${s.id}_${ym}`);
-      addItem<Fee>("fees", {
-        id: newId(), studentId: s.id, studentName: `${s.firstName} ${s.lastName}`.trim(),
-        parentMobile: s.parentMobile || s.fatherContact, kind: "monthly", period: ym,
-        title: `${monthLabel} Monthly Fee`, type: "monthly", amount: effectiveFee(s, profile.monthlyFee || 0),
-        amountPaid: 0, status: "pending", dueDate: `${ym}-05`,
-        reminderSentAt: "", approved: false, voucherSentAt: "",
-      });
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, students, fees, ym]);
+    if (!hydrated || billingRequested.current) return;
+    billingRequested.current = true;
+    ensureMonthlyBilling()
+      .then((r) => { if (r.feesCreated || r.expensesCreated) reloadDb(); })
+      .catch(() => { /* cron will catch it tonight — never block the page */ });
+  }, [hydrated]);
 
   // One-time: fold the legacy royalty % into the generic recurring charges.
   const royaltyMigrated = useRef(false);
@@ -187,54 +179,6 @@ export function FeesView() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
-
-  // ── auto-post each recurring monthly charge as an expense ──
-  // basis: fixed ₹, per active student ₹, or % of the month's fees. Posted once
-  // per month so the dashboard's Net Profit is the center's real margin.
-  const chargesPosted = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (!hydrated) return;
-    const charges = profile.recurringCharges || [];
-    if (charges.length === 0) return;
-    const active = students.filter((s) => s.status === "active");
-    const feeBase = active.reduce((sum, s) => sum + effectiveFee(s, profile.monthlyFee || 0), 0);
-    charges.forEach((c) => {
-      const key = `${c.id}_${ym}`;
-      if (chargesPosted.current.has(key)) return;
-      const amount =
-        c.basis === "fixed" ? c.amount
-        : c.basis === "per_student" ? c.amount * active.length
-        : Math.round((c.amount / 100) * feeBase);
-      const title = `${c.name || "Charge"} — ${monthLabel}`;
-      if (amount <= 0 || expenses.some((e) => e.title === title)) { chargesPosted.current.add(key); return; }
-      chargesPosted.current.add(key);
-      const note =
-        c.basis === "per_student" ? `₹${c.amount} × ${active.length} active students`
-        : c.basis === "percent" ? `${c.amount}% of ₹${feeBase} monthly fees`
-        : "fixed monthly charge";
-      addItem<Expense>("expenses", { id: newId(), title, category: c.category || "Miscellaneous", amount, date: today, note });
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, students, expenses, ym, profile.recurringCharges]);
-
-  // ── post this month's total teacher salary as an expense ──
-  // Sum of each teacher's monthly salary (set on the Teachers page). Posted once
-  // per month, editable on Expenses — so a mid-month change is easy to adjust.
-  const salaryDone = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (!hydrated || salaryDone.current.has(ym)) return;
-    const total = teachers.reduce((s, t) => s + (t.salary || 0), 0);
-    if (total <= 0) return;
-    const title = `Teacher salary — ${monthLabel}`;
-    if (expenses.some((e) => e.title === title)) { salaryDone.current.add(ym); return; }
-    const paidCount = teachers.filter((t) => (t.salary || 0) > 0).length;
-    salaryDone.current.add(ym);
-    addItem<Expense>("expenses", {
-      id: newId(), title, category: "Teacher Salary", amount: total, date: today,
-      note: `${paidCount} teacher${paidCount > 1 ? "s" : ""}`,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, teachers, expenses, ym]);
 
   if (hydrated && fees.length === 0 && students.length === 0) {
     return (

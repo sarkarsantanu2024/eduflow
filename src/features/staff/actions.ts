@@ -69,9 +69,19 @@ export async function createStaff(formData: FormData): Promise<{ error?: string;
   const email = `${username}@staff.eduflow.local`;
 
   // Enforce plan staff limit.
+  //
+  // `maxStaff` counts TOTAL logins for the center, owner included — the pricing
+  // page says "1 staff login" on Free and a customer reads that as one person.
+  // Counting only teachers meant Free quietly allowed the owner plus a teacher.
   const data = await listStaff();
-  if (data.limit !== null && data.staff.length >= data.limit) {
-    return { error: `Your ${data.planName} plan allows ${data.limit} staff login${data.limit === 1 ? "" : "s"}. Upgrade your plan to add more.` };
+  const OWNER_LOGINS = 1;
+  const used = data.staff.length + OWNER_LOGINS;
+  if (data.limit !== null && used >= data.limit) {
+    return {
+      error:
+        `Your ${data.planName} plan allows ${data.limit} login${data.limit === 1 ? "" : "s"} ` +
+        `for this center, including your own. Upgrade your plan to add more.`,
+    };
   }
 
   // Username is the login — must be globally unique.

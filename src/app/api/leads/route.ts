@@ -9,18 +9,44 @@ import { leads } from "@/lib/db/schema";
  * enquiry, exactly like any contact form. Reading them requires super-admin
  * (see /admin/leads).
  *
- * The marketing site is hosted on a different domain, so CORS is open for POST.
- * Nothing sensitive is exposed: this endpoint only ever writes.
+ * CORS is locked to our own origin. It used to be "*" because the marketing
+ * site was hosted separately; site.html is now served same-origin by the
+ * rewrite in next.config.ts, so the wildcard bought nothing and let any page
+ * on the web post into this table.
  */
 
 export const dynamic = "force-dynamic";
 
+const ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? "https://eduflow.nexvoratechnologies.co.in";
+
 const CORS = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": ORIGIN,
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
   "Access-Control-Max-Age": "86400",
+  Vary: "Origin",
 };
+
+/**
+ * Per-IP rate limit. In-memory, so it resets on cold start and is per-instance
+ * — not a shield against a distributed flood, but enough to stop one script
+ * filling the leads table faster than a human could ever submit. Move to Vercel
+ * KV if this ever needs to be authoritative.
+ */
+const RATE_LIMIT = { max: 5, windowMs: 10 * 60 * 1000 };
+const hits = new Map<string, number[]>();
+
+function rateLimited(ip: string): boolean {
+  const now = Date.now();
+  const recent = (hits.get(ip) ?? []).filter((t) => now - t < RATE_LIMIT.windowMs);
+  recent.push(now);
+  hits.set(ip, recent);
+  // Opportunistic cleanup so the map cannot grow without bound.
+  if (hits.size > 5000) {
+    for (const [k, v] of hits) if (!v.some((t) => now - t < RATE_LIMIT.windowMs)) hits.delete(k);
+  }
+  return recent.length > RATE_LIMIT.max;
+}
 
 const LeadSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -41,6 +67,17 @@ export async function OPTIONS() {
 }
 
 export async function POST(request: Request) {
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
+  if (rateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Too many enquiries from this connection. Please try again shortly, or message us on WhatsApp." },
+      { status: 429, headers: CORS },
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
