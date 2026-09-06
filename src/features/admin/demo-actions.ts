@@ -430,6 +430,7 @@ const DEMO_STAFF: Record<string, [string, string][]> = {
   drawing: [["Kavita Desai", "Watercolour & Sketching"], ["Imran Shaikh", "Acrylic & Exam prep"]],
   spoken_english: [["Arun Nambiar", "Fluency & Accent"], ["Grace Thomas", "Kids & Personality Dev."]],
   tuition: [["Ramesh Yadav", "Mathematics & Science"], ["Pooja Mishra", "English & Accountancy"]],
+  yoga: [["Anjali Iyer", "Hatha & Ashtanga (Lead)"], ["Yogesh Rawat", "Pranayama & Therapeutic"]],
   // A full activity center runs one specialist per activity.
   activity: [
     ["Neha Agarwal", "Abacus & Vedic Maths"],
