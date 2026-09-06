@@ -14,6 +14,7 @@ import {
   useCollection, useHydrated, useProfile, addItem, newId, type Performance,
 } from "@/lib/store/local-db";
 import { formatDate } from "@/lib/utils";
+import { todayIso } from "@/lib/date";
 
 const BODY = "Proud moment! {{student_name}} achieved {{result}} at {{event}} ({{level}}). Congratulations! 🏆 — {{business}}";
 
@@ -44,7 +45,7 @@ export function PerformanceView() {
         addItem<Performance>("performances", {
           id: newId("perf"), studentId: s.id, studentName: `${s.firstName} ${s.lastName}`.trim(),
           parentMobile: s.parentMobile || s.fatherContact, event: v("event"), level: v("level"),
-          result: v("result"), date: v("date") || new Date().toISOString().slice(0, 10),
+          result: v("result"), date: v("date") || todayIso(),
         });
       }}
     />

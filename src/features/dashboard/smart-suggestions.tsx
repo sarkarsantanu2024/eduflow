@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useDb } from "@/lib/store/local-db";
 import { getSector } from "@/lib/sectors";
 import { formatCurrency } from "@/lib/utils";
+import { todayIso } from "@/lib/date";
 
 type Tone = "urgent" | "info" | "good";
 
@@ -36,7 +37,7 @@ export function SmartSuggestions() {
   const { students, fees, payments, expenses, attendance, examRegs, batches, profile } = db;
   const modules = getSector(profile.businessType).modules;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   const ym = today.slice(0, 7);
   const todayMd = today.slice(5);
 

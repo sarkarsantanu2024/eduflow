@@ -27,6 +27,7 @@ import {
 } from "@/lib/store/local-db";
 import { HO_MATERIALS } from "@/lib/ho-materials";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { todayIso } from "@/lib/date";
 
 const selectClass =
   "h-10 w-full rounded-lg border border-input bg-card px-3 text-sm shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
@@ -129,6 +130,9 @@ function IssueMaterialDialog({
   );
 }
 
+/** Stable link from a Head-Office cost expense back to its material. */
+const materialCostKey = (materialId: string) => `material:${materialId}`;
+
 export function MaterialsView() {
   const hydrated = useHydrated();
   const materials = useCollection("materials");
@@ -139,7 +143,7 @@ export function MaterialsView() {
   const biz = profile.businessName || "our institute";
   const upiId = profile.upiId;
   const qrImage = profile.qrImage;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
 
   const mobileFor = (studentId: string) => {
     const s = students.find((x) => x.id === studentId);
@@ -149,8 +153,9 @@ export function MaterialsView() {
   // Buy from HO (cost → expense) and record the sale to the parent (charge).
   function onIssue({ student, item, sellPrice, hoCost }: { student: Student; item: string; sellPrice: number; hoCost: number }) {
     const name = `${student.firstName} ${student.lastName}`.trim();
+    const materialId = newId();
     addItem<Material>("materials", {
-      id: newId(), studentId: student.id, studentName: name,
+      id: materialId, studentId: student.id, studentName: name,
       item, amount: sellPrice, issued: false, date: today,
     });
     if (hoCost > 0) {
@@ -158,6 +163,9 @@ export function MaterialsView() {
         id: newId(), title: `Head Office — ${item} (${name})`,
         category: "Study Materials", amount: hoCost, date: today,
         note: `Cost of ${item} bought from HO for ${name}`,
+        // Links the cost to the material by ID. The title used to be the only
+        // link, so renaming the item — or the student — silently orphaned it.
+        dedupeKey: materialCostKey(materialId),
       });
     }
     toast.success("Material issued", { description: `${item} → ${name} · margin ${formatCurrency((sellPrice - hoCost) * 100)}` });
@@ -178,26 +186,22 @@ export function MaterialsView() {
   // the ledger doesn't keep an orphan cost for a kit that no longer exists.
   function deleteMaterial(m: Material) {
     removeItem("materials", m.id);
-    const costTitle = `Head Office — ${m.item} (${m.studentName})`;
-    const linked = expenses.find((e) => e.title === costTitle);
+    // Match on the key first; fall back to the title for costs posted before
+    // keys existed. Both go to Trash, so a wrong guess is recoverable.
+    const key = materialCostKey(m.id);
+    const linked =
+      expenses.find((e) => e.dedupeKey === key)
+      ?? expenses.find((e) => e.title === `Head Office — ${m.item} (${m.studentName})`);
     if (linked) removeItem("expenses", linked.id);
     toast.success("Material deleted");
   }
 
-  // One-time cleanup: older builds didn't remove a material's Head Office cost
-  // when the material was deleted, leaving orphan "Study Materials" expenses that
-  // dented Net Profit. Sweep them once per session — an expense is an orphan if
-  // it's a HO material cost whose material record no longer exists.
-  const swept = useRef(false);
-  useEffect(() => {
-    if (!hydrated || swept.current) return;
-    swept.current = true;
-    const validCostTitles = new Set(materials.map((m) => `Head Office — ${m.item} (${m.studentName})`));
-    expenses
-      .filter((e) => e.category === "Study Materials" && e.title.startsWith("Head Office — ") && !validCostTitles.has(e.title))
-      .forEach((e) => removeItem("expenses", e.id));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated]);
+  // The automatic orphan sweep that used to live here is gone. It moved any
+  // "Head Office — ..." expense whose TITLE no longer matched a material into
+  // Trash, simply because someone opened this page — so renaming a kit or
+  // correcting a student's spelling silently changed Net Profit. Costs are
+  // linked by id now (see onIssue), and deleteMaterial removes the linked cost
+  // directly, which is what the sweep was compensating for.
 
   const issueBtn = <IssueMaterialDialog students={students} onIssue={onIssue} />;
 

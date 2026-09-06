@@ -19,6 +19,7 @@ import { checkStudentCapacityAction } from "@/features/data/actions";
 import { nextStudentCode } from "@/features/students/student-code";
 import { defaultBillingStart } from "@/features/students/billing-start";
 import { getLabels } from "@/lib/constants";
+import { todayIso } from "@/lib/date";
 
 const selectClass =
   "h-10 w-full rounded-lg border border-input bg-card px-3 text-sm shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
@@ -60,7 +61,7 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
   const { member } = getLabels(profile.businessType);
   const profileMonthlyFee = profile.monthlyFee || 0;
   const profileAdmissionFee = profile.admissionFee || 0;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   const ym = today.slice(0, 7);
   const monthLabel = new Date(`${ym}-01T00:00:00`).toLocaleString("en-IN", { month: "long", year: "numeric" });
   // Both of these are `null` until the owner overrides them, so they keep

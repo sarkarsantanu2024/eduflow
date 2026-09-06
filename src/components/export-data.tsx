@@ -7,10 +7,11 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { toCsv, downloadFile } from "@/lib/csv";
+import { todayIso } from "@/lib/date";
 
 export type ExportColumn<T> = { header: string; value: (row: T) => string | number };
 
-const stamp = () => new Date().toISOString().slice(0, 10);
+const stamp = () => todayIso();
 const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /** Build an Excel-openable HTML table (.xls) — no dependency. */

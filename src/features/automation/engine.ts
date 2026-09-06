@@ -3,6 +3,7 @@ import { and, eq, gte, inArray, isNull, lt, lte, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { fees, institutes, messageOutbox, students, templates } from "@/lib/db/schema";
 import { renderTemplate } from "@/lib/wa-link";
+import { istToday } from "@/lib/date";
 import { formatDate } from "@/lib/utils";
 import { DEFAULT_AUTOMATION, type AutomationSettings } from "@/lib/store/types";
 
@@ -16,12 +17,12 @@ import { DEFAULT_AUTOMATION, type AutomationSettings } from "@/lib/store/types";
  * number, and `purgeOutbox` removes sent/stale rows so the table stays small.
  */
 
-/** Today's date parts in IST (the server runs in UTC on Vercel). */
-export function istToday(): { ymd: string; mmdd: string; year: number } {
-  const ist = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
-  const ymd = ist.toISOString().slice(0, 10);
-  return { ymd, mmdd: ymd.slice(5), year: ist.getUTCFullYear() };
-}
+/**
+ * Today's date parts in IST. Re-exported from lib/date so the browser and the
+ * server cannot drift — they used to disagree for five and a half hours every
+ * night, because client code took the date in UTC.
+ */
+export { istToday };
 
 export function addDays(ymd: string, days: number): string {
   const d = new Date(`${ymd}T00:00:00Z`);

@@ -17,6 +17,7 @@ import { renderTemplate, waLink } from "@/lib/wa-link";
 import { queueAnnouncement } from "@/features/automation/actions";
 import { getSector } from "@/lib/sectors";
 import { formatDate } from "@/lib/utils";
+import { useCanManage } from "@/components/layout/role-context";
 import {
   useCollection, useHydrated, useProfile, addItem, updateItem, removeItem, newId,
   type Template, type Student, type Fee,
@@ -380,6 +381,7 @@ function SendPanel({
 }
 
 export function RemindersView({ canEditAutomation = false }: { canEditAutomation?: boolean }) {
+  const canManage = useCanManage();
   const hydrated = useHydrated();
   const templates = useCollection("templates");
   const students = useCollection("students");
@@ -394,7 +396,9 @@ export function RemindersView({ canEditAutomation = false }: { canEditAutomation
   // with its sector's professional version. Never touches templates you've edited.
   const migrated = useRef(false);
   useEffect(() => {
-    if (!hydrated || migrated.current) return;
+    // Owner-only: templates are not staff-writable, so without this a teacher
+    // opening Reminders got a "Forbidden" toast for visiting the page.
+    if (!hydrated || migrated.current || !canManage) return;
     migrated.current = true;
     const seedByName = new Map(sector.seedTemplates.map((t) => [t.name, t.body]));
     templates.forEach((t) => {

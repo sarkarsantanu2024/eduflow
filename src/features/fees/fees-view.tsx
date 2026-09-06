@@ -30,6 +30,8 @@ import {
 } from "@/lib/store/local-db";
 import { ensureMonthlyBilling } from "@/features/automation/actions";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { todayIso } from "@/lib/date";
+import { useCanManage } from "@/components/layout/role-context";
 
 const periodLabel = (period: string) =>
   period ? new Date(`${period}-01T00:00:00`).toLocaleString("en-IN", { month: "short", year: "numeric" }) : "—";
@@ -55,8 +57,9 @@ export function FeesView() {
   const materials = useCollection("materials");
   const profile = useProfile();
   const [tab, setTab] = useState<Tab>("monthly");
+  const canManage = useCanManage();
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   const ym = today.slice(0, 7); // current period "YYYY-MM"
   const monthLabel = new Date(`${ym}-01T00:00:00`).toLocaleString("en-IN", { month: "long", year: "numeric" });
 
@@ -136,16 +139,13 @@ export function FeesView() {
     toast.success("Reminder sent on WhatsApp", { description: "Demo — preview only" });
   }
 
-  // Auto-deactivate any active student with too many unpaid months.
-  useEffect(() => {
-    if (!hydrated) return;
-    students.forEach((s) => {
-      if (s.status !== "active") return;
-      const dueMonths = fees.filter((f) => f.kind === "monthly" && f.studentId === s.id && f.status !== "paid").length;
-      if (dueMonths >= DEACTIVATE_AFTER) updateItem<Student>("students", s.id, { status: "inactive" });
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, fees]);
+  // Auto-deactivation moved SERVER-SIDE — see features/automation/billing.ts.
+  //
+  // It used to run right here, in a browser effect, which meant a student was
+  // suspended at the arbitrary moment somebody happened to open this page, and
+  // it counted every unpaid monthly fee ever recorded — including months
+  // before the centre started billing them, so entering a long-standing
+  // student could suspend them on sight.
 
   // ── monthly billing ──
   // Fees, recurring charges and teacher salary are generated SERVER-SIDE (see
@@ -167,9 +167,12 @@ export function FeesView() {
   }, [hydrated]);
 
   // One-time: fold the legacy royalty % into the generic recurring charges.
+  // Owner-only: this writes the centre profile, which staff cannot do. Without
+  // the guard a teacher opening Fees triggered a write the server refuses, and
+  // got an error toast for simply visiting the page.
   const royaltyMigrated = useRef(false);
   useEffect(() => {
-    if (!hydrated || royaltyMigrated.current) return;
+    if (!hydrated || royaltyMigrated.current || !canManage) return;
     royaltyMigrated.current = true;
     const pct = profile.hoRoyaltyPercent || 0;
     const charges = profile.recurringCharges || [];

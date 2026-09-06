@@ -20,6 +20,7 @@ import {
   type AdMaterial, type Stationery,
 } from "@/lib/store/local-db";
 import { formatDate } from "@/lib/utils";
+import { todayIso } from "@/lib/date";
 
 const textareaClass =
   "min-h-20 w-full rounded-lg border border-input bg-card p-3 text-sm shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
@@ -57,7 +58,7 @@ function AdTab({ addedBy, hydrated }: { addedBy: string; hydrated: boolean }) {
     const anyQty = AD_FIELDS.some((f) => num(form[f.key]) > 0);
     if (!anyQty && !form.other.trim()) { toast.error("Enter at least one item or a note"); return; }
     addItem<AdMaterial>("adMaterials", {
-      id: newId(), date: new Date().toISOString().slice(0, 10),
+      id: newId(), date: todayIso(),
       banner: num(form.banner), leaflet: num(form.leaflet), sunPack: num(form.sunPack),
       poster: num(form.poster), voice: num(form.voice), other: form.other.trim(), addedBy,
     });
@@ -160,7 +161,7 @@ function StationeryTab({ addedBy, hydrated }: { addedBy: string; hydrated: boole
       return;
     }
     addItem<Stationery>("stationery", {
-      id: newId(), date: new Date().toISOString().slice(0, 10),
+      id: newId(), date: todayIso(),
       stationery: num(form.stationery), gift: num(form.gift), other: form.other.trim(), addedBy,
     });
     setForm(EMPTY_ST);

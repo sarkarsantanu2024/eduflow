@@ -21,6 +21,7 @@ import {
   ONE_OFF_EXPENSE_CATEGORIES, type Expense, type RecurringCharge,
 } from "@/lib/store/local-db";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { todayIso } from "@/lib/date";
 
 /**
  * Recurring costs (Head Office royalty, room rent, teacher salary, material
@@ -71,7 +72,7 @@ export function ExpensesView() {
     });
   };
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   const inRange = (d: string) =>
     (range === "day" && d === today) ||
     (range === "month" && d.slice(0, 7) === today.slice(0, 7)) ||

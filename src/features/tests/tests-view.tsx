@@ -19,6 +19,7 @@ import { renderTemplate } from "@/lib/wa-link";
 import {
   useCollection, useHydrated, useProfile, addItem, newId, type TestScore,
 } from "@/lib/store/local-db";
+import { todayIso } from "@/lib/date";
 
 const BODY = "{{student_name}} scored {{score}}/{{max}} in the {{test}} test — Rank {{rank}} in the batch. — {{business}}";
 
@@ -58,7 +59,7 @@ export function TestsView() {
         const s = students.find((x) => x.id === v("studentId"));
         if (!s) return;
         addItem<TestScore>("testScores", {
-          id: newId("ts"), testName: v("testName"), date: new Date().toISOString().slice(0, 10),
+          id: newId("ts"), testName: v("testName"), date: todayIso(),
           batchId: s.batchId, studentId: s.id, studentName: `${s.firstName} ${s.lastName}`.trim(),
           parentMobile: s.parentMobile || s.fatherContact,
           score: Number(v("score")) || 0, maxScore: Number(v("maxScore")) || 100,

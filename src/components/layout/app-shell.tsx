@@ -6,6 +6,7 @@ import { LogOut } from "lucide-react";
 import { OnboardingGateDialog } from "./onboarding-gate";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
+import { RoleProvider } from "./role-context";
 import { cn } from "@/lib/utils";
 import { exitCenter } from "@/features/admin/actions";
 import { useActiveTenant } from "@/lib/store/local-db";
@@ -121,7 +122,7 @@ export function AppShell({
             {/* Don't paint the blocked page while the redirect is in flight —
                 flashing "No students yet" and then bouncing away is worse than
                 showing nothing for a moment. */}
-            {blocked ? null : children}
+            {blocked ? null : <RoleProvider role={navRole}>{children}</RoleProvider>}
           </div>
         </main>
       </div>
