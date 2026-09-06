@@ -1,0 +1,24 @@
+# Served straight from public/ — src/middleware.ts excludes *.txt so a
+# crawler never receives an auth redirect here.
+
+User-agent: *
+Allow: /$
+Allow: /privacy.html
+Allow: /terms.html
+
+# The product itself. Nothing behind the login is useful to a crawler, and
+# these all redirect to /login anyway.
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /org
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /suspended
+
+# Certificate verification pages are per-student and carry names. They must
+# stay reachable by QR scan, but must not be indexed.
+Disallow: /verify/
+
+Sitemap: https://eduflow.nexvoratechnologies.co.in/sitemap.xml

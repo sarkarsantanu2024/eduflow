@@ -1,0 +1,12 @@
+/**
+ * Tailwind input for the static marketing page. Compiled to public/site.css by
+ * `npm run build:site-css` (see scripts/site-tailwind.config.js).
+ *
+ * The theme tokens, dark-mode variable swap and component overrides all still
+ * live in the <style> block inside public/site.html, which loads AFTER this
+ * file — so they keep winning over the utilities exactly as they did when the
+ * play CDN injected them at runtime.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

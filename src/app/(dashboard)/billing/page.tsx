@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/page-header";
 import { ActionButton } from "@/components/action-button";
 import {
   SUBSCRIPTION_PLANS, CURRENT_PLAN_CODE, FRANCHISE_PLAN,
-  PRICE_NOTE, ADD_ONS, ANNUAL_DISCOUNT_PERCENT,
+  PRICE_NOTE, ANNUAL_DISCOUNT_PERCENT,
 } from "@/lib/constants";
 import { FEATURES } from "@/lib/features";
 import { db } from "@/lib/db";
@@ -120,8 +120,7 @@ export default async function BillingPage() {
       <p className="text-sm text-muted-foreground">
         Need more students than your plan covers? Add a seat pack — <strong>+25</strong>,{" "}
         <strong>+50</strong> or <strong>+100</strong> students — from the capacity panel above.
-        Extra branches are <strong>₹{ADD_ONS.extraBranch}</strong> per branch / month. Annual billing{" "}
-        <strong>saves {ANNUAL_DISCOUNT_PERCENT}%</strong>.
+        Annual billing <strong>saves {ANNUAL_DISCOUNT_PERCENT}%</strong>.
       </p>
 
       {/* Franchise / multi-center tier */}

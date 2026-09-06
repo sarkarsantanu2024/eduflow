@@ -5,8 +5,9 @@
   "description": "EduFlow — Multi-tenant SaaS for institute management, fee collection & WhatsApp reminders",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "vercel-build": "node scripts/migrate.mjs --production-only && next build",
+    "build": "npm run build:site-css && next build",
+    "build:site-css": "tailwindcss -c scripts/site-tailwind.config.js -i scripts/site.css -o public/site.css --minify",
+    "vercel-build": "node scripts/migrate.mjs --production-only && npm run build:site-css && next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",

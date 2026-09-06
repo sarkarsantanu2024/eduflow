@@ -98,7 +98,11 @@ export const SUBSCRIPTION_PLANS = [
     maxStudents: 20,
     maxStaff: 1,
     popular: false,
-    features: ["Student management & admissions", "Attendance & batches", "Monthly fee generation", "UPI-QR payment", "Unlimited one-click WhatsApp reminders", "PDF receipts", "Basic reports", "Works on any phone"],
+    // Export, Trash and bulk import are listed here because nothing gates
+    // them: export-data.tsx has no plan check and plan-gating.ts has no key
+    // for them. Marketing must not sell them as paid upgrades — see the
+    // matching rows in public/site.html.
+    features: ["Student management & admissions", "Attendance & batches", "Monthly fee generation", "UPI-QR payment", "Unlimited one-click WhatsApp reminders", "PDF receipts", "Excel / CSV export & Trash", "One-click Excel / CSV import", "Basic reports", "Works on any phone"],
   },
   {
     code: "starter",
@@ -112,7 +116,7 @@ export const SUBSCRIPTION_PLANS = [
     maxStudents: 100,
     maxStaff: 3,
     popular: false,
-    features: ["Everything in Free", "Student ID cards", "Certificates with QR verify", "Excel / CSV export & Trash", "No EduFlow mark on posters", "Email & WhatsApp support"],
+    features: ["Everything in Free", "Student ID cards", "Certificates with QR verify", "No EduFlow mark on posters", "Email & WhatsApp support"],
   },
   {
     code: "growth",
@@ -126,7 +130,7 @@ export const SUBSCRIPTION_PLANS = [
     maxStudents: 300,
     maxStaff: 8,
     popular: true,
-    features: ["Everything in Starter", "Exams, tests & rank lists", "Expenses, income & profit reports", "Teacher salary management", "Staff roles & permissions", "Student promotion & inventory", "Bulk Excel / CSV import", "Custom fee rules", "Advanced reports", "Priority support"],
+    features: ["Everything in Starter", "Exams, tests & rank lists", "Expenses, income & profit reports", "Teacher salary management", "Staff roles & permissions", "Student promotion & inventory", "Custom fee rules", "Advanced reports", "Priority support"],
   },
   {
     code: "business",
@@ -165,6 +169,12 @@ export const PRICE_NOTE = "Prices in INR, exclusive of 18% GST. Student capacity
 export const ADD_ONS = {
   /** Internal unit rate. NEVER shown to a customer — see SEAT_PACKS. */
   extraStudent: 8,
+  /**
+   * Intended rate for a second branch. NOT SELLABLE YET — multiple branches
+   * are marked "Coming soon" on the pricing page and in the plan comparison,
+   * and no branch feature ships. Keep this out of every customer-facing
+   * surface until branches actually exist.
+   */
   extraBranch: 399,
 } as const;
 

@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>EduFlow — Run Your Coaching or Activity Center on Autopilot | From ₹0/month</title>
 <meta name="description" content="India's most affordable software for coaching classes, abacus, yoga, dance, computer, drawing, music, tuition, preschool and multi-activity centers. Admissions, fees, UPI-QR, WhatsApp reminders, attendance and reports. Free up to 20 students." />
-<meta name="keywords" content="coaching class software India, abacus center software, activity center software, yoga class management software, dance academy software, computer institute software, tuition center software, preschool management software, fee management software India, WhatsApp fee reminder" />
+<!-- No <meta name="keywords">: ignored by every major engine since 2009, and
+     it only advertises the terms you are chasing. The same terms are carried
+     properly by the title, description, H2s and the JSON-LD below. -->
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFFFFF" />
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0F172A" />
 <script>
@@ -31,22 +34,46 @@
 <meta property="og:url" content="https://eduflow.nexvoratechnologies.co.in/" />
 <meta property="og:locale" content="en_IN" />
 <meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="EduFlow — Run Your Coaching or Activity Center on Autopilot" />
+<meta name="twitter:description" content="Admissions, fees, UPI-QR collection, WhatsApp reminders, attendance and reports in one place. Free up to 20 students, then from ₹399/month." />
+<meta name="twitter:image" content="https://eduflow.nexvoratechnologies.co.in/og-cover.png" />
+<meta name="twitter:image:alt" content="The EduFlow dashboard showing student count, fees collected and pending dues." />
 
-<!-- Google Analytics 4 — paste your Measurement ID below (G-XXXXXXXXXX).
-     The snippet stays inert until a real ID replaces the placeholder. -->
+<!-- Google Analytics 4.
+     Consent Mode v2 is set to DENIED before the tag loads, so no analytics
+     cookie is written until the visitor accepts in the notice at the bottom of
+     the page. A returning visitor who already accepted is upgraded straight
+     away. Declining keeps the tag inert for good. -->
 <script>
   (function () {
     var GA_ID = "G-882P8P9QHM";
     if (GA_ID === "G-XXXXXXXXXX" || !/^G-[A-Z0-9]+$/.test(GA_ID)) return;
+
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    window.gtag = gtag;
+
+    /* Deny first — this must run before the tag script is appended. */
+    gtag("consent", "default", {
+      ad_storage: "denied",
+      ad_user_data: "denied",
+      ad_personalization: "denied",
+      analytics_storage: "denied",
+      wait_for_update: 500
+    });
+
+    var choice = null;
+    try { choice = localStorage.getItem("eduflow-analytics-consent"); } catch (e) {}
+    if (choice === "denied") return;   /* declined — never load the tag */
+
     var s = document.createElement("script");
     s.async = true;
     s.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_ID;
     document.head.appendChild(s);
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    window.gtag = gtag;
     gtag("js", new Date());
-    gtag("config", GA_ID);
+    gtag("config", GA_ID, { anonymize_ip: true });
+
+    if (choice === "granted") gtag("consent", "update", { analytics_storage: "granted" });
   })();
 </script>
 
@@ -54,52 +81,18 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0&display=block" rel="stylesheet" />
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          // Every shade reads from a CSS variable, so flipping :root.dark
-          // re-themes every existing bg-/text-/border- utility on the page.
-          brand: {
-            50:'rgb(var(--brand-50) / <alpha-value>)',   100:'rgb(var(--brand-100) / <alpha-value>)',
-            200:'rgb(var(--brand-200) / <alpha-value>)', 300:'rgb(var(--brand-300) / <alpha-value>)',
-            400:'rgb(var(--brand-400) / <alpha-value>)', 500:'rgb(var(--brand-500) / <alpha-value>)',
-            600:'rgb(var(--brand-600) / <alpha-value>)', 700:'rgb(var(--brand-700) / <alpha-value>)',
-            800:'rgb(var(--brand-800) / <alpha-value>)', 900:'rgb(var(--brand-900) / <alpha-value>)',
-          },
-          ink: {
-            50:'rgb(var(--ink-50) / <alpha-value>)',   100:'rgb(var(--ink-100) / <alpha-value>)',
-            200:'rgb(var(--ink-200) / <alpha-value>)', 300:'rgb(var(--ink-300) / <alpha-value>)',
-            400:'rgb(var(--ink-400) / <alpha-value>)', 500:'rgb(var(--ink-500) / <alpha-value>)',
-            600:'rgb(var(--ink-600) / <alpha-value>)', 700:'rgb(var(--ink-700) / <alpha-value>)',
-            800:'rgb(var(--ink-800) / <alpha-value>)', 900:'rgb(var(--ink-900) / <alpha-value>)',
-          },
-          emerald: {
-            50:'rgb(var(--em-50) / <alpha-value>)',   200:'rgb(var(--em-200) / <alpha-value>)',
-            600:'rgb(var(--em-600) / <alpha-value>)', 700:'rgb(var(--em-700) / <alpha-value>)',
-            800:'rgb(var(--em-800) / <alpha-value>)',
-          },
-          rose: { 500:'rgb(var(--rose-500) / <alpha-value>)', 600:'rgb(var(--rose-600) / <alpha-value>)' },
-          surface: 'rgb(var(--surface) / <alpha-value>)',
-        },
-        fontFamily: {
-          sans: ['Inter','ui-sans-serif','system-ui','Segoe UI','Roboto','sans-serif'],
-          display: ['"Plus Jakarta Sans"','Inter','ui-sans-serif','system-ui','sans-serif'],
-        },
-        boxShadow: {
-          soft: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px -12px rgba(15,23,42,.12)',
-          lift: '0 12px 32px -12px rgba(234,88,12,.35)',
-        },
-        keyframes: {
-          rise: { '0%': { opacity:'0', transform:'translateY(12px)' }, '100%': { opacity:'1', transform:'translateY(0)' } },
-        },
-        animation: { rise: 'rise .5s ease-out both' },
-      },
-    },
-  };
-</script>
+<!-- Pre-built Tailwind stylesheet.
+
+     This used to be <script src="https://cdn.tailwindcss.com"> plus an inline
+     tailwind.config — the play CDN, which Tailwind documents as development
+     only. It shipped a full compiler to every visitor and generated the
+     utilities in the browser on each load, which is expensive on a 4G phone
+     and forces 'unsafe-eval' into any CSP.
+
+     The config now lives in scripts/site-tailwind.config.js and is compiled to
+     public/site.css by `npm run build:site-css` (wired into `npm run build`).
+     After editing classes in this file, re-run that script. -->
+<link rel="stylesheet" href="/site.css" />
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -109,25 +102,123 @@
   "operatingSystem": "Web browser (Android, iOS, Windows, Mac)",
   "description": "Software for coaching classes, abacus, yoga, dance, computer, drawing, music, tuition, preschool and multi-activity centers in India. Admissions, automatic fee generation, UPI-QR collection, WhatsApp reminders, attendance, tests, certificates and reports.",
   "areaServed": "IN",
+  "url": "https://eduflow.nexvoratechnologies.co.in/",
   "offers": [
-    { "@type": "Offer", "name": "Free",     "price": "0",    "priceCurrency": "INR", "description": "Up to 20 students, 1 staff login" },
-    { "@type": "Offer", "name": "Starter",  "price": "399",  "priceCurrency": "INR", "description": "Up to 100 students, 3 staff logins" },
-    { "@type": "Offer", "name": "Growth",   "price": "799",  "priceCurrency": "INR", "description": "Up to 300 students, 8 staff logins" },
-    { "@type": "Offer", "name": "Business", "price": "1499", "priceCurrency": "INR", "description": "Up to 1000 students, unlimited staff logins" }
+    { "@type": "Offer", "name": "Free",             "price": "0",     "priceCurrency": "INR", "url": "https://eduflow.nexvoratechnologies.co.in/#pricing", "description": "Up to 20 students, 1 staff login. Free forever, not a trial." },
+    { "@type": "Offer", "name": "Starter monthly",  "price": "399",   "priceCurrency": "INR", "url": "https://eduflow.nexvoratechnologies.co.in/#pricing", "description": "Up to 100 students, 3 staff logins. Per month, plus 18% GST." },
+    { "@type": "Offer", "name": "Starter annual",   "price": "3999",  "priceCurrency": "INR", "url": "https://eduflow.nexvoratechnologies.co.in/#pricing", "description": "Up to 100 students, 3 staff logins. Per year — two months free." },
+    { "@type": "Offer", "name": "Growth monthly",   "price": "799",   "priceCurrency": "INR", "url": "https://eduflow.nexvoratechnologies.co.in/#pricing", "description": "Up to 300 students, 8 staff logins. Per month, plus 18% GST." },
+    { "@type": "Offer", "name": "Growth annual",    "price": "7999",  "priceCurrency": "INR", "url": "https://eduflow.nexvoratechnologies.co.in/#pricing", "description": "Up to 300 students, 8 staff logins. Per year — two months free." },
+    { "@type": "Offer", "name": "Business monthly", "price": "1499",  "priceCurrency": "INR", "url": "https://eduflow.nexvoratechnologies.co.in/#pricing", "description": "Up to 1000 students, unlimited staff logins. Per month, plus 18% GST." },
+    { "@type": "Offer", "name": "Business annual",  "price": "14999", "priceCurrency": "INR", "url": "https://eduflow.nexvoratechnologies.co.in/#pricing", "description": "Up to 1000 students, unlimited staff logins. Per year — two months free." }
+  ]
+}
+</script>
+<!-- All nine questions below are rendered on the page. Google requires the
+     schema to match the visible content, so if you edit an answer in the FAQ
+     section, edit it here too. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Why is EduFlow so affordable?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Three reasons. It's built for Indian centers, so there's no bloat you'd never use. It's sold directly, so no reseller margin. And WhatsApp reminders go from your own number, so there are no per-message charges to pass on. Those savings go into the price instead of into middlemen."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What happens when I reach 100 students?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Everything you already have keeps working exactly as it is - no data is touched and no feature switches off. To admit student number 101 you just need room for them: add a seat pack (+25, +50 or +100 students), or move to Growth when that works out cheaper. Tap the pack you want and WhatsApp opens with your centre details already filled in; we reply with payment details and switch the seats on the same day. The app shows your remaining seats well before you run out, so an admission is never held up by surprise."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I upgrade anytime?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes - upgrade or downgrade whenever you like and we adjust the difference on your next bill. No upgrade fee, no re-setup, no data migration. Your students, fees and history stay exactly where they are."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I bring my existing Excel list?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. EduFlow has a built-in importer - upload your Excel or CSV file and every student, parent contact and batch is created in one go. It works on every plan including Free. It takes a few minutes, you do it yourself whenever you like, and nothing is retyped."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I cancel anytime?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Any time, from your own account. Cancelling stops the next bill and your plan runs to the end of the period you have already paid for - there is no cancellation charge and no lock-in contract. Export everything to Excel in one click before you go: every table downloads on every plan, including Free, so your data leaves with you."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "I'm not technical. Can I really use it?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "If you can use WhatsApp, you can use EduFlow. We set the center up for you, import your students and walk you through it on a call. Most owners are collecting fees through it the same week."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I pay extra for WhatsApp messages?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No - on every plan, including Free. The message opens ready-written on your own WhatsApp with the parent's name, the amount and your UPI QR filled in, and you press send. Unlimited, from your own number, at no cost."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Are the WhatsApp messages sent automatically?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "EduFlow prepares them automatically - every morning it queues fee-due, overdue, absence and birthday messages with the parent's name and amount already filled in. You review the Outbox and tap send; each message goes from your own WhatsApp number. That final tap is why the messages are free and unlimited: they go from your own number, not a paid messaging API."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "I run several activities in one center. Does that work?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes - choose the multi-activity setup. Every activity (abacus, computer, yoga, dance, drawing, music, karate, spoken English and more) gets its own batches, timings and instructor, with kits, exams, belts, grades, competitions and events switched on - and you still see one fee register and one profit figure for the whole center."
+      }
+    }
   ]
 }
 </script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    { "@type":"Question","name":"Why is EduFlow so affordable?","acceptedAnswer":{"@type":"Answer","text":"EduFlow is built for Indian centers, sold directly without resellers, and WhatsApp reminders go from your own number so there are no per-message charges. Those savings go into the price instead of into middlemen."}},
-    { "@type":"Question","name":"What happens when I reach 100 students?","acceptedAnswer":{"@type":"Answer","text":"Everything you already have keeps working — nothing is removed and no feature switches off. To admit more students you add a seat pack (+25, +50 or +100 students), or move to Growth when that works out cheaper. The app shows your remaining seats well before you run out."}},
-    { "@type":"Question","name":"Can I upgrade anytime?","acceptedAnswer":{"@type":"Answer","text":"Yes. Upgrade or downgrade at any time and we adjust the difference on your next bill. No lock-in and no upgrade fee."}},
-    { "@type":"Question","name":"Can I bring my existing Excel list?","acceptedAnswer":{"@type":"Answer","text":"Yes. EduFlow has a built-in importer: upload your Excel or CSV and every student, parent contact and batch is created in one go. It takes a few minutes and you do it yourself, so nothing is retyped and nobody has to wait on us."}},
-    { "@type":"Question","name":"Are the WhatsApp messages sent automatically?","acceptedAnswer":{"@type":"Answer","text":"EduFlow prepares them automatically — every morning it queues fee-due, overdue, absence and birthday messages with the parent's name and amount already filled in. You review the Outbox and tap send; each message goes from your own WhatsApp number. That final tap is why the messages are free and unlimited: they go from your own number, not a paid messaging API."}},
-    { "@type":"Question","name":"Can I cancel anytime?","acceptedAnswer":{"@type":"Answer","text":"Yes, any time, from your account. Export everything to Excel in one click first — your data is always yours."}}
+  "@type": "Organization",
+  "name": "EduFlow",
+  "url": "https://eduflow.nexvoratechnologies.co.in/",
+  "description": "Management software for coaching classes and activity centers in India.",
+  "areaServed": {
+    "@type": "Country",
+    "name": "India"
+  },
+  "contactPoint": [
+    {
+      "@type": "ContactPoint",
+      "telephone": "+91-98042-43159",
+      "contactType": "sales",
+      "areaServed": "IN",
+      "availableLanguage": [
+        "en",
+        "hi"
+      ]
+    }
   ]
 }
 </script>
@@ -147,8 +238,8 @@
     --ink-300:203 213 225; --ink-400:100 116 139; --ink-500:90 105 128;
     --ink-600:71 85 105;   --ink-700:51 65 85;    --ink-800:30 41 59;
     --ink-900:15 23 42;
-    --em-50:236 253 245; --em-200:167 243 208; --em-600:4 120 87;
-    --em-700:4 108 78;   --em-800:6 95 70;
+    --em-50:236 253 245; --em-200:167 243 208; --em-300:110 231 183;
+    --em-600:4 120 87;   --em-700:4 108 78;    --em-800:6 95 70;
     --rose-500:190 32 60; --rose-600:190 18 60;
     --surface:255 255 255;
     --page:255 255 255;
@@ -165,8 +256,8 @@
     --ink-300:71 87 115;   --ink-400:157 172 194; --ink-500:176 190 210;
     --ink-600:203 214 230; --ink-700:224 232 242; --ink-800:240 245 250;
     --ink-900:248 250 252;
-    --em-50:5 46 34;  --em-200:14 90 66;  --em-600:52 211 153;
-    --em-700:110 231 183; --em-800:167 243 208;
+    --em-50:5 46 34;      --em-200:14 90 66;    --em-300:22 130 95;
+    --em-600:52 211 153;  --em-700:110 231 183; --em-800:167 243 208;
     --rose-500:253 164 175; --rose-600:253 164 175;
     --surface:22 32 54;
     --page:15 23 42;
@@ -212,19 +303,40 @@
   .cta-band { background-image: linear-gradient(to bottom right, #B23F0B, #9A3412); }
   .dark .cta-band { background-image: linear-gradient(to bottom right, #8F350C, #7C2D12); }
 
-  /* Phones: buttons drop to 14px so long labels stay on one line. Reading
-     copy keeps its 16px floor. */
+  /* Phones: long button labels wrap rather than shrink. They used to drop to
+     14px, which shrank the tap label on exactly the CTAs that matter most. */
   @media (max-width: 639.98px) {
     button,
-    a[class*="rounded-lg"], a[class*="rounded-xl"], a[class*="rounded-full"] { font-size: 14px; }
+    a[class*="rounded-lg"], a[class*="rounded-xl"], a[class*="rounded-full"] {
+      font-size: 16px;
+      white-space: normal;
+      text-wrap: balance;
+    }
   }
 
-  /* Denser type in the three scan-and-compare surfaces — plan cards, the
-     comparison table and the footer. Reading copy elsewhere stays at 16px. */
-  #pricing, #compare, footer { font-size: 14px; }
-  #pricing [class*="text-[16px]"],
-  #compare [class*="text-[16px]"],
-  footer  [class*="text-[16px]"] { font-size: 14px; }
+  /* Density is bought ONLY where a reader is scanning a wide grid with a
+     mouse: the desktop comparison table and the footer. Pricing cards and the
+     mobile comparison accordion hold the 16px floor — they are where a buyer
+     makes the decision, and this audience skews 40+. */
+  footer { font-size: 14px; }
+  footer [class*="text-[16px]"] { font-size: 14px; }
+  @media (min-width: 640px) {
+    #compare table { font-size: 14px; }
+    #compare table [class*="text-[16px]"] { font-size: 14px; }
+  }
+
+  /* Analytics notice. Above the sticky mobile CTA bar on phones, centred
+     between the two floating buttons on desktop. `hidden` on the element wins
+     until script removes it, so it never flashes for a visitor who has
+     already answered. */
+  #consentBar { bottom: calc(4.75rem + env(safe-area-inset-bottom)); }
+  #consentBar:not([hidden]) { display: flex; }
+  @media (min-width: 768px) { #consentBar { bottom: 1.25rem; } }
+  /* Give "back to top" room while the notice is up — phones only, where the
+     two would otherwise stack on top of each other. */
+  @media (max-width: 767.98px) {
+    html.consent-open #toTop { bottom: calc(11.5rem + env(safe-area-inset-bottom)); }
+  }
 
   /* Off-screen honeypot that cannot widen the page. */
   .hp-trap { position: absolute; width: 1px; height: 1px; overflow: hidden;
@@ -271,7 +383,7 @@
 <!-- ══════════════ HEADER ══════════════ -->
 <header class="sticky top-0 z-50 border-b border-ink-200 bg-white/90 backdrop-blur-md">
   <div class="mx-auto flex h-16 max-w-[1720px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-14">
-    <a href="#" class="flex shrink-0 items-center gap-2.5" aria-label="EduFlow home"><span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg></span><span class="font-display text-xl font-extrabold tracking-tight text-ink-900">Edu<span class="text-brand-600">Flow</span></span></a>
+    <a href="/" class="flex shrink-0 items-center gap-2.5" aria-label="EduFlow home"><span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg></span><span class="font-display text-xl font-extrabold tracking-tight text-ink-900">Edu<span class="text-brand-600">Flow</span></span></a>
     <nav class="hidden items-center gap-5 lg:flex xl:gap-6" aria-label="Main">
       <a href="#features" class="whitespace-nowrap text-[16px] font-semibold text-ink-600 transition hover:text-brand-600">Features</a>
       <a href="#who" class="whitespace-nowrap text-[16px] font-semibold text-ink-600 transition hover:text-brand-600">Who it's for</a>
@@ -287,9 +399,9 @@
       <a id="loginBtn" href="/login" class="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-ink-300 px-3 py-2 text-[16px] font-bold text-ink-800 transition hover:border-brand-500 hover:bg-brand-50 hover:text-brand-600 sm:px-3.5">
         <span class="material-symbols-rounded text-[18px]" aria-hidden="true">login</span> Login
       </a>
-      <!-- Below md the fixed bottom bar carries this CTA — never two demo buttons at once. -->
-      <a href="#contact" class="hidden shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-brand-600 px-4 py-2 text-[16px] font-bold text-white shadow-sm transition hover:bg-brand-700 md:inline-flex">
-        <span class="material-symbols-rounded text-[18px]" aria-hidden="true">bolt</span> Book free demo
+      <!-- Below md the fixed bottom bar carries these CTAs — never doubled up. -->
+      <a id="signupBtn" href="/register" class="hidden shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-brand-600 px-4 py-2 text-[16px] font-bold text-white shadow-sm transition hover:bg-brand-700 md:inline-flex">
+        <span class="material-symbols-rounded text-[18px]" aria-hidden="true">bolt</span> Start free
       </a>
     </div>
   </div>
@@ -312,12 +424,15 @@
           India's most affordable software for coaching classes and activity centers. Admissions, fees,
           WhatsApp reminders, attendance and reports in one place — from less than one student's monthly fee.
         </p>
+        <!-- Primary action is the free account, because it exists and is
+             self-serve. The demo stays as the second option for owners who
+             would rather be walked through it. -->
         <div class="mt-5 flex flex-wrap gap-2.5">
-          <a href="#contact" class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 font-bold text-white shadow-lift transition hover:bg-brand-700">
-            <span class="material-symbols-rounded text-[20px]" aria-hidden="true">play_circle</span> Book a free live demo
+          <a id="heroSignup" href="/register" class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 font-bold text-white shadow-lift transition hover:bg-brand-700">
+            <span class="material-symbols-rounded text-[20px]" aria-hidden="true">rocket_launch</span> Start free — no card needed
           </a>
-          <a href="#pricing" class="inline-flex items-center gap-2 rounded-xl border border-ink-300 bg-white px-5 py-3 font-bold text-ink-800 transition hover:border-brand-500 hover:text-brand-600">
-            <span class="material-symbols-rounded text-[20px]" aria-hidden="true">sell</span> See pricing
+          <a href="#contact" class="inline-flex items-center gap-2 rounded-xl border border-ink-300 bg-white px-5 py-3 font-bold text-ink-800 transition hover:border-brand-500 hover:text-brand-600">
+            <span class="material-symbols-rounded text-[20px]" aria-hidden="true">play_circle</span> Book a free live demo
           </a>
         </div>
         <ul class="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-[16px] font-medium text-ink-500">
@@ -403,7 +518,10 @@
       <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">how_to_reg</span>
         <h3 class="font-display font-bold text-ink-900">Admissions &amp; student register</h3>
-        <p class="mt-1 text-[16px] text-ink-500">Add a student in twenty seconds, or import your Excel / CSV / PDF list free. Photos, parents, batch, level and status in one profile.</p>
+        <!-- The PDF path (student-pdf.ts) reads ONE student out of ONE
+             digitally generated form and cannot read scans or photos, so it is
+             no longer described as list import. -->
+        <p class="mt-1 text-[16px] text-ink-500">Add a student in twenty seconds, or import your whole Excel / CSV list free — on every plan. Photos, parents, batch, level and status in one profile.</p>
       </article>
       <article class="group rounded-xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:shadow-soft">
         <span class="material-symbols-rounded ms-fill mb-1.5 inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-[20px] text-brand-600" aria-hidden="true">autorenew</span>
@@ -586,9 +704,11 @@
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>One-click WhatsApp reminders</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>PDF receipts</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Basic reports</li>
+          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Excel / CSV export &amp; Trash</li>
+          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>One-click Excel / CSV import</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Works on any phone</li>
         </ul>
-        <a href="#contact" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border-2 border-emerald-600 px-4 py-2.5 text-[16px] font-bold text-emerald-700 transition hover:bg-emerald-600 hover:text-white">Start Free</a>
+        <a href="/register" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border-2 border-emerald-600 px-4 py-2.5 text-[16px] font-bold text-emerald-700 transition hover:bg-emerald-600 hover:text-white">Start Free</a>
       </article>
 
       <!-- STARTER -->
@@ -608,11 +728,10 @@
         <ul class="mt-1.5 flex-1 space-y-1.5 text-[16px]">
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Student ID cards</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Certificates with QR verify</li>
-          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Excel / CSV export &amp; Trash</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>No EduFlow mark on posters</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Email &amp; WhatsApp support</li>
         </ul>
-        <a href="#contact" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border-2 border-brand-600 px-4 py-2.5 text-[16px] font-bold text-brand-700 transition hover:bg-brand-600 hover:text-white">Start Starter Plan</a>
+        <a href="/register" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border-2 border-brand-600 px-4 py-2.5 text-[16px] font-bold text-brand-700 transition hover:bg-brand-600 hover:text-white">Start free, then upgrade</a>
       </article>
 
       <!-- GROWTH -->
@@ -637,13 +756,12 @@
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Staff roles &amp; permissions</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Student promotion</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Inventory &amp; materials</li>
-          <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Bulk Excel / CSV import</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Custom fee rules</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Advanced reports</li>
           <li class="flex gap-1.5"><span class="material-symbols-rounded mt-px shrink-0 text-[17px] text-emerald-600" aria-hidden="true">check</span>Priority support</li>
         </ul>
-        <a href="#contact" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2.5 text-[16px] font-bold text-white shadow-sm transition hover:bg-brand-700">
-          <span class="material-symbols-rounded text-[18px]" aria-hidden="true">event_available</span> Book Free Demo
+        <a href="/register" class="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2.5 text-[16px] font-bold text-white shadow-sm transition hover:bg-brand-700">
+          <span class="material-symbols-rounded text-[18px]" aria-hidden="true">rocket_launch</span> Start free, then upgrade
         </a>
       </article>
 
@@ -708,9 +826,12 @@
       <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>GST extra (18%)</li>
       <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>Annual billing — <span class="text-brand-600">2 months free</span></li>
       <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>Seat packs — +25, +50 or +100 students</li>
-      <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>Extra branch — ₹399/month</li>
+      <!-- "Extra branch — ₹399/month" used to sit here with a tick, while the
+           Enterprise card and the comparison table both mark multiple
+           branches as Coming soon. Nothing carries a price until it ships. -->
+      <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>Free plan — no time limit</li>
       <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>One-click Excel import</li>
-      <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>Cancel anytime</li>
+      <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>Cancel anytime — runs to the end of your paid period</li>
       <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>No credit card required</li>
       <li class="flex items-center gap-2"><span class="material-symbols-rounded text-[18px] text-emerald-600" aria-hidden="true">check_circle</span>No setup fee, no lock-in</li>
     </ul>
@@ -726,6 +847,18 @@
     <p class="text-[16px] font-extrabold uppercase tracking-[.14em] text-brand-600">Side by side</p>
     <h2 id="cmp-h" class="mt-1.5 font-display text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">Compare every plan</h2>
     <p class="mt-1.5 text-ink-600">Green tick means included. A dash means not on that plan.</p>
+
+    <!-- Both the accordion and the table body below are built by script from
+         one COMPARE array. If script never runs they stay empty, so say so
+         and point at the plan cards, which are plain HTML. -->
+    <noscript>
+      <p class="mt-4 rounded-xl border border-brand-200 bg-brand-50 p-4 text-[16px] font-semibold text-ink-800">
+        This comparison needs JavaScript to draw. Every plan's full feature list is also written out on the
+        <a class="font-bold text-brand-700 underline" href="#pricing">pricing cards above</a>, or
+        <a class="font-bold text-brand-700 underline" href="https://wa.me/919804243159">message us on WhatsApp</a>
+        and we'll walk you through it.
+      </p>
+    </noscript>
 
     <!-- Below sm a 6-column table forces a horizontal scroll that shows one
          plan at a time with the header cut off — a per-plan accordion reads
@@ -815,7 +948,7 @@
       </details>
       <details class="group rounded-xl border border-ink-200 bg-white px-4 py-3">
         <summary class="flex cursor-pointer items-center justify-between gap-3 font-display font-bold text-ink-900">Can I cancel anytime?<span class="faq-chev material-symbols-rounded shrink-0 text-[22px] text-brand-600 transition" aria-hidden="true">expand_more</span></summary>
-        <p class="mt-2 text-[16px] text-ink-600">Any time, from your own account. Export everything to Excel in one click first — every table downloads, so your data leaves with you. No cancellation charge and no lock-in contract.</p>
+        <p class="mt-2 text-[16px] text-ink-600">Any time, from your own account. Cancelling stops the next bill and your plan runs to the end of the period you have already paid for — there is no cancellation charge and no lock-in contract. Export everything to Excel in one click before you go: every table downloads on every plan, including Free, so your data leaves with you.</p>
       </details>
       <details class="group rounded-xl border border-ink-200 bg-white px-4 py-3">
         <summary class="flex cursor-pointer items-center justify-between gap-3 font-display font-bold text-ink-900">I'm not technical. Can I really use it?<span class="faq-chev material-symbols-rounded shrink-0 text-[22px] text-brand-600 transition" aria-hidden="true">expand_more</span></summary>
@@ -845,7 +978,7 @@
         <h2 id="cta-h" class="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">See it on your own students — free</h2>
         <p class="mt-2 max-w-md text-white/90">A 20-minute demo on your phone or laptop. We'll show a ready-made sample center of your exact type, then set yours up if you like it. No card, no obligation.</p>
         <div class="mt-5 flex flex-wrap gap-2.5">
-          <a id="waBtn" href="#" class="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-bold text-ink-900 shadow-sm ring-1 ring-black/5 transition hover:bg-brand-50">
+          <a id="waBtn" href="https://wa.me/919804243159?text=Hi%21%20I%20run%20a%20center%20and%20I%27d%20like%20a%20free%20EduFlow%20demo." class="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-bold text-ink-900 shadow-sm ring-1 ring-black/5 transition hover:bg-brand-50">
             <span class="material-symbols-rounded ms-fill text-[20px] text-[#1FA855]" aria-hidden="true">chat</span> WhatsApp us now
           </a>
           <a href="tel:+919804243159" class="inline-flex items-center gap-2 rounded-xl border-2 border-white/70 px-5 py-3 font-bold text-white transition hover:bg-white/10">
@@ -901,10 +1034,17 @@
           <input id="company" name="company" type="text" tabindex="-1" autocomplete="off" />
         </div>
         <p id="formError" role="alert" class="mt-2 hidden text-[16px] font-semibold text-rose-600"></p>
-        <p id="formOk" role="status" class="mt-2 hidden rounded-lg bg-emerald-50 p-3 text-[16px] font-semibold text-emerald-800"></p>
+        <p id="formOk" role="status" tabindex="-1" class="mt-2 hidden rounded-lg bg-emerald-50 p-3 text-[16px] font-semibold text-emerald-800"></p>
         <button type="submit" class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-3 font-bold text-white transition hover:bg-brand-700">
           <span class="material-symbols-rounded ms-fill text-[20px]" aria-hidden="true">send</span> Book Free Demo
         </button>
+        <!-- Notice at the point of collection. The DPDP Act 2023 expects the
+             purpose to be stated where the details are actually given, not
+             only in a policy linked from the footer. -->
+        <p class="mt-2.5 text-[16px] leading-snug text-ink-500">
+          We'll only use these details to contact you about EduFlow — no spam, and we never sell your data.
+          See our <a class="font-semibold text-brand-700 underline" href="/privacy.html">Privacy Policy</a>.
+        </p>
       </form>
     </div>
   </div>
@@ -921,17 +1061,18 @@
         <p class="mt-2 text-[16px]">India's most affordable software for coaching classes and activity centers. Built in India, for Indian centers.</p>
       </div>
       <nav aria-label="Product">
-        <h2 class="font-display text-[16px] font-bold uppercase tracking-wide text-white">Product</h2>
+        <h3 class="font-display text-[16px] font-bold uppercase tracking-wide text-white">Product</h3>
         <ul class="mt-2 space-y-1 text-[16px]">
           <li><a class="transition hover:text-brand-400" href="#features">Features</a></li>
           <li><a class="transition hover:text-brand-400" href="#who">Who it's for</a></li>
           <li><a class="transition hover:text-brand-400" href="#pricing">Pricing</a></li>
           <li><a class="transition hover:text-brand-400" href="#compare">Compare plans</a></li>
+          <li><a id="signupFoot" class="transition hover:text-brand-400" href="/register">Create a free account</a></li>
           <li><a id="loginFoot" class="transition hover:text-brand-400" href="/login">Login to EduFlow</a></li>
         </ul>
       </nav>
       <nav aria-label="Company">
-        <h2 class="font-display text-[16px] font-bold uppercase tracking-wide text-white">Company</h2>
+        <h3 class="font-display text-[16px] font-bold uppercase tracking-wide text-white">Company</h3>
         <ul class="mt-2 space-y-1 text-[16px]">
           <li><a class="transition hover:text-brand-400" href="#contact">Book a demo</a></li>
           <li><a class="transition hover:text-brand-400" href="#faq">FAQ</a></li>
@@ -939,12 +1080,18 @@
           <li><a class="transition hover:text-brand-400" href="/terms.html">Terms of service</a></li>
         </ul>
       </nav>
-      <nav aria-label="Follow us">
-        <h2 class="font-display text-[16px] font-bold uppercase tracking-wide text-white">Follow</h2>
+      <!-- Was a "Follow" column whose Facebook and LinkedIn links pointed at
+           those sites' own homepages. A dead social link reads as an
+           unfinished site to exactly the cautious buyer who clicks it, so this
+           is real contact detail instead. Add the social links back here when
+           the profiles actually exist. -->
+      <nav aria-label="Contact us">
+        <h3 class="font-display text-[16px] font-bold uppercase tracking-wide text-white">Talk to us</h3>
         <ul class="mt-2 space-y-1 text-[16px]">
-          <li><a class="transition hover:text-brand-400" href="https://www.facebook.com/" target="_blank" rel="noopener">Facebook</a></li>
-          <li><a class="transition hover:text-brand-400" href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a></li>
-          <li><a class="transition hover:text-brand-400" href="#contact">WhatsApp</a></li>
+          <li><a id="waFoot" class="transition hover:text-brand-400" href="https://wa.me/919804243159" target="_blank" rel="noopener">WhatsApp us</a></li>
+          <li><a class="transition hover:text-brand-400" href="tel:+919804243159">+91 98042 43159</a></li>
+          <li><a class="transition hover:text-brand-400" href="mailto:support@eduflow.in">support@eduflow.in</a></li>
+          <li class="pt-1 text-ink-500">Mon–Sat, 10am–7pm IST</li>
         </ul>
       </nav>
     </div>
@@ -954,12 +1101,33 @@
 
 <!-- Sticky mobile CTA bar — both actions always reachable below md -->
 <div class="fixed inset-x-0 bottom-0 z-50 flex gap-2 border-t border-ink-200 bg-white/95 p-2.5 shadow-[0_-4px_16px_rgba(15,23,42,.08)] backdrop-blur md:hidden" style="padding-bottom: calc(.625rem + env(safe-area-inset-bottom));">
-  <a id="waBtnMobile" href="#" class="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-ink-300 px-2 py-2.5 text-[16px] font-bold text-ink-800 sm:px-3">
+  <a id="waBtnMobile" href="https://wa.me/919804243159?text=Hi%21%20I%20run%20a%20center%20and%20I%27d%20like%20a%20free%20EduFlow%20demo." class="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-ink-300 px-2 py-2.5 text-[16px] font-bold text-ink-800 sm:px-3">
     <span class="material-symbols-rounded ms-fill shrink-0 text-[19px] text-[#1FA855]" aria-hidden="true">chat</span> WhatsApp
   </a>
-  <a href="#contact" class="inline-flex min-w-0 flex-[1.4] items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-brand-600 px-2 py-2.5 text-[16px] font-bold text-white sm:px-3">
-    <span class="material-symbols-rounded shrink-0 text-[19px]" aria-hidden="true">event_available</span> Book free demo
+  <!-- Two actions only. A third ("Demo") made all three cramped at 320px, and
+       WhatsApp already covers "I'd rather talk to a person". `grow-[1.5]`
+       rather than `flex-[1.5]`: a bare number is not a valid arbitrary flex
+       shorthand, so `flex-[1.4]` here never generated a rule at all. -->
+  <a id="mobileSignup" href="/register" class="inline-flex min-w-0 flex-1 grow-[1.5] items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-2 py-2.5 text-[16px] font-bold text-white sm:px-3">
+    <span class="material-symbols-rounded shrink-0 text-[19px]" aria-hidden="true">rocket_launch</span> Start free
   </a>
+</div>
+
+<!-- Analytics notice. Consent Mode is already set to denied in <head>, so no
+     analytics cookie exists until "Allow" is pressed here. Deliberately a
+     quiet strip, not a modal: it must never stand between a center owner and
+     the pricing. It sits above the mobile CTA bar and between the two desktop
+     floating buttons, and lifts "back to top" while it is on screen. -->
+<div id="consentBar" hidden class="fixed left-1/2 z-[60] hidden w-[min(30rem,calc(100vw-1.5rem))] -translate-x-1/2 flex-col gap-2.5 rounded-xl border border-ink-200 bg-white p-3.5 shadow-lift sm:flex-row sm:items-center"
+     role="region" aria-label="Analytics cookie notice">
+  <p class="flex-1 text-[16px] leading-snug text-ink-600">
+    We use Google Analytics to see which pages help centers most. No analytics cookie is stored until you allow it.
+    <a class="font-semibold text-brand-700 underline" href="/privacy.html">Privacy Policy</a>
+  </p>
+  <div class="flex shrink-0 gap-2">
+    <button id="consentNo" type="button" class="flex-1 whitespace-nowrap rounded-lg border border-ink-300 px-3 py-2 text-[16px] font-bold text-ink-700 transition hover:border-brand-500 hover:text-brand-600 sm:flex-none">Decline</button>
+    <button id="consentYes" type="button" class="flex-1 whitespace-nowrap rounded-lg bg-brand-600 px-3.5 py-2 text-[16px] font-bold text-white transition hover:bg-brand-700 sm:flex-none">Allow</button>
+  </div>
 </div>
 
 <!-- Back to top — appears once the visitor is a screen or two down -->
@@ -970,7 +1138,7 @@
 <!-- Desktop floating WhatsApp. "Book free demo" is not repeated here: the
      sticky header already keeps it on screen at every scroll position. -->
 <div class="fixed bottom-5 right-5 z-50 hidden flex-col items-end gap-2 md:flex">
-  <a id="waFab" href="#" class="panel-invert inline-flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-3 text-[16px] font-bold text-white shadow-lg ring-1 ring-white/20 transition" aria-label="Chat with us on WhatsApp">
+  <a id="waFab" href="https://wa.me/919804243159?text=Hi%21%20I%20run%20a%20center%20and%20I%27d%20like%20a%20free%20EduFlow%20demo." class="panel-invert inline-flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-3 text-[16px] font-bold text-white shadow-lg ring-1 ring-white/20 transition" aria-label="Chat with us on WhatsApp">
     <span class="material-symbols-rounded ms-fill shrink-0 text-[20px] text-[#25D366]" aria-hidden="true">chat</span> Chat on WhatsApp
   </a>
 </div>
@@ -1012,6 +1180,34 @@ document.getElementById("yr").textContent = new Date().getFullYear();
   document.fonts.ready.then(function () {
     if (!check()) setTimeout(check, 600);
   }, function () {});
+})();
+
+/* ── Analytics consent ───────────────────────────────────────────── */
+(function () {
+  var bar = document.getElementById("consentBar"),
+      root = document.documentElement,
+      KEY = "eduflow-analytics-consent";
+  if (!bar) return;
+
+  var stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === "granted" || stored === "denied") return;   /* already answered */
+
+  bar.hidden = false;
+  root.classList.add("consent-open");
+
+  function answer(value) {
+    try { localStorage.setItem(KEY, value); } catch (e) {}
+    /* The tag is already loaded in a denied state, so granting is an update
+       rather than a reload. Declining leaves it denied and it stays inert. */
+    if (value === "granted" && typeof window.gtag === "function") {
+      window.gtag("consent", "update", { analytics_storage: "granted" });
+    }
+    bar.hidden = true;
+    root.classList.remove("consent-open");
+  }
+  document.getElementById("consentYes").addEventListener("click", function () { answer("granted"); });
+  document.getElementById("consentNo").addEventListener("click", function () { answer("denied"); });
 })();
 
 /* ── Back to top ─────────────────────────────────────────────────── */
@@ -1061,7 +1257,12 @@ document.getElementById("yr").textContent = new Date().getFullYear();
 
 function waLink(text){ return "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + encodeURIComponent(text); }
 var DEFAULT_MSG = "Hi! I run a center and I'd like a free EduFlow demo.";
-["waBtn","waFab","waBtnMobile"].forEach(function(id){
+
+/* The three WhatsApp buttons ship with a working wa.me href already in the
+   HTML, so they stay clickable even if this script never runs. This only
+   re-derives them from WHATSAPP_NUMBER, so editing that one line at the top
+   still moves every button. Keep the hard-coded hrefs in sync when you do. */
+["waBtn","waFab","waBtnMobile","waFoot"].forEach(function(id){
   var el = document.getElementById(id);
   if (el) el.href = waLink(DEFAULT_MSG);
 });
@@ -1121,13 +1322,23 @@ document.getElementById("leadForm").addEventListener("submit", function(e){
     + "Students: " + (lead.students || "-") + "\n"
     + "My number: " + lead.phone;
 
+  /* This used to call window.open() from inside the fetch callback — outside
+     the user-gesture stack, so Safari blocked it by default and Chrome blocked
+     it whenever the request was slow, while the copy still claimed "WhatsApp
+     is opening". An explicit link cannot be blocked, works when the save
+     fails, and leaves the visitor in control of whether to send. */
   function done(saved){
-    ok.textContent = saved
-      ? "Thank you — we have your details and will call you shortly. WhatsApp is opening so you can message us straight away."
-      : "Opening WhatsApp with your details — just press send and we'll take it from there.";
+    var lead_in = saved
+      ? "Thank you — we have your details and will call you shortly."
+      : "Got it. We couldn't reach our server just now, so send us this on WhatsApp and nothing is lost.";
+    ok.innerHTML = lead_in +
+      ' <a class="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 font-bold text-white transition hover:bg-emerald-700" ' +
+      'href="' + waLink(msg) + '" target="_blank" rel="noopener">' +
+      '<span class="material-symbols-rounded ms-fill text-[18px]" aria-hidden="true">chat</span>' +
+      'Continue on WhatsApp</a>';
     ok.classList.remove("hidden");
     if (btn){ btn.disabled = false; btn.classList.remove("opacity-60"); }
-    window.open(waLink(msg), "_blank", "noopener");
+    ok.focus({ preventScroll: false });
   }
 
   if (btn){ btn.disabled = true; btn.classList.add("opacity-60"); }
@@ -1153,16 +1364,23 @@ var COMPARE = [
   { label: "UPI-QR collection & PDF receipts",      values: [1,1,1,1,1] },
   { label: "One-click WhatsApp reminders (unlimited, free)", values: [1,1,1,1,1] },
   { label: "Basic reports",                         values: [1,1,1,1,1] },
+  /* Export, Trash and bulk import are NOT gated anywhere in the product —
+     there is no plan check in export-data.tsx and no key for them in
+     MODULE_MIN_RANK (src/lib/plan-gating.ts), so they work on every plan
+     including Free. They used to show a ✗ on Free here, which quietly
+     contradicted "your data is always yours — no lock-in, ever" two sections
+     up. If they are ever meant to be paid features, gate them in the code
+     first and change these rows back at the same time. */
+  { label: "Excel / CSV export & Trash",            values: [1,1,1,1,1] },
+  { label: "Bulk Excel / CSV import",               values: [1,1,1,1,1] },
   { label: "Student ID cards",                      values: [0,1,1,1,1] },
   { label: "Certificates with QR verify",           values: [0,1,1,1,1] },
-  { label: "Excel / CSV export & Trash",            values: [0,1,1,1,1] },
   { label: "No EduFlow mark on posters",            values: [0,1,1,1,1] },
   { label: "Exams, tests & rank lists",             values: [0,0,1,1,1] },
   { label: "Expenses, income & profit reports",     values: [0,0,1,1,1] },
   { label: "Teacher salary management",             values: [0,0,1,1,1] },
   { label: "Staff roles & permissions",             values: [0,0,1,1,1] },
   { label: "Student promotion & inventory",         values: [0,0,1,1,1] },
-  { label: "Bulk Excel / CSV import",               values: [0,0,1,1,1] },
   { label: "Custom fee rules",                      values: [0,0,1,1,1] },
   { label: "Advanced reports",                      values: [0,0,1,1,1] },
   { label: "Priority support",                      values: [0,0,1,1,1] },
@@ -1239,7 +1457,7 @@ function calc(){
   if (!plan){
     out.innerHTML = "With <strong>" + students + "</strong> students you're in Enterprise territory — "
       + '<a class="font-bold text-brand-700 underline" href="#contact">talk to sales</a> for custom pricing '
-      + "and multi-branch rollout.";
+      + "and a rollout plan for your group.";
     return;
   }
   if (plan.price === 0){
