@@ -77,7 +77,20 @@ export function FinancialReport() {
   }
   const mkt = byCat.find(([c]) => c === "Marketing");
   if (mkt) tips.push(`Marketing spend is ${formatCurrency(mkt[1] * 100)} — track how many admissions it produced to measure ROI, and double down on the channel that converts best.`);
-  if (profit >= 0 && tips.length === 0) tips.push(`Healthy finances this period — consider reinvesting part of your ${formatCurrency(profit * 100)} surplus into marketing to grow admissions.`);
+  // Nothing recorded at all is not "healthy finances" — a brand-new centre, or
+  // one that has not entered its month yet, was being congratulated on a ₹0
+  // surplus and told to reinvest part of it.
+  if (income === 0 && spend === 0) {
+    tips.push(
+      outstanding > 0
+        ? `No money recorded for ${scopeLabel} yet, though ${formatCurrency(outstanding * 100)} is outstanding. Record the payments you have collected so this report reflects your real position.`
+        : `Nothing recorded for ${scopeLabel} yet. Once you collect a fee or add an expense, this report fills in automatically.`,
+    );
+  } else if (profit > 0 && tips.length === 0) {
+    tips.push(`Healthy finances this period — consider reinvesting part of your ${formatCurrency(profit * 100)} surplus into marketing to grow admissions.`);
+  } else if (profit === 0 && tips.length === 0) {
+    tips.push(`Income and expenses are exactly level this period. Any additional admission is straight margin from here.`);
+  }
 
   return (
     <div className="space-y-4">

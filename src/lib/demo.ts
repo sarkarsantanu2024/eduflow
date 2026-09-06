@@ -248,4 +248,9 @@ export const demoMetrics: DashboardMetrics = {
   monthCollection: 14250000, // ₹1,42,500
   pendingAmount: 3200000, // ₹32,000
   defaultersCount: 5,
+  // Rupees (not paise, unlike the collection figures above) — these feed the
+  // collection-rate and retention ratios, which divide like by like.
+  billedTotal: 174500,
+  collectedTotal: 142500,
+  droppedStudents: demoStudents.filter((s) => s.status === "dropped").length,
 };

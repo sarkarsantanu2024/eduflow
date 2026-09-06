@@ -15,6 +15,17 @@ interface StatusDatum {
 
 const PIE_COLORS = ["#F2630E", "#16A34A", "#F59E0B", "#6366F1"];
 
+/**
+ * Compact axis ticks: 10000 -> "10k". The axis was 48px wide with raw numbers,
+ * so a five-digit tick had its leading digit clipped and "10000" rendered as
+ * "0000" — a wrong number, not just an ugly one.
+ */
+function inrTick(v: number): string {
+  if (Math.abs(v) >= 100000) return `${(v / 100000).toFixed(1)}L`;
+  if (Math.abs(v) >= 1000) return `${Math.round(v / 1000)}k`;
+  return String(v);
+}
+
 export function DashboardAnalytics({
   metrics,
   trend,
@@ -27,19 +38,39 @@ export function DashboardAnalytics({
   enrolment: DemoEnrolPoint[];
 }) {
   const joined = enrolment.reduce((s, e) => s + e.joined, 0);
-  const dropped = enrolment.reduce((s, e) => s + e.dropped, 0);
-  const droppedThisMonth = enrolment[enrolment.length - 1]?.dropped ?? 0;
-  const retention = joined > 0 ? Math.round(((joined - dropped) / joined) * 100) : 0;
-  const collectionRate =
-    metrics.monthCollection + metrics.pendingAmount > 0
-      ? Math.round((metrics.monthCollection / (metrics.monthCollection + metrics.pendingAmount)) * 100)
-      : 0;
+
+  /**
+   * Retention over the whole student base, not a six-month joining cohort.
+   *
+   * It used to be (joined - dropped) / joined across the last six months, so a
+   * centre whose students all enrolled more than six months ago divided by
+   * zero and displayed "0%" — the worst possible number — while having lost
+   * nobody at all. That is most established centres.
+   */
+  const baseForRetention = metrics.activeStudents + metrics.droppedStudents;
+  const retention = baseForRetention > 0
+    ? `${Math.round((metrics.activeStudents / baseForRetention) * 100)}%`
+    : "—";
+
+  /**
+   * Of everything billed, how much has been collected. Previously this took
+   * THIS month's collection over this month's collection plus ALL-TIME
+   * pending, which pinned any centre carrying a backlog near 0% however well
+   * it was actually collecting.
+   */
+  const collectionRate = metrics.billedTotal > 0
+    ? `${Math.round((metrics.collectedTotal / metrics.billedTotal) * 100)}%`
+    : "—";
 
   const stats = [
-    { label: "Collection rate", value: `${collectionRate}%` },
+    { label: "Collection rate", value: collectionRate },
     { label: "New admissions (6 mo)", value: String(joined) },
-    { label: "Dropouts this month", value: String(droppedThisMonth) },
-    { label: "Retention rate", value: `${retention}%` },
+    // Was "Dropouts this month", counted from each dropped student's ADMISSION
+    // date — so it answered "who joined this month and has since left", which
+    // is not what anyone reads it as. There is no drop date on the record, so
+    // this reports the honest total instead of a precise-looking wrong number.
+    { label: "Dropped students", value: String(metrics.droppedStudents) },
+    { label: "Retention rate", value: retention },
   ];
   return (
     <div className="space-y-4">
@@ -75,7 +106,7 @@ export function DashboardAnalytics({
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e7e1d4" vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={12} />
-                <YAxis tickLine={false} axisLine={false} fontSize={12} width={48} />
+                <YAxis tickLine={false} axisLine={false} fontSize={12} width={62} tickFormatter={inrTick} />
                 <Tooltip formatter={(v: number) => `₹${v.toLocaleString("en-IN")}`} />
                 <Area type="monotone" dataKey="collected" stroke="#F2630E" strokeWidth={2.5} fill="url(#gCollected)" name="Collected" />
                 <Area type="monotone" dataKey="pending" stroke="#F59E0B" strokeWidth={2} fill="url(#gPending)" name="Pending" />

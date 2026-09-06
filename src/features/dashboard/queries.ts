@@ -10,4 +10,9 @@ export interface DashboardMetrics {
   monthCollection: number;
   pendingAmount: number;
   defaultersCount: number;
+  /** Everything ever billed, and how much of it has been paid — rupees. */
+  billedTotal: number;
+  collectedTotal: number;
+  /** Head-count by status, for retention. */
+  droppedStudents: number;
 }
