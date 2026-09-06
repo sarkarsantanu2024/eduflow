@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useCollection, useProfile, effectiveFee } from "@/lib/store/local-db";
 import { formatCurrency } from "@/lib/utils";
 import { todayIso } from "@/lib/date";
+import { collectableFees } from "@/lib/store/types";
 
 type Scope = "month" | "half" | "year";
 
@@ -53,7 +54,8 @@ export function FinancialReport() {
   ).sort((a, b) => b[1] - a[1]);
   const topCat = byCat[0];
 
-  const unpaid = fees.filter((f) => f.status !== "paid");
+  // Excludes dues belonging to a trashed student — see collectableFees.
+  const unpaid = collectableFees(fees, students).filter((f) => f.status !== "paid");
   const outstanding = unpaid.reduce((s, f) => s + (f.amount - f.amountPaid), 0);
   const defaulters = new Set(unpaid.map((f) => f.studentId)).size;
   const activeList = students.filter((s) => s.status === "active");

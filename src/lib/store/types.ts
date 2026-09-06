@@ -427,3 +427,20 @@ export const EMPTY_DB: Db = {
   performances: [], materials: [], adMaterials: [], stationery: [], events: [], teachers: [],
   profile: EMPTY_PROFILE,
 };
+
+/**
+ * Fees that still represent money the centre can actually chase.
+ *
+ * Soft-deleting a student leaves their fee rows behind — the store filters
+ * deleted students out but not the fees pointing at them, so a trashed
+ * student's dues kept inflating "Pending Fees" and the defaulter count. A fee
+ * with no student attached is kept: it is a real charge somebody raised, and
+ * hiding money is worse than showing an unassigned line.
+ */
+export function collectableFees<F extends { studentId: string }>(
+  fees: F[],
+  students: { id: string }[],
+): F[] {
+  const live = new Set(students.map((s) => s.id));
+  return fees.filter((f) => !f.studentId || live.has(f.studentId));
+}

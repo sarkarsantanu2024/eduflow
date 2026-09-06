@@ -12,6 +12,7 @@ import { useDb } from "@/lib/store/local-db";
 import { getSector } from "@/lib/sectors";
 import { formatCurrency } from "@/lib/utils";
 import { todayIso } from "@/lib/date";
+import { collectableFees } from "@/lib/store/types";
 
 type Tone = "urgent" | "info" | "good";
 
@@ -69,7 +70,8 @@ export function SmartSuggestions() {
   const suggestions: Suggestion[] = [];
 
   // 1) Pending fees — the #1 monthly pain.
-  const unpaid = fees.filter((f) => f.status !== "paid");
+  // Excludes dues belonging to a trashed student — see collectableFees.
+  const unpaid = collectableFees(fees, students).filter((f) => f.status !== "paid");
   const dueStudents = new Set(unpaid.map((f) => f.studentId)).size;
   const outstanding = unpaid.reduce((s, f) => s + (f.amount - f.amountPaid), 0);
   if (dueStudents > 0) {
