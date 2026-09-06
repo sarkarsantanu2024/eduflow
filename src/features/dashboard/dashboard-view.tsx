@@ -11,6 +11,7 @@ import { SmartSuggestions } from "@/features/dashboard/smart-suggestions";
 import { useDb, useHydrated } from "@/lib/store/local-db";
 import { formatCurrency } from "@/lib/utils";
 import { todayIso } from "@/lib/date";
+import { collectableFees } from "@/lib/store/types";
 
 export function DashboardView() {
   const hydrated = useHydrated();
@@ -25,8 +26,17 @@ export function DashboardView() {
 
   const todayCollection = r(payments.filter((p) => p.status === "success" && p.date === today).reduce((s, p) => s + p.amount, 0));
   const monthCollection = r(payments.filter((p) => p.status === "success" && p.date.startsWith(ym)).reduce((s, p) => s + p.amount, 0));
-  const pendingAmount = r(fees.reduce((s, f) => s + Math.max(0, f.amount - f.amountPaid), 0));
-  const defaultersCount = fees.filter((f) => f.status !== "paid").length;
+  // Only fees still attached to a live student are money you can chase — a
+  // trashed student's dues were inflating both figures below.
+  const chaseable = collectableFees(fees, students);
+  const pendingAmount = r(chaseable.reduce((s, f) => s + Math.max(0, f.amount - f.amountPaid), 0));
+  // Counts STUDENTS, not fee rows. This used to be fees.filter(...).length, so a
+  // student three months behind was reported as three separate "defaulters" —
+  // and it disagreed with the Financial report and Smart suggestions, which
+  // both counted people.
+  const defaultersCount = new Set(
+    chaseable.filter((f) => f.status !== "paid").map((f) => f.studentId).filter(Boolean),
+  ).size;
 
   const metrics = {
     totalStudents: students.length,
