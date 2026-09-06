@@ -192,9 +192,9 @@ export function StudentsView() {
         courseId = cid;
       }
       // A code in the file wins — the owner's existing numbering is theirs to
-      // keep. Otherwise generate one from the row's own admission date.
+      // keep. Otherwise continue the centre's own running series.
       const code = rest.code?.trim()
-        || nextStudentCode(profile.businessName, profile.city, rest.admissionDate ?? "", issued);
+        || nextStudentCode(profile.businessName, profile.city, issued);
       issued.add(code);
       addItem<Student>("students", { id: newId("student"), ...rest, courseId, code });
       imported += 1;

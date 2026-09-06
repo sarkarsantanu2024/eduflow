@@ -81,12 +81,12 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  // Keep the generated ID in step with the admission month while the owner is
-  // still filling the form. Never touches an existing student (their ID is
-  // printed on a card and referenced in receipts) or a hand-entered one.
+  // Generated from the centre and branch, as a running serial. Never touches an
+  // existing student (their ID is printed on a card and quoted on receipts) or
+  // one the owner has typed themselves.
   const autoCode = useMemo(
-    () => nextStudentCode(profile.businessName, profile.city, form.admissionDate, students.map((s) => s.code)),
-    [profile.businessName, profile.city, form.admissionDate, students],
+    () => nextStudentCode(profile.businessName, profile.city, students.map((s) => s.code)),
+    [profile.businessName, profile.city, students],
   );
   useEffect(() => {
     if (existing || codeManual) return;
@@ -270,7 +270,7 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
               <p className="mt-1 text-xs text-muted-foreground">
                 {existing ? "Existing IDs are not renumbered — it is printed on the ID card."
                   : codeManual ? "Typing your own. Tap Auto to go back to the generated ID."
-                  : "Generated from your centre name, branch and admission month."}
+                  : "Generated from your centre name and branch."}
               </p>
             </Field>
             <Field label="Status">
