@@ -16,6 +16,8 @@ export interface Student {
   courseId: string;
   batchId: string;
   monthlyFee: number; // per-student fee; 0 = use the center's flat fee
+  /** First month to bill, "YYYY-MM". Empty = from the admission month. */
+  billingStartMonth: string;
   centreName: string;
   hobbies: string;
   siblingAge: string;

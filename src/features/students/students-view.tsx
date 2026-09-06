@@ -108,7 +108,7 @@ export function StudentsView() {
         id: newId("student"),
         code: `MMA-${String(students.length + 1).padStart(4, "0")}`,
         firstName: "", lastName: "", gender: "", dob: "", admissionDate: today,
-        courseId: "", batchId: "", monthlyFee: 0, centreName: "", hobbies: "", siblingAge: "",
+        courseId: "", batchId: "", monthlyFee: 0, billingStartMonth: "", centreName: "", hobbies: "", siblingAge: "",
         schoolName: "", schoolClass: "", address: "", city: "", pincode: "",
         fatherName: "", fatherContact: "", motherName: "", motherContact: "",
         parentName: "", parentMobile: "", parentEmail: "", status: "active",

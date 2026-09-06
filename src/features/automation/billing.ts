@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { expenses, fees, institutes, students, teachers } from "@/lib/db/schema";
 import { effectiveFee, type RecurringCharge } from "@/lib/store/types";
 import { istToday } from "@/features/automation/engine";
+import { billsInMonth } from "@/features/students/billing-start";
 
 /**
  * Monthly billing: the month's fee for every active student, plus the recurring
@@ -72,7 +73,15 @@ export async function runMonthlyBilling(instituteId: string): Promise<BillingRes
     .where(and(eq(fees.instituteId, instituteId), eq(fees.kind, "monthly"), eq(fees.period, ym), isNull(fees.deletedAt)));
   const alreadyBilled = new Set(existing.map((f) => f.studentId));
 
+  /**
+   * A student is billed only once their billing has started — see
+   * features/students/billing-start.ts for the rule. This is what stops a
+   * centre's first week of data entry producing a pile of fake dues, and it
+   * also covers a future-dated admission (enrolled now for a batch that
+   * begins next month).
+   */
   const feeRows = activeStudents
+    .filter((s) => billsInMonth(s, ym))
     .filter((s) => !alreadyBilled.has(s.id))
     .map((s) => ({
       instituteId,
@@ -86,7 +95,11 @@ export async function runMonthlyBilling(instituteId: string): Promise<BillingRes
       amount: effectiveFee(s, centerFee),
       amountPaid: 0,
       status: "pending" as const,
-      dueDate: `${ym}-05`,
+      // Never dated in the past. The cron normally runs early in the month so
+      // the 5th is still ahead, but a centre that signs up on the 20th calls
+      // this on demand — and a fee born overdue would fire an "overdue"
+      // reminder at a parent who has not been asked for the money yet.
+      dueDate: `${ym}-05` > ymd ? `${ym}-05` : ymd,
     }));
 
   let feesCreated = 0;

@@ -43,6 +43,7 @@ import {
 const SAMPLE: Student = {
   id: "sample",
   code: "MMA-0001",
+  billingStartMonth: "",
   firstName: "Aarav",
   lastName: "Sharma",
   gender: "male",

@@ -12,7 +12,7 @@ export const STUDENT_COLUMNS: (keyof Student)[] = [
 
 const blankStudent: Omit<Student, "id"> = {
   code: "", firstName: "", lastName: "", gender: "", dob: "", admissionDate: "",
-  courseId: "", batchId: "", monthlyFee: 0, centreName: "", hobbies: "", siblingAge: "",
+  courseId: "", batchId: "", monthlyFee: 0, billingStartMonth: "", centreName: "", hobbies: "", siblingAge: "",
   schoolName: "", schoolClass: "", address: "", city: "", pincode: "",
   fatherName: "", fatherContact: "", motherName: "", motherContact: "",
   parentName: "", parentMobile: "", parentEmail: "", photo: "", status: "active",
