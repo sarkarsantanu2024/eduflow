@@ -15,10 +15,32 @@
  * number doubles as "how many admissions this branch has taken".
  */
 
-/** Initials of the centre name: "Maa Manasa Abacus" → "MMA". */
+/**
+ * Short code for the centre.
+ *
+ * "Maa Manasa Abacus" → "MMA"  (initials)
+ * "Radha Art Centre"  → "RAC"  (initials)
+ * "MMA Dumdum"        → "MMA"  (the brand is ALREADY an acronym — keep it)
+ *
+ * That last case is why this is not just "first letter of each word": a centre
+ * named "MMA Dumdum" would come out as "MD", chopping the brand down to a
+ * single letter and producing "MD-Dumdum-001" where the owner expects
+ * "MMA-Dumdum-001".
+ */
 export function centrePrefix(businessName: string): string {
-  const initials = (businessName || "")
-    .split(/\s+/)
+  const words = (businessName || "").trim().split(/\s+/).filter(Boolean);
+
+  // A first word that is already all-caps is the brand itself ("MMA Dumdum",
+  // "S.K. Coaching"). Skipped when EVERY word is capitalised, because that is
+  // an owner typing the whole name in caps ("MAA MANASA ABACUS"), where the
+  // initials are still what you want.
+  const shouty = words.length > 1 && words.every((w) => w === w.toUpperCase());
+  const first = (words[0] ?? "").replace(/[^A-Za-z]/g, "");
+  if (!shouty && first.length >= 2 && /^[A-Z]+$/.test(first)) {
+    return first.slice(0, 4);
+  }
+
+  const initials = words
     .map((w) => w[0] ?? "")
     .join("")
     .replace(/[^A-Za-z]/g, "")
