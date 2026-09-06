@@ -9,6 +9,7 @@ import {
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
 import { DEMO_MODE } from "@/lib/demo";
+import { WEEKDAYS, joinTimeRange, splitTimeRange, splitDays } from "@/lib/schedule";
 
 export interface FormField {
   name: string;
@@ -27,62 +28,6 @@ export interface FormField {
 
 const controlClass =
   "h-10 w-full rounded-lg border border-input bg-card px-3 text-sm shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
-
-/** Short weekday labels, in the order a timetable is read. */
-export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-
-/** "16:00" → "4:00 PM". Empty in, empty out. */
-function to12Hour(hhmm: string): string {
-  const parts = hhmm.split(":");
-  const h = Number(parts[0]);
-  const m = Number(parts[1] ?? 0);
-  if (!Number.isFinite(h)) return "";
-  const suffix = h < 12 ? "AM" : "PM";
-  const hour = h % 12 === 0 ? 12 : h % 12;
-  return `${hour}:${String(Number.isFinite(m) ? m : 0).padStart(2, "0")} ${suffix}`;
-}
-
-/** Two clock values → the single string stored on the batch. */
-function joinTimeRange(from: string, to: string): string {
-  const a = to12Hour(from);
-  const b = to12Hour(to);
-  if (a && b) return `${a} – ${b}`;
-  return a || b || "";
-}
-
-/**
- * Read an existing timing back into two 24-hour values for the clock inputs.
- * Batches created before this control hold free text in every imaginable
- * shape ("4p.m. - 6p.m.", "5:00 PM - 6:30 PM", "16:00-18:00"), so parse
- * loosely and fall back to blank rather than showing something wrong.
- */
-export function splitTimeRange(value?: string): { from: string; to: string } {
-  const found: string[] = [];
-  if (value) {
-    const twelve = /(\d{1,2})(?::(\d{2}))?\s*([ap])\.?\s*m\.?/gi;
-    let m: RegExpExecArray | null;
-    while (found.length < 2 && (m = twelve.exec(value)) !== null) {
-      const base = Number(m[1] ?? 0) % 12;
-      const hour = (m[3] ?? "").toLowerCase() === "p" ? base + 12 : base;
-      found.push(`${String(hour).padStart(2, "0")}:${m[2] ?? "00"}`);
-    }
-    if (found.length === 0) {
-      const twentyFour = /(\d{1,2}):(\d{2})/g;
-      let n: RegExpExecArray | null;
-      while (found.length < 2 && (n = twentyFour.exec(value)) !== null) {
-        found.push(`${(n[1] ?? "0").padStart(2, "0")}:${n[2] ?? "00"}`);
-      }
-    }
-  }
-  return { from: found[0] ?? "", to: found[1] ?? "" };
-}
-
-/** "Saturday, Mon" → ["Mon","Sat"]. Matches on the first three letters. */
-export function splitDays(value?: string): string[] {
-  if (!value) return [];
-  const parts = value.split(/[,/|+&]+/).map((s) => s.trim().toLowerCase()).filter(Boolean);
-  return WEEKDAYS.filter((d) => parts.some((p) => p.startsWith(d.toLowerCase())));
-}
 
 /**
  * Generic "create / edit" dialog. In demo mode it validates required fields,

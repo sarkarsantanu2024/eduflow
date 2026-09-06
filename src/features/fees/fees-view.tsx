@@ -31,6 +31,7 @@ import {
 import { ensureMonthlyBilling } from "@/features/automation/actions";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { todayIso } from "@/lib/date";
+import { allocatePayment, reverseAllocation } from "@/lib/money";
 import { useCanManage } from "@/components/layout/role-context";
 
 const periodLabel = (period: string) =>
@@ -78,22 +79,13 @@ export function FeesView() {
   // ── shared mutations ────────────────────────────────────────
   // Applies `amount` across the given fees, oldest first (supports partial pay).
   function applyPayment(list: Fee[], amount: number, studentId: string, studentName: string, method: Payment["method"] = "upi") {
-    const sorted = [...list].sort((a, b) => (a.period || a.dueDate).localeCompare(b.period || b.dueDate));
-    const totalDue = sorted.reduce((a, f) => a + (f.amount - f.amountPaid), 0);
-    let left = Math.min(Math.max(0, amount), totalDue);
-    const paid = left;
-    sorted.forEach((f) => {
-      if (left <= 0) return;
-      const due = f.amount - f.amountPaid;
-      if (due <= 0) return;
-      const part = Math.min(due, left);
-      const newPaid = f.amountPaid + part;
-      updateItem<Fee>("fees", f.id, { amountPaid: newPaid, status: newPaid >= f.amount ? "paid" : "partial" });
-      left -= part;
-    });
-    if (paid > 0) {
-      addItem<Payment>("payments", { id: newId("pay"), studentId, studentName, amount: paid, method, status: "success", source: "fee", date: today });
-      toast.success(`Collected ${formatCurrency(paid * 100)}`, { description: `${studentName} · recorded in History` });
+    // Deciding WHICH fee the money clears lives in lib/money.ts so it can be
+    // tested without a browser. This just applies the decision.
+    const { allocations, collected } = allocatePayment(list, amount);
+    allocations.forEach((a) => updateItem<Fee>("fees", a.id, { amountPaid: a.amountPaid, status: a.status }));
+    if (collected > 0) {
+      addItem<Payment>("payments", { id: newId("pay"), studentId, studentName, amount: collected, method, status: "success", source: "fee", date: today });
+      toast.success(`Collected ${formatCurrency(collected * 100)}`, { description: `${studentName} · recorded in History` });
     }
   }
 
@@ -115,19 +107,12 @@ export function FeesView() {
       const m = materials.find((x) => x.studentId === p.studentId && x.amount === p.amount && x.issued);
       if (m) updateItem<Material>("materials", m.id, { issued: false });
     } else if (p.source === "fee") {
-      // Roll back the fee(s) this payment covered — newest-paid first, mirroring
-      // the oldest-first collection.
-      let left = p.amount;
-      const paidFees = fees
-        .filter((f) => f.studentId === p.studentId && f.amountPaid > 0)
-        .sort((a, b) => (b.period || b.dueDate).localeCompare(a.period || a.dueDate));
-      paidFees.forEach((f) => {
-        if (left <= 0) return;
-        const take = Math.min(f.amountPaid, left);
-        const newPaid = f.amountPaid - take;
-        updateItem<Fee>("fees", f.id, { amountPaid: newPaid, status: newPaid <= 0 ? "pending" : "partial" });
-        left -= take;
-      });
+      // Mirrors allocatePayment newest-paid-first, so reversing a collection
+      // restores exactly the fees it cleared. See lib/money.ts.
+      const paidFees = fees.filter((f) => f.studentId === p.studentId);
+      reverseAllocation(paidFees, p.amount).allocations.forEach((a) =>
+        updateItem<Fee>("fees", a.id, { amountPaid: a.amountPaid, status: a.status }),
+      );
     }
     // "reactivation" (and any legacy/unknown source) → just remove the payment.
     removeItem("payments", p.id);
