@@ -45,10 +45,9 @@ const REQUIRED_FIELDS: Array<[keyof Omit<Student, "id">, string]> = [
   ["schoolName", "School name"],
   ["pincode", "Pincode"],
   ["address", "Address"],
-  ["fatherName", "Father's name"],
-  ["fatherContact", "Father's contact"],
-  ["motherName", "Mother's name"],
-  ["motherContact", "Mother's contact"],
+  // Parent / guardian details are validated as a PAIR instead — see submit().
+  // Requiring all four blocked single-parent and guardian-raised admissions,
+  // and staff would have worked around it by typing something fake.
 ];
 
 export function StudentStoreForm({ studentId }: { studentId?: string }) {
@@ -124,6 +123,29 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
     }
     if (!/^\d{6}$/.test(form.pincode.trim())) {
       toast.error("Pincode must be 6 digits");
+      return;
+    }
+    // At least ONE guardian, complete. Every fee reminder, absence message and
+    // result card goes to this number, so a name without a number is no use.
+    const father = { name: form.fatherName.trim(), phone: form.fatherContact.trim() };
+    const mother = { name: form.motherName.trim(), phone: form.motherContact.trim() };
+    const complete = [father, mother].filter((g) => g.name && g.phone);
+    if (complete.length === 0) {
+      const partial = [father, mother].find((g) => g.name || g.phone);
+      toast.error("One parent / guardian is required", {
+        description: partial
+          ? "Add both the name and the contact number for the same parent — messages need somewhere to go."
+          : "Fill in either the father's name and contact, or the mother's name and contact.",
+        duration: 10000,
+      });
+      return;
+    }
+    const badPhone = complete.find((g) => g.phone.replace(/\D/g, "").length < 10);
+    if (badPhone) {
+      toast.error("That contact number looks incomplete", {
+        description: `"${badPhone.phone}" is not a 10-digit mobile number. WhatsApp reminders would never arrive.`,
+        duration: 10000,
+      });
       return;
     }
     if (!form.photo) {
@@ -332,12 +354,18 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
 
       {/* Parents */}
       <Card>
-        <CardHeader><CardTitle>Parent / guardian details</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Parent / guardian details</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Fill in <span className="font-medium text-foreground">at least one</span> — name and contact together.
+            Either parent is fine; that number receives the fee reminders.
+          </p>
+        </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <Field label="Father's name *"><Input value={form.fatherName} onChange={(e) => set("fatherName", e.target.value)} /></Field>
-          <Field label="Father's contact *"><Input value={form.fatherContact} onChange={(e) => set("fatherContact", e.target.value)} placeholder="+9198…" /></Field>
-          <Field label="Mother's name *"><Input value={form.motherName} onChange={(e) => set("motherName", e.target.value)} /></Field>
-          <Field label="Mother's contact *"><Input value={form.motherContact} onChange={(e) => set("motherContact", e.target.value)} placeholder="+9198…" /></Field>
+          <Field label="Father's name"><Input value={form.fatherName} onChange={(e) => set("fatherName", e.target.value)} /></Field>
+          <Field label="Father's contact"><Input value={form.fatherContact} onChange={(e) => set("fatherContact", e.target.value)} placeholder="+9198…" /></Field>
+          <Field label="Mother's name"><Input value={form.motherName} onChange={(e) => set("motherName", e.target.value)} /></Field>
+          <Field label="Mother's contact"><Input value={form.motherContact} onChange={(e) => set("motherContact", e.target.value)} placeholder="+9198…" /></Field>
           <Field label="Parent email"><Input type="email" value={form.parentEmail} onChange={(e) => set("parentEmail", e.target.value)} /></Field>
         </CardContent>
       </Card>
