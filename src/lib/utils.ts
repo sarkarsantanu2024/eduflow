@@ -6,7 +6,25 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** Format paise (integer) as Indian Rupee currency. */
+/**
+ * Format an amount in PAISE as Indian Rupee currency.
+ *
+ * Careful: the database stores money in WHOLE RUPEES (every `amount` column is
+ * an integer of rupees — see src/lib/db/schema.ts). So callers holding a value
+ * straight from the store must pass `amount * 100`, which is why you will see
+ * that multiplication at every call site, and an `r()` helper doing it in
+ * bulk on the dashboard.
+ *
+ * This is a wart, not a bug — the units are consistent everywhere today. The
+ * clean fix is to make this take rupees and drop the ×100 from all 42 call
+ * sites, but that is a mechanical change across every money display in the
+ * app and wants a visual pass to land safely.
+ *
+ * The genuinely dangerous part is gone: `toPaise()` / `toRupees()` used to sit
+ * here, unused by anything, implying a paise-based storage model that does not
+ * exist. Writing `toPaise(amount)` into an integer-rupee column would have
+ * been a silent 100× error.
+ */
 export function formatCurrency(paise: number, currency = "INR"): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -14,11 +32,6 @@ export function formatCurrency(paise: number, currency = "INR"): string {
     maximumFractionDigits: 0,
   }).format(paise / 100);
 }
-
-/** Rupees (number from a form) → paise (integer for storage). */
-export const toPaise = (rupees: number) => Math.round(rupees * 100);
-/** Paise (integer) → rupees (number for display in inputs). */
-export const toRupees = (paise: number) => paise / 100;
 
 export function formatDate(date: string | Date | null | undefined): string {
   if (!date) return "—";

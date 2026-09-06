@@ -9,6 +9,7 @@ import {
   materials, adMaterials, stationery, events, teachers,
 } from "@/lib/db/schema";
 import { getActiveInstituteId, requireActiveInstituteId } from "@/lib/tenant";
+import { requireProfile } from "@/lib/auth";
 import { checkStudentCapacity, getStudentUsage, type StudentUsage } from "@/lib/plan-limits";
 import {
   EMPTY_DB, EMPTY_PROFILE, DEFAULT_CERT_LAYOUT, DEFAULT_ID_CARD_DESIGN,
@@ -48,6 +49,50 @@ const CONFIG: Record<CollectionName, Cfg> = {
 
 const STRIP = new Set(["instituteId", "createdAt", "updatedAt", "deletedAt"]);
 
+/* ── Who may write what ──────────────────────────────────────────────
+ * `teacher` is a real login with a password (see features/staff/actions.ts),
+ * handed to employees. Until now every write path here checked only that the
+ * caller had a tenant, so a teacher could edit payments and expenses, empty
+ * the whole center, or change the center's UPI ID so parents paid them
+ * instead. Teaching staff get the day-to-day teaching collections; anything
+ * that moves money or reshapes the center is the owner's.
+ */
+const TEACHER_WRITABLE = new Set<CollectionName>([
+  "attendance",
+  "testScores",
+  "performances",
+  "promotions",
+]);
+
+/** True when the role may write this collection. */
+function roleMayWrite(role: string, collection: CollectionName): boolean {
+  if (role === "institute_admin" || role === "super_admin" || role === "org_admin") return true;
+  if (role === "teacher") return TEACHER_WRITABLE.has(collection);
+  return false; // `parent` and anything unrecognised: read-only
+}
+
+/**
+ * Resolve the tenant AND assert the caller may write `collection`.
+ * Every write in this file goes through here, so a new collection is
+ * owner-only by default rather than silently open to staff.
+ */
+async function requireWriteAccess(collection: CollectionName): Promise<string> {
+  const profile = await requireProfile();
+  if (!roleMayWrite(profile.role, collection)) {
+    throw new Error(`Forbidden: your role cannot change ${collection}.`);
+  }
+  return requireActiveInstituteId();
+}
+
+/** Owner-only guard for center-wide operations (profile, bulk wipe). */
+async function requireOwner(): Promise<string> {
+  const profile = await requireProfile();
+  if (profile.role !== "institute_admin" && profile.role !== "super_admin" && profile.role !== "org_admin") {
+    throw new Error("Forbidden: only the center owner can do this.");
+  }
+  return requireActiveInstituteId();
+}
+
 // Every tenant collection supports soft delete (Trash): rows carry `deletedAt`,
 // normal reads filter it out, and anything deleted can be restored or purged.
 // Items stay in Trash until the owner acts — there is no automatic expiry.
@@ -59,6 +104,14 @@ function toDb(collection: CollectionName, item: Record<string, unknown>): Record
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(item)) {
     const key = cfg.rename[k] ?? k;
+    // Server-owned columns are never writable from a patch. `instituteId` is
+    // the important one: updateRow's WHERE clause stops a caller touching
+    // another tenant's row, but without this a crafted patch could set
+    // instituteId and PUSH one of their own rows into someone else's center —
+    // injecting fake students or fees into a stranger's books. deletedAt is
+    // stripped too so Trash can only be driven through softDeleteRow /
+    // restoreRow, which is where the semantics live.
+    if (STRIP.has(key)) continue;
     out[key] = v;
   }
   // Only normalise fields the caller actually sent: a PARTIAL patch (e.g.
@@ -116,11 +169,32 @@ export async function fetchDb(): Promise<Db> {
     }),
   );
 
+  // ── Scale warning ────────────────────────────────────────────────
+  // This function has no LIMIT: it loads every row of all 18 collections for
+  // the tenant on every hydrate, and list "pagination" is a client-side slice
+  // of what is already in memory. That is fine for a small center and will not
+  // hold at the 1,000 students the Business plan advertises — one year of
+  // attendance alone is ~250k rows.
+  //
+  // Fixing it properly means moving aggregation server-side per view. Until
+  // then, log when a center crosses a size where that work becomes urgent, so
+  // the wall arrives as a warning in the logs rather than as a customer whose
+  // dashboard stopped loading. Windowing by date here would be worse than the
+  // problem: the financial report has a full-year scope, and silently
+  // truncating money data is not an acceptable trade for speed.
+  const totalRows = Object.values(result).reduce((n, rows) => n + rows.length, 0);
+  if (totalRows > 50_000) {
+    console.warn(
+      `[fetchDb] institute ${instituteId} hydrated ${totalRows} rows in one payload. ` +
+        `Server-side pagination is needed before this center grows further.`,
+    );
+  }
+
   // Profile is resilient too: if it fails (e.g. a pending migration), fall back
   // to an empty profile rather than blanking the whole app.
   let profile: Profile;
   try {
-    profile = await fetchProfile(instituteId);
+    profile = await loadProfile(instituteId);
   } catch (err) {
     console.error("[fetchDb] failed to load profile:", err);
     profile = EMPTY_PROFILE;
@@ -129,11 +203,14 @@ export async function fetchDb(): Promise<Db> {
   return { ...(result as unknown as Omit<Db, "profile">), profile };
 }
 
-/** Load the active institute's profile (center settings). */
-export async function fetchProfile(instituteIdArg?: string): Promise<Profile> {
-  const instituteId = instituteIdArg ?? (await getActiveInstituteId());
-  if (!instituteId) return EMPTY_PROFILE;
-
+/**
+ * Load a center's profile. NOT exported — everything in this file is a server
+ * action, and an action that takes an institute id as an argument is callable
+ * with ANY id by any signed-in user. That leaked every center's owner name,
+ * phone, GST, address and UPI ID. Callers must resolve the tenant themselves
+ * and pass a verified id.
+ */
+async function loadProfile(instituteId: string): Promise<Profile> {
   const inst = await db.query.institutes.findFirst({ where: eq(institutes.id, instituteId) });
   if (!inst) return EMPTY_PROFILE;
 
@@ -167,10 +244,17 @@ export async function fetchProfile(instituteIdArg?: string): Promise<Profile> {
   };
 }
 
+/** The ACTIVE institute's profile. Takes no arguments by design — see loadProfile. */
+export async function fetchProfile(): Promise<Profile> {
+  const instituteId = await getActiveInstituteId();
+  if (!instituteId) return EMPTY_PROFILE;
+  return loadProfile(instituteId);
+}
+
 /* ── Writes ──────────────────────────────────────────────────────── */
 
 export async function createRow(collection: CollectionName, item: Record<string, unknown>): Promise<void> {
-  const instituteId = await requireActiveInstituteId();
+  const instituteId = await requireWriteAccess(collection);
   // Student capacity is prepaid and enforced here — the one write path every
   // add and every bulk import goes through, so it cannot be bypassed from the
   // client. The UI checks first (see checkStudentCapacityAction) to show a
@@ -206,7 +290,7 @@ export async function checkStudentCapacityAction(
 }
 
 export async function updateRow(collection: CollectionName, id: string, patch: Record<string, unknown>): Promise<void> {
-  const instituteId = await requireActiveInstituteId();
+  const instituteId = await requireWriteAccess(collection);
   const table = CONFIG[collection].table;
   const values = toDb(collection, patch);
   delete values.id;
@@ -214,7 +298,7 @@ export async function updateRow(collection: CollectionName, id: string, patch: R
 }
 
 export async function deleteRow(collection: CollectionName, id: string): Promise<void> {
-  const instituteId = await requireActiveInstituteId();
+  const instituteId = await requireWriteAccess(collection);
   const table = CONFIG[collection].table;
   await db.delete(table).where(and(eq(table.id, id), eq(table.instituteId, instituteId)));
 }
@@ -225,7 +309,7 @@ export async function deleteRow(collection: CollectionName, id: string): Promise
  *  collections that don't support soft delete. */
 export async function softDeleteRow(collection: CollectionName, id: string): Promise<void> {
   if (!SOFT_DELETE.has(collection)) return deleteRow(collection, id);
-  const instituteId = await requireActiveInstituteId();
+  const instituteId = await requireWriteAccess(collection);
   const table = CONFIG[collection].table;
   await db.update(table).set({ deletedAt: new Date() }).where(and(eq(table.id, id), eq(table.instituteId, instituteId)));
 }
@@ -233,7 +317,7 @@ export async function softDeleteRow(collection: CollectionName, id: string): Pro
 /** Restore a trashed row (clear its deletedAt). */
 export async function restoreRow(collection: CollectionName, id: string): Promise<void> {
   if (!SOFT_DELETE.has(collection)) return;
-  const instituteId = await requireActiveInstituteId();
+  const instituteId = await requireWriteAccess(collection);
   const table = CONFIG[collection].table;
   await db.update(table).set({ deletedAt: null }).where(and(eq(table.id, id), eq(table.instituteId, instituteId)));
 }
@@ -295,7 +379,9 @@ const PROFILE_MAP: Partial<Record<keyof Profile, string>> = {
 
 /** Save the active institute's profile. Marks the center as onboarded. */
 export async function saveProfile(patch: Partial<Profile>): Promise<void> {
-  const instituteId = await requireActiveInstituteId();
+  // Owner-only: this writes upiId and qrImageUrl. A teacher who could reach it
+  // would be able to redirect every fee payment to their own UPI ID.
+  const instituteId = await requireOwner();
   const values: Record<string, unknown> = { updatedAt: new Date(), onboarded: true };
   for (const [k, v] of Object.entries(patch)) {
     const col = PROFILE_MAP[k as keyof Profile];
@@ -318,7 +404,8 @@ export async function saveProfile(patch: Partial<Profile>): Promise<void> {
 
 /** Delete ALL of the active institute's records (keeps the institute + profile). */
 export async function clearInstituteData(): Promise<void> {
-  const instituteId = await requireActiveInstituteId();
+  // Owner-only, and a HARD delete that Trash cannot undo.
+  const instituteId = await requireOwner();
   await Promise.all(
     (Object.keys(CONFIG) as CollectionName[]).map((name) =>
       db.delete(CONFIG[name].table).where(eq(CONFIG[name].table.instituteId, instituteId)),

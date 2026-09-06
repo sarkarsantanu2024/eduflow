@@ -2,6 +2,7 @@ import {
   pgTable, pgEnum, uuid, text, integer, boolean, timestamp, date, jsonb,
   doublePrecision, uniqueIndex, index,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import type { AutomationSettings, CertLayout, IdCardDesign, RecurringCharge } from "../store/types";
 
 /**
@@ -289,7 +290,18 @@ export const fees = pgTable("fees", {
   voucherSentAt: text("voucher_sent_at").notNull().default(""),
   ...softDelete,
   ...timestamps,
-}, (t) => ({ byInstitute: index("fees_institute_idx").on(t.instituteId) }));
+}, (t) => ({
+  byInstitute: index("fees_institute_idx").on(t.instituteId),
+  // ONE monthly fee per student per period. Billing used to run in a browser
+  // effect that deduped against the client's own cache, so two tabs open at
+  // once produced two real charges against the same parent. Generation is
+  // server-side now, but this is the constraint that makes it impossible
+  // rather than merely unlikely. Partial: "other" fees share period "" and
+  // must stay unconstrained, and a trashed fee must be re-creatable.
+  monthlyUnique: uniqueIndex("fees_monthly_unique")
+    .on(t.instituteId, t.studentId, t.period)
+    .where(sql`${t.kind} = 'monthly' and ${t.deletedAt} is null`),
+}));
 
 // ── Payments ─────────────────────────────────────────────────────────
 export const payments = pgTable("payments", {
@@ -317,9 +329,18 @@ export const expenses = pgTable("expenses", {
   amount: integer("amount").notNull().default(0), // rupees
   date: date("date"),
   note: text("note").notNull().default(""),
+  // Set ONLY on auto-posted rows (recurring charges, teacher salary) so they
+  // can be made idempotent. NULL for anything the owner types by hand, which
+  // stays freely duplicable — two ₹100 tea expenses on one day are legitimate.
+  dedupeKey: text("dedupe_key"),
   ...softDelete,
   ...timestamps,
-}, (t) => ({ byInstitute: index("expenses_institute_idx").on(t.instituteId) }));
+}, (t) => ({
+  byInstitute: index("expenses_institute_idx").on(t.instituteId),
+  autoUnique: uniqueIndex("expenses_auto_unique")
+    .on(t.instituteId, t.dedupeKey)
+    .where(sql`${t.dedupeKey} is not null and ${t.deletedAt} is null`),
+}));
 
 // ── Message templates ────────────────────────────────────────────────
 export const templates = pgTable("templates", {

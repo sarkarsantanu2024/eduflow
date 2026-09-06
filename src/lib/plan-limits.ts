@@ -60,6 +60,10 @@ export interface CapacityOffer {
 
 const UNLIMITED: number = Number.POSITIVE_INFINITY;
 
+/** Cap applied when a center has no subscription row at all. */
+const FREE_PLAN_CAP =
+  SUBSCRIPTION_PLANS.find((p) => p.code === "free")?.maxStudents ?? 20;
+
 /** Current student usage and capacity for a center. */
 export async function getStudentUsage(instituteId: string): Promise<StudentUsage> {
   const [countRow, subRow] = await Promise.all([
@@ -84,9 +88,12 @@ export async function getStudentUsage(instituteId: string): Promise<StudentUsage
   const used = countRow[0]?.n ?? 0;
   const sub = subRow[0];
 
-  // No subscription row → treat as unlimited rather than locking a center out
-  // of its own data because of a provisioning gap.
-  const planCap = sub ? sub.maxStudents : null;
+  // No subscription row → fall back to the Free tier's cap, not to unlimited.
+  // Reads are never blocked by this (nothing here gates reading your own data),
+  // so a provisioning gap still can't lock a center out of what it already has
+  // — but it must not silently hand out Enterprise capacity for free either,
+  // which is what `null` did here.
+  const planCap = sub ? sub.maxStudents : FREE_PLAN_CAP;
   const extra = sub?.extraStudents ?? 0;
   const cap = planCap === null ? null : planCap + extra;
 
