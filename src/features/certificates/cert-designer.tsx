@@ -11,11 +11,12 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useProfile, setProfile, DEFAULT_CERT_LAYOUT, type CertLayout, type Certificate } from "@/lib/store/local-db";
 import { uploadImageFile } from "@/features/uploads/upload-client";
 import { renderCertCanvas } from "@/features/certificates/cert-pdf";
+import { todayIso } from "@/lib/date";
 
 const PREVIEW_CERT: Certificate = {
   id: "preview", serial: "EF-2026-0001", studentId: "",
   studentName: "Student Name", title: "Course / Level — Completion", course: "Course",
-  issueDate: new Date().toISOString().slice(0, 10),
+  issueDate: todayIso(),
 };
 
 type FieldKey = "name" | "course" | "date" | "serial";

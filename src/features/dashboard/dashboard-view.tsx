@@ -10,6 +10,7 @@ import { FinancialReport } from "@/features/dashboard/financial-report";
 import { SmartSuggestions } from "@/features/dashboard/smart-suggestions";
 import { useDb, useHydrated } from "@/lib/store/local-db";
 import { formatCurrency } from "@/lib/utils";
+import { todayIso } from "@/lib/date";
 
 export function DashboardView() {
   const hydrated = useHydrated();
@@ -18,7 +19,7 @@ export function DashboardView() {
   if (!hydrated) return <p className="py-10 text-center text-sm text-muted-foreground">Loading…</p>;
 
   const { students, fees, payments } = db;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   const ym = today.slice(0, 7);
   const r = (n: number) => n * 100; // rupees → paise for formatCurrency
 

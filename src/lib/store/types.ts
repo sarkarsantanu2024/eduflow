@@ -100,6 +100,14 @@ export interface Expense {
   amount: number; // rupees
   date: string; // YYYY-MM-DD
   note: string;
+  /**
+   * Set only on expenses the app posts for you, never on ones typed by hand
+   * (two ₹100 tea expenses on one day are both real). It does two jobs:
+   * `expenses_auto_unique` uses it so a recurring charge or salary cannot be
+   * posted twice in a month, and a material's Head-Office cost carries
+   * "material:<id>" so it stays linked when the item or student is renamed.
+   */
+  dedupeKey?: string;
 }
 
 export const EXPENSE_CATEGORIES = [

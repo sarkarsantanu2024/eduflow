@@ -15,6 +15,7 @@ import {
   useCollection, useHydrated, useProfile, addItem, updateItem, newId, type Promotion,
 } from "@/lib/store/local-db";
 import { formatDate } from "@/lib/utils";
+import { todayIso } from "@/lib/date";
 
 const BODY = "Congratulations! {{student_name}} has cleared {{from}} and is promoted to {{to}} ({{score}}). 🎉 — {{business}}";
 
@@ -48,7 +49,7 @@ export function PromotionsView() {
         addItem<Promotion>("promotions", {
           id: newId("promo"), studentId: s.id, studentName: `${s.firstName} ${s.lastName}`.trim(),
           parentMobile: s.parentMobile || s.fatherContact, fromLevel: v("fromLevel"), toLevel: v("toLevel"),
-          score: v("score"), date: new Date().toISOString().slice(0, 10), notified: false,
+          score: v("score"), date: todayIso(), notified: false,
         });
       }}
     />

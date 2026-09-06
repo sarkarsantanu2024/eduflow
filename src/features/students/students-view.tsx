@@ -32,6 +32,7 @@ import { ExportData } from "@/components/export-data";
 import { PosterPackDialog } from "@/features/students/welcome-pack-dialog";
 import { extractStudentFromPdf } from "@/features/students/student-pdf";
 import { nextStudentCode } from "@/features/students/student-code";
+import { todayIso } from "@/lib/date";
 
 const statusVariant: Record<StudentStatus, "success" | "secondary" | "warning" | "destructive"> = {
   active: "success", inactive: "secondary", graduated: "warning", dropped: "destructive",
@@ -103,7 +104,7 @@ export function StudentsView() {
         toast.error("Couldn't read this PDF — it may be a scanned image. Use a digital form or Import CSV.", { id: tId });
         return;
       }
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayIso();
       const draft: Student = {
         id: newId("student"),
         code: `MMA-${String(students.length + 1).padStart(4, "0")}`,

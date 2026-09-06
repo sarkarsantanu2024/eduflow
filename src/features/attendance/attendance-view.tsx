@@ -17,6 +17,7 @@ import {
   useCollection, useHydrated, useProfile, addItem, updateItem, newId,
   type Attendance, type Student,
 } from "@/lib/store/local-db";
+import { todayIso } from "@/lib/date";
 
 const selectClass =
   "h-10 w-full rounded-lg border border-input bg-card px-3 text-sm shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
@@ -32,7 +33,7 @@ export function AttendanceView() {
   const profile = useProfile();
   const biz = profile.businessName || "our institute";
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   const [date, setDate] = useState(today);
   const [batchId, setBatchId] = useState<string>("");
 

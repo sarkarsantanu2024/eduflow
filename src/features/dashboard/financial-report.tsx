@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useCollection, useProfile, effectiveFee } from "@/lib/store/local-db";
 import { formatCurrency } from "@/lib/utils";
+import { todayIso } from "@/lib/date";
 
 type Scope = "month" | "half" | "year";
 
@@ -24,7 +25,7 @@ export function FinancialReport() {
   const profile = useProfile();
   const [scope, setScope] = useState<Scope>("month");
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   const ym = today.slice(0, 7);
   const year = today.slice(0, 4);
   const startMonth = new Date(`${ym}-01T00:00:00`);

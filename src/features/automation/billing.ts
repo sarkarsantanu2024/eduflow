@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { expenses, fees, institutes, students, teachers } from "@/lib/db/schema";
 import { effectiveFee, type RecurringCharge } from "@/lib/store/types";
@@ -36,7 +36,14 @@ import { billsInMonth } from "@/features/students/billing-start";
 export interface BillingResult {
   feesCreated: number;
   expensesCreated: number;
+  suspended: number;
 }
+
+/**
+ * Unpaid months after which service is suspended. Kept in step with
+ * DEACTIVATE_AFTER in the Fees screen, which shows the owner the same rule.
+ */
+const SUSPEND_AFTER_UNPAID_MONTHS = 4;
 
 /** "2026-09" → "September 2026". Fixed to en-IN so cron and UI agree. */
 function monthLabel(ym: string): string {
@@ -57,7 +64,7 @@ export async function runMonthlyBilling(instituteId: string): Promise<BillingRes
   const label = monthLabel(ym);
 
   const inst = await db.query.institutes.findFirst({ where: eq(institutes.id, instituteId) });
-  if (!inst) return { feesCreated: 0, expensesCreated: 0 };
+  if (!inst) return { feesCreated: 0, expensesCreated: 0, suspended: 0 };
 
   const centerFee = inst.monthlyFee ?? 0;
 
@@ -169,7 +176,53 @@ export async function runMonthlyBilling(instituteId: string): Promise<BillingRes
     expensesCreated = inserted.length;
   }
 
-  return { feesCreated, expensesCreated };
+  /* ── 3. Suspend service after too many unpaid months ───────────── */
+  //
+  // Ran in a Fees-page browser effect before, so it fired whenever somebody
+  // happened to open that screen, and it counted every unpaid monthly fee ever
+  // recorded — including months before the centre started billing a student,
+  // which meant entering a long-standing student could suspend them on sight.
+  //
+  // Only months from the student's billing start count now, and it runs once a
+  // day from the cron whether or not anyone opens the app.
+  const unpaid = await db
+    .select({ studentId: fees.studentId, period: fees.period })
+    .from(fees)
+    .where(and(
+      eq(fees.instituteId, instituteId),
+      eq(fees.kind, "monthly"),
+      ne(fees.status, "paid"),
+      isNull(fees.deletedAt),
+    ));
+
+  const unpaidByStudent = new Map<string, string[]>();
+  for (const f of unpaid) {
+    if (!f.studentId) continue;
+    const list = unpaidByStudent.get(f.studentId) ?? [];
+    list.push(f.period);
+    unpaidByStudent.set(f.studentId, list);
+  }
+
+  const toSuspend = activeStudents.filter((s) => {
+    const periods = unpaidByStudent.get(s.id) ?? [];
+    // Anything before this student's billing start is not a debt they owe.
+    const countable = periods.filter((period) => billsInMonth(s, period));
+    return countable.length >= SUSPEND_AFTER_UNPAID_MONTHS;
+  });
+
+  let suspended = 0;
+  if (toSuspend.length) {
+    const ids = toSuspend.map((s) => s.id);
+    const done = await db
+      .update(students)
+      .set({ status: "inactive", updatedAt: new Date() })
+      .where(and(eq(students.instituteId, instituteId), inArray(students.id, ids)))
+      .returning({ id: students.id });
+    suspended = done.length;
+    console.info(`[billing] suspended ${suspended} student(s) at ${instituteId} for ${SUSPEND_AFTER_UNPAID_MONTHS}+ unpaid months`);
+  }
+
+  return { feesCreated, expensesCreated, suspended };
 }
 
 /** Run monthly billing for every active center. Called by the daily cron. */
@@ -181,15 +234,17 @@ export async function runMonthlyBillingForAll(): Promise<BillingResult & { cente
 
   let feesCreated = 0;
   let expensesCreated = 0;
+  let suspended = 0;
   for (const c of centers) {
     try {
       const r = await runMonthlyBilling(c.id);
       feesCreated += r.feesCreated;
       expensesCreated += r.expensesCreated;
+      suspended += r.suspended;
     } catch (e) {
       // One center's billing must never stop the rest of the run.
       console.error(`[billing] center ${c.id} failed:`, e);
     }
   }
-  return { centers: centers.length, feesCreated, expensesCreated };
+  return { centers: centers.length, feesCreated, expensesCreated, suspended };
 }

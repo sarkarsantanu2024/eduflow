@@ -15,6 +15,7 @@ import {
   DEFAULT_ID_CARD_DESIGN, type Certificate, type Profile,
 } from "@/lib/store/local-db";
 import { formatDate } from "@/lib/utils";
+import { todayIso } from "@/lib/date";
 
 /** Free QR image (same service used for UPI QR) — encodes the public verify URL. */
 function qrUrl(data: string) {
@@ -124,7 +125,7 @@ export function CertificatesView() {
         addItem<Certificate>("certificates", {
           id: newId("cert"), serial: `EF-2026-${seq}`, studentId: s.id,
           studentName: `${s.firstName} ${s.lastName}`.trim(),
-          title: v("title"), course: v("course"), issueDate: new Date().toISOString().slice(0, 10),
+          title: v("title"), course: v("course"), issueDate: todayIso(),
         });
       }}
     />
