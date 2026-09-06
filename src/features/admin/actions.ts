@@ -10,7 +10,7 @@ import {
 } from "@/lib/db/schema";
 import { requireSuperAdmin, getCurrentProfile } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
-import { ACTING_COOKIE } from "@/lib/tenant";
+import { ACTING_COOKIE, ACTING_COOKIE_OPTIONS } from "@/lib/tenant";
 import { DEMO_INSTITUTE_IDS } from "@/lib/demo-tenant";
 
 export type CustomerRow = {
@@ -80,7 +80,7 @@ export async function openCenter(formData: FormData) {
   const instituteId = String(formData.get("instituteId") ?? "");
   if (!instituteId) return;
   const store = await cookies();
-  store.set(ACTING_COOKIE, instituteId, { httpOnly: true, sameSite: "lax", path: "/" });
+  store.set(ACTING_COOKIE, instituteId, ACTING_COOKIE_OPTIONS);
   redirect("/dashboard");
 }
 
