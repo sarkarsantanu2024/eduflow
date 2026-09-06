@@ -243,6 +243,16 @@ export const students = pgTable("students", {
   courseId: uuid("course_id").references(() => courses.id, { onDelete: "set null" }),
   batchId: uuid("batch_id").references(() => batches.id, { onDelete: "set null" }),
   monthlyFee: integer("monthly_fee").notNull().default(0), // per-student override; 0 = use center fee
+  /**
+   * First month this student is billed for, "YYYY-MM". Empty = bill from the
+   * admission month, which is right for a walk-in admitted today.
+   *
+   * It exists for the other case: entering students who have been coming for
+   * months. Their real admission date belongs on the record (it prints on the
+   * ID card), but they must not be invoiced for the months before you started
+   * using EduFlow — those were already settled on paper.
+   */
+  billingStartMonth: text("billing_start_month").notNull().default(""),
   // Admission-form fields
   centreName: text("centre_name").notNull().default(""),
   hobbies: text("hobbies").notNull().default(""),

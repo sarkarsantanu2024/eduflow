@@ -17,6 +17,7 @@ import {
 import { uploadImageFile } from "@/features/uploads/upload-client";
 import { checkStudentCapacityAction } from "@/features/data/actions";
 import { nextStudentCode } from "@/features/students/student-code";
+import { defaultBillingStart } from "@/features/students/billing-start";
 import { getLabels } from "@/lib/constants";
 
 const selectClass =
@@ -24,7 +25,7 @@ const selectClass =
 
 const blank: Omit<Student, "id"> = {
   code: "", firstName: "", lastName: "", gender: "", dob: "", admissionDate: "",
-  courseId: "", batchId: "", monthlyFee: 0, centreName: "", hobbies: "", siblingAge: "",
+  courseId: "", batchId: "", monthlyFee: 0, billingStartMonth: "", centreName: "", hobbies: "", siblingAge: "",
   schoolName: "", schoolClass: "", address: "", city: "", pincode: "",
   fatherName: "", fatherContact: "", motherName: "", motherContact: "",
   parentName: "", parentMobile: "", parentEmail: "", photo: "", status: "active",
@@ -62,8 +63,10 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
   const today = new Date().toISOString().slice(0, 10);
   const ym = today.slice(0, 7);
   const monthLabel = new Date(`${ym}-01T00:00:00`).toLocaleString("en-IN", { month: "long", year: "numeric" });
-  // Whether to collect the first month up front at admission ("advance").
-  const [advanceMonth, setAdvanceMonth] = useState(true);
+  // Both of these are `null` until the owner overrides them, so they keep
+  // following the admission date as it is typed.
+  const [advanceMonth, setAdvanceMonth] = useState<boolean | null>(null);
+  const [billingStart, setBillingStart] = useState<string | null>(null);
 
   const existing = studentId ? students.find((s) => s.id === studentId) : undefined;
   const [form, setForm] = useState<Omit<Student, "id">>(
@@ -76,6 +79,22 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
   // One-time admission fee raised at admission. Blank = use the centre default;
   // editable so an owner can waive it (0) or adjust for a specific admission.
   const [admissionFee, setAdmissionFee] = useState<number | "">("");
+
+  /**
+   * An admission dated before this month means the owner is entering someone
+   * who has been attending for a while — the usual first-week-of-use task, not
+   * a walk-in. Those students were settled up on paper, so by default:
+   * no admission fee, no advance month, and billing starts NEXT month.
+   * Every one of these is still overridable right in the form.
+   */
+  const admissionYm = form.admissionDate.slice(0, 7);
+  const isBackdated = Boolean(admissionYm) && admissionYm < ym;
+  const firstBilledMonth =
+    billingStart ?? (form.billingStartMonth || defaultBillingStart(form.admissionDate, ym));
+  const collectAdvance = (advanceMonth ?? !isBackdated) && firstBilledMonth === ym;
+  const admissionFeeDefault = isBackdated ? 0 : profileAdmissionFee;
+  const firstBilledLabel = new Date(`${firstBilledMonth}-01T00:00:00Z`)
+    .toLocaleString("en-IN", { month: "long", year: "numeric", timeZone: "UTC" });
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -177,6 +196,9 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
     const payload = {
       ...form,
       code,
+      // Persisted so the nightly billing run applies the same rule. Blank for a
+      // normal admission, which means "bill from the admission month".
+      billingStartMonth: firstBilledMonth === (form.admissionDate.slice(0, 7) || ym) ? "" : firstBilledMonth,
       centreName: profile.businessName || form.centreName,
       parentName: form.parentName || form.fatherName || form.motherName,
       parentMobile: form.parentMobile || form.fatherContact || form.motherContact,
@@ -196,30 +218,42 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
       //   2) First month "advance" — this month's monthly fee (e.g. ₹500), paid up
       //      front. Same shape/period as the monthly auto-post, which dedupes by
       //      (studentId, period), so it's never billed twice.
-      const admFee = admissionFee === "" ? profileAdmissionFee : admissionFee;
-      const firstMonth = advanceMonth ? effectiveFee(payload, profile.monthlyFee || 0) : 0;
+      const admFee = admissionFee === "" ? admissionFeeDefault : admissionFee;
+      const firstMonth = collectAdvance ? effectiveFee(payload, profile.monthlyFee || 0) : 0;
       if (admFee > 0) {
         addItem<Fee>("fees", {
           id: newId("fee"), studentId: sid, studentName: name,
           parentMobile: payload.parentMobile, kind: "other", period: "",
           title: "Admission Fee", type: "admission", amount: admFee, amountPaid: 0,
-          status: "pending", dueDate: payload.admissionDate || today,
+          // Never dated in the past. Using the admission date made a student
+          // entered today, admitted in January, look eight months overdue the
+          // moment they were saved. A future admission still bills on the day.
+          status: "pending", dueDate: payload.admissionDate > today ? payload.admissionDate : today,
           reminderSentAt: "", approved: false, voucherSentAt: "",
         });
       }
       if (firstMonth > 0) {
+        const due = `${ym}-05`;
         addItem<Fee>("fees", {
           id: newId("fee"), studentId: sid, studentName: name,
           parentMobile: payload.parentMobile, kind: "monthly", period: ym,
           title: `${monthLabel} Monthly Fee`, type: "monthly", amount: firstMonth, amountPaid: 0,
-          status: "pending", dueDate: `${ym}-05`,
+          // The 5th has already passed for anyone admitted later in the month,
+          // so a fee raised today would arrive already overdue.
+          status: "pending", dueDate: due > today ? due : today,
           reminderSentAt: "", approved: false, voucherSentAt: "",
         });
       }
       const total = admFee + firstMonth;
-      toast.success("Student added", total > 0 ? {
-        description: `Raised ₹${total} to collect — admission ₹${admFee} + first month ₹${firstMonth}. See Fees.`,
-      } : undefined);
+      const parts = [
+        admFee > 0 ? `admission ₹${admFee}` : null,
+        firstMonth > 0 ? `first month ₹${firstMonth}` : null,
+      ].filter(Boolean);
+      toast.success("Student added", {
+        description: total > 0
+          ? `Raised ₹${total} to collect — ${parts.join(" + ")}. Monthly billing runs from ${firstBilledLabel}.`
+          : `Nothing to collect now. Monthly billing starts ${firstBilledLabel}.`,
+      });
     }
     router.push("/students");
   }
@@ -323,12 +357,37 @@ export function StudentStoreForm({ studentId }: { studentId?: string }) {
               <Field label="Admission fee (₹)">
                 <Input type="number" value={admissionFee}
                   onChange={(e) => setAdmissionFee(e.target.value === "" ? "" : Number(e.target.value) || 0)}
-                  placeholder={profileAdmissionFee > 0 ? `Center default (${profileAdmissionFee})` : "No admission fee set"} />
+                  placeholder={admissionFeeDefault > 0 ? `Centre default (${admissionFeeDefault})` : "No admission fee"} />
                 <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                  <input type="checkbox" checked={advanceMonth} onChange={(e) => setAdvanceMonth(e.target.checked)} className="size-3.5" />
-                  Collect first month ({monthLabel}) in advance
+                  <input type="checkbox" checked={collectAdvance} disabled={firstBilledMonth !== ym}
+                    onChange={(e) => setAdvanceMonth(e.target.checked)} className="size-3.5" />
+                  Collect {monthLabel} in advance
                 </label>
                 <p className="mt-1 text-xs text-muted-foreground">Charged once now. Blank = centre default; 0 = waive.</p>
+              </Field>
+            )}
+            {(
+              <Field label="Monthly billing starts">
+                <Input type="month" value={firstBilledMonth} onChange={(e) => setBillingStart(e.target.value)} />
+                {existing ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Months before this are never invoiced. Set it forward if this {member.toLowerCase()} was
+                    already settled up on paper — it does not remove fees already raised, which you can clear
+                    from the Fees page.
+                  </p>
+                ) : isBackdated ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Admitted <strong>{admissionYm}</strong>, before this month — so this looks like a
+                    {" "}{member.toLowerCase()} you already had. Nothing is charged for the months before you
+                    started using EduFlow, and the admission fee defaults to zero on the assumption it was
+                    collected back then. Change either if that is not right.
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    First month this {member.toLowerCase()} is invoiced for. Push it forward for a batch that
+                    starts later.
+                  </p>
+                )}
               </Field>
             )}
             <Field label="Hobbies"><Input value={form.hobbies} onChange={(e) => set("hobbies", e.target.value)} /></Field>
