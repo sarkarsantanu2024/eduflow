@@ -13,7 +13,7 @@ import {
 } from "@/lib/db/schema";
 import { requireSuperAdmin } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
-import { ACTING_COOKIE } from "@/lib/tenant";
+import { ACTING_COOKIE, ACTING_COOKIE_OPTIONS } from "@/lib/tenant";
 import {
   DEMO_ORG_ID, DEMO_INSTITUTE_ID, DEMO_BRANCH_2_ID, DEMO_ABACUS_IDS,
   DEMO_CENTERS, getDemoCenter, type DemoCenter, DEMO_CENTER_PASSWORD, demoCenterUsername,
@@ -377,7 +377,7 @@ export async function enterDemoMode() {
   await requireSuperAdmin();
   if (!(await demoExists())) await seedDemo();
   const store = await cookies();
-  store.set(ACTING_COOKIE, DEMO_INSTITUTE_ID, { httpOnly: true, sameSite: "lax", path: "/" });
+  store.set(ACTING_COOKIE, DEMO_INSTITUTE_ID, ACTING_COOKIE_OPTIONS);
   redirect("/dashboard");
 }
 
@@ -813,7 +813,7 @@ export async function enterSectorDemo(formData: FormData) {
   if (!center) return;
   if (!(await centerExists(center.id))) await seedCenter(center);
   const store = await cookies();
-  store.set(ACTING_COOKIE, center.id, { httpOnly: true, sameSite: "lax", path: "/" });
+  store.set(ACTING_COOKIE, center.id, ACTING_COOKIE_OPTIONS);
   redirect("/dashboard");
 }
 

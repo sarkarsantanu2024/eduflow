@@ -12,7 +12,7 @@ import {
 import { requireOrgAdmin } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
 import { getSector } from "@/lib/sectors";
-import { ACTING_COOKIE } from "@/lib/tenant";
+import { ACTING_COOKIE, ACTING_COOKIE_OPTIONS } from "@/lib/tenant";
 
 export type BranchRow = {
   id: string;
@@ -210,6 +210,6 @@ export async function openBranch(formData: FormData) {
   if (!branch) throw new Error("That branch is not part of your organization.");
 
   const store = await cookies();
-  store.set(ACTING_COOKIE, instituteId, { httpOnly: true, sameSite: "lax", path: "/" });
+  store.set(ACTING_COOKIE, instituteId, ACTING_COOKIE_OPTIONS);
   redirect("/dashboard");
 }
