@@ -16,6 +16,12 @@ export default defineConfig({
     reporters: "verbose",
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      // Next's "server-only" marker has no package behind it. Stub it so the
+      // pure exports of server modules can be imported and tested; the modules
+      // that also touch the database mock `@/lib/db` themselves.
+      "server-only": path.resolve(__dirname, "./src/test/server-only-stub.ts"),
+    },
   },
 });
