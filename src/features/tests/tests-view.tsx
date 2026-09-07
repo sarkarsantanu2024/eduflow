@@ -16,6 +16,7 @@ import {
   stickyActionsHead, stickyActionsCell,
 } from "@/components/ui/table";
 import { renderTemplate } from "@/lib/wa-link";
+import { rankScores, testNames } from "@/features/tests/rank";
 import {
   useCollection, useHydrated, useProfile, addItem, newId, type TestScore,
 } from "@/lib/store/local-db";
@@ -31,17 +32,12 @@ export function TestsView() {
   const biz = profile.businessName || "our institute";
 
   // Group scores by test name; default-select the first test.
-  const testNames = useMemo(() => Array.from(new Set(scores.map((s) => s.testName))), [scores]);
+  const names = useMemo(() => testNames(scores), [scores]);
   const [selected, setSelected] = useState<string>("");
-  const activeTest = selected || testNames[0] || "";
+  const activeTest = selected || names[0] || "";
 
-  // Ranked rows for the active test (highest score first).
-  const ranked = useMemo(() => {
-    return scores
-      .filter((s) => s.testName === activeTest)
-      .sort((a, b) => b.score - a.score)
-      .map((s, i) => ({ ...s, rank: i + 1 }));
-  }, [scores, activeTest]);
+  // Ranked rows for the active test — see rank.ts for how ties are handled.
+  const ranked = useMemo(() => rankScores(scores, activeTest), [scores, activeTest]);
 
   const addBtn = (
     <FormDialog
@@ -95,9 +91,9 @@ export function TestsView() {
         />
       ) : (
         <>
-          {testNames.length > 1 && (
+          {names.length > 1 && (
             <div className="flex flex-wrap gap-2">
-              {testNames.map((t) => (
+              {names.map((t) => (
                 <button key={t} onClick={() => setSelected(t)}
                   className={`rounded-full border px-3 py-1 text-sm font-medium ${t === activeTest ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted"}`}>
                   {t}

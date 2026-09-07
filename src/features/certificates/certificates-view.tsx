@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/empty-state";
 import { FormDialog } from "@/components/form-dialog";
 import { CertDesigner } from "@/features/certificates/cert-designer";
 import { downloadCertPdf, downloadAllCertsPdf } from "@/features/certificates/cert-pdf";
+import { nextCertSerial } from "@/features/certificates/serial";
 import {
   useCollection, useHydrated, useProfile, addItem, newId,
   DEFAULT_ID_CARD_DESIGN, type Certificate, type Profile,
@@ -121,9 +122,8 @@ export function CertificatesView() {
       onSubmit={(v) => {
         const s = students.find((x) => x.id === v("studentId"));
         if (!s) return;
-        const seq = String(certificates.length + 1).padStart(4, "0");
         addItem<Certificate>("certificates", {
-          id: newId("cert"), serial: `EF-2026-${seq}`, studentId: s.id,
+          id: newId("cert"), serial: nextCertSerial(certificates), studentId: s.id,
           studentName: `${s.firstName} ${s.lastName}`.trim(),
           title: v("title"), course: v("course"), issueDate: todayIso(),
         });

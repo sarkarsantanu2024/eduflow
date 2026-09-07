@@ -14,6 +14,9 @@ import { SendOnWhatsApp } from "@/components/send-on-whatsapp";
 import { renderTemplate } from "@/lib/wa-link";
 import { queueAbsentAlerts } from "@/features/automation/actions";
 import {
+  rosterFor, unassignedCount, savedAbsentIds, attendanceWrites, attendanceSummary,
+} from "@/features/attendance/attendance-math";
+import {
   useCollection, useHydrated, useProfile, addItem, updateItem, newId,
   type Attendance, type Student,
 } from "@/lib/store/local-db";
@@ -39,25 +42,16 @@ export function AttendanceView() {
 
   // Default to the first batch once data is present.
   const activeBatch = batchId || batches[0]?.id || "";
-  const roster = useMemo(
-    () => students.filter((s) => s.batchId === activeBatch && s.status === "active"),
-    [students, activeBatch],
-  );
+  const roster = useMemo(() => rosterFor(students, activeBatch), [students, activeBatch]);
   // Active students with no batch never appear in ANY roster — surface them
   // instead of letting them silently disappear from attendance.
-  const unassigned = useMemo(
-    () => students.filter((s) => s.status === "active" && !s.batchId).length,
-    [students],
-  );
+  const unassigned = useMemo(() => unassignedCount(students), [students]);
 
   // Which students are currently marked absent (seeded from saved records).
-  const savedAbsent = useMemo(() => {
-    const set = new Set<string>();
-    attendance.forEach((a) => {
-      if (a.batchId === activeBatch && a.date === date && !a.present) set.add(a.studentId);
-    });
-    return set;
-  }, [attendance, activeBatch, date]);
+  const savedAbsent = useMemo(
+    () => savedAbsentIds(attendance, activeBatch, date),
+    [attendance, activeBatch, date],
+  );
 
   const [absent, setAbsent] = useState<Set<string>>(new Set());
   // Re-seed local toggles whenever batch/date changes.
@@ -78,20 +72,11 @@ export function AttendanceView() {
   }
 
   function save() {
-    roster.forEach((s) => {
-      const present = !absent.has(s.id);
-      const existing = attendance.find((a) => a.batchId === activeBatch && a.date === date && a.studentId === s.id);
-      if (existing) {
-        if (existing.present !== present) updateItem<Attendance>("attendance", existing.id, { present });
-      } else {
-        addItem<Attendance>("attendance", {
-          id: newId("att"), date, batchId: activeBatch, studentId: s.id,
-          studentName: `${s.firstName} ${s.lastName}`.trim(),
-          parentMobile: s.parentMobile || s.fatherContact, present,
-        });
-      }
-    });
-    toast.success("Attendance saved", { description: `${roster.length - absent.size} present · ${absent.size} absent` });
+    const { creates, updates } = attendanceWrites(roster, absent, attendance, activeBatch, date);
+    updates.forEach((u) => updateItem<Attendance>("attendance", u.id, { present: u.present }));
+    creates.forEach((c) => addItem<Attendance>("attendance", { id: newId("att"), ...c }));
+    const tally = attendanceSummary(roster, absent);
+    toast.success("Attendance saved", { description: `${tally.present} present · ${tally.absent} absent` });
     // If the center enabled the "Absent today" automation, queue alerts into
     // the Reminders → Outbox (no-op otherwise; server checks the switch).
     if (absent.size > 0) {
