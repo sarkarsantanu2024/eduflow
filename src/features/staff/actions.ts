@@ -3,8 +3,9 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { users, subscriptions, subscriptionPlans } from "@/lib/db/schema";
+import { institutes, users, subscriptions, subscriptionPlans } from "@/lib/db/schema";
 import { requireProfile } from "@/lib/auth";
+import { customPlanName } from "@/lib/constants";
 import { requireActiveInstituteId } from "@/lib/tenant";
 import { hashPassword } from "@/lib/auth/password";
 
@@ -42,16 +43,28 @@ export async function listStaff(): Promise<StaffData> {
     .where(and(eq(users.instituteId, instituteId), eq(users.role, "teacher")));
 
   const sub = await db
-    .select({ maxStaff: subscriptionPlans.maxStaff, planName: subscriptionPlans.name })
+    .select({
+      maxStaff: subscriptionPlans.maxStaff,
+      planName: subscriptionPlans.name,
+      centerName: institutes.name,
+      customPrice: subscriptions.customPriceMonthly,
+      customStudents: subscriptions.customMaxStudents,
+    })
     .from(subscriptions)
     .innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id))
+    .innerJoin(institutes, eq(subscriptions.instituteId, institutes.id))
     .where(eq(subscriptions.instituteId, instituteId))
     .limit(1);
 
+  // A custom plan sets the amount and the student cap, not the staff limit —
+  // that still comes from the plan the center sits on. Only the NAME changes.
+  const s = sub[0];
   return {
-    staff: staff.map((s) => ({ ...s, lastLoginAt: s.lastLoginAt ? s.lastLoginAt.toISOString() : null })),
-    limit: sub[0]?.maxStaff ?? 1,
-    planName: sub[0]?.planName ?? "Starter",
+    staff: staff.map((r) => ({ ...r, lastLoginAt: r.lastLoginAt ? r.lastLoginAt.toISOString() : null })),
+    limit: s?.maxStaff ?? 1,
+    planName: s && s.customPrice != null && s.customStudents != null
+      ? customPlanName(s.centerName, s.customPrice, s.customStudents)
+      : (s?.planName ?? "Starter"),
   };
 }
 

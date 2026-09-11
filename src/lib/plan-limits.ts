@@ -1,8 +1,8 @@
 import "server-only";
 import { and, eq, isNull, count } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { students, subscriptions, subscriptionPlans } from "@/lib/db/schema";
-import { SUBSCRIPTION_PLANS, SEAT_PACKS } from "@/lib/constants";
+import { institutes, students, subscriptions, subscriptionPlans } from "@/lib/db/schema";
+import { SUBSCRIPTION_PLANS, SEAT_PACKS, customPlanName } from "@/lib/constants";
 
 /**
  * Student capacity — the one thing every plan is priced on.
@@ -15,6 +15,10 @@ import { SUBSCRIPTION_PLANS, SEAT_PACKS } from "@/lib/constants";
  * Effective cap = plan.maxStudents + subscription.extraStudents
  *   - plan.maxStudents = null means unlimited (Enterprise).
  *   - extraStudents is raised by a super-admin once payment lands.
+ *   - A custom plan ALWAYS WINS: when subscription.customMaxStudents is set it
+ *     replaces plan.maxStudents — the cap a super-admin agreed for that one
+ *     center — and the plan is named after the center. Seat packs still add on
+ *     top of it. With no custom plan, the selected plan applies unchanged.
  *
  * NOTHING already in the account is affected at the limit — no data is removed
  * and no feature switches off. Only the *next* admission waits.
@@ -39,9 +43,14 @@ export interface StudentUsage {
   atCap: boolean;
   /** True from 90% of the effective cap — where we start warning. */
   nearCap: boolean;
+  /** Custom plans are named after the center — see customPlanName(). */
   planName: string;
   planCode: string;
   billingCycle: "monthly" | "annual";
+  /** True when a super-admin has set this center's own amount and cap. */
+  isCustom: boolean;
+  /** Custom plans only: the agreed monthly amount in rupees. */
+  customPrice: number | null;
 }
 
 /** A seat pack offered to the owner. Price is never rendered. */
@@ -66,7 +75,7 @@ const FREE_PLAN_CAP =
 
 /** Current student usage and capacity for a center. */
 export async function getStudentUsage(instituteId: string): Promise<StudentUsage> {
-  const [countRow, subRow] = await Promise.all([
+  const [countRow, subRow, instRow] = await Promise.all([
     db
       .select({ n: count() })
       .from(students)
@@ -78,11 +87,15 @@ export async function getStudentUsage(instituteId: string): Promise<StudentUsage
         planCode: subscriptionPlans.code,
         extraStudents: subscriptions.extraStudents,
         billingCycle: subscriptions.billingCycle,
+        customMaxStudents: subscriptions.customMaxStudents,
+        customPriceMonthly: subscriptions.customPriceMonthly,
       })
       .from(subscriptions)
       .innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id))
       .where(eq(subscriptions.instituteId, instituteId))
       .limit(1),
+    // Only needed to name a custom plan after its center.
+    db.select({ name: institutes.name }).from(institutes).where(eq(institutes.id, instituteId)).limit(1),
   ]);
 
   const used = countRow[0]?.n ?? 0;
@@ -93,7 +106,10 @@ export async function getStudentUsage(instituteId: string): Promise<StudentUsage
   // so a provisioning gap still can't lock a center out of what it already has
   // — but it must not silently hand out Enterprise capacity for free either,
   // which is what `null` did here.
-  const planCap = sub ? sub.maxStudents : FREE_PLAN_CAP;
+  // A custom plan carries its own cap on the subscription row and wins over the
+  // plan's; null there means "the plan decides", which is every other center.
+  const planCap = sub ? (sub.customMaxStudents ?? sub.maxStudents) : FREE_PLAN_CAP;
+  const isCustom = sub?.customMaxStudents != null;
   const extra = sub?.extraStudents ?? 0;
   const cap = planCap === null ? null : planCap + extra;
 
@@ -106,9 +122,16 @@ export async function getStudentUsage(instituteId: string): Promise<StudentUsage
     ratio: cap === null || cap === 0 ? 0 : used / cap,
     atCap: cap !== null && used >= cap,
     nearCap: cap !== null && cap > 0 && used / cap >= 0.9,
-    planName: sub?.planName ?? "Free",
+    // A custom plan is named after the center it was agreed for; everywhere a
+    // plan name is shown, that is the name that shows.
+    planName: isCustom
+      ? customPlanName(instRow[0]?.name ?? "", sub?.customPriceMonthly ?? 0, sub?.customMaxStudents ?? 0)
+      : (sub?.planName ?? "Free"),
+    // Modules still follow the plan the center sits on.
     planCode: sub?.planCode ?? "free",
     billingCycle: sub?.billingCycle === "annual" ? "annual" : "monthly",
+    isCustom,
+    customPrice: sub?.customPriceMonthly ?? null,
   };
 }
 
@@ -141,6 +164,11 @@ export function capacityMessage(usage: StudentUsage, wanted: number): string {
  * seat packs.
  */
 export function getCapacityOffer(usage: StudentUsage): CapacityOffer {
+  // A custom plan was agreed for this center specifically, so there is no
+  // published tier to steer them to — seats are the only thing on offer.
+  if (usage.isCustom) {
+    return { packs: SEAT_PACKS.map((p) => ({ seats: p.seats, upgradeIsBetter: false })), recommendedPlan: null, reason: "" };
+  }
   const order = SUBSCRIPTION_PLANS.map((p) => p.code) as readonly string[];
   const idx = order.indexOf(usage.planCode);
   const current = SUBSCRIPTION_PLANS.find((p) => p.code === usage.planCode);

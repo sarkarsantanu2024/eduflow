@@ -8,11 +8,11 @@ import { PageHeader } from "@/components/page-header";
 import { ActionButton } from "@/components/action-button";
 import {
   SUBSCRIPTION_PLANS, CURRENT_PLAN_CODE, FRANCHISE_PLAN,
-  PRICE_NOTE, ANNUAL_DISCOUNT_PERCENT,
+  PRICE_NOTE, ANNUAL_DISCOUNT_PERCENT, customPlanName,
 } from "@/lib/constants";
 import { FEATURES } from "@/lib/features";
 import { db } from "@/lib/db";
-import { subscriptions, subscriptionPlans } from "@/lib/db/schema";
+import { institutes, subscriptions, subscriptionPlans } from "@/lib/db/schema";
 import { getActiveInstituteId } from "@/lib/tenant";
 import { SeatMeter } from "@/features/capacity/seat-meter";
 import { CapacityHistory } from "@/features/capacity/capacity-history";
@@ -27,14 +27,30 @@ export default async function BillingPage() {
   // Show the center's real current plan (falls back to the demo default).
   const activeId = await getActiveInstituteId();
   let currentPlanCode: string = CURRENT_PLAN_CODE;
+  // Set only when a custom plan was agreed for this center — its amount and
+  // student cap override the plan below, and it is named after the center.
+  let custom: { name: string; price: number; students: number } | null = null;
   if (activeId) {
     const [sub] = await db
-      .select({ code: subscriptionPlans.code })
+      .select({
+        code: subscriptionPlans.code,
+        centerName: institutes.name,
+        customPrice: subscriptions.customPriceMonthly,
+        customStudents: subscriptions.customMaxStudents,
+      })
       .from(subscriptions)
       .innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id))
+      .innerJoin(institutes, eq(subscriptions.instituteId, institutes.id))
       .where(eq(subscriptions.instituteId, activeId))
       .limit(1);
     if (sub?.code) currentPlanCode = sub.code;
+    if (sub?.customPrice != null && sub.customStudents != null) {
+      custom = {
+        name: customPlanName(sub.centerName, sub.customPrice, sub.customStudents),
+        price: sub.customPrice,
+        students: sub.customStudents,
+      };
+    }
   }
 
 
@@ -53,9 +69,36 @@ export default async function BillingPage() {
         </CardContent>
       </Card>
 
+      {/* A custom plan agreed for this center — its own amount and cap, which
+          override the plan below. Shown instead of a "Current" badge on the
+          cards, since a custom plan is never one of the published tiers. */}
+      {custom && (
+        <Card className="border-primary/40">
+          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+              <Sparkles className="size-6" />
+            </span>
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-bold">{custom.name}</h3>
+                <Badge variant="success">Current</Badge>
+              </div>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                A plan agreed with our team for your center —{" "}
+                <strong className="text-foreground">₹{custom.price.toLocaleString("en-IN")}/month</strong> for up to{" "}
+                <strong className="text-foreground">{custom.students.toLocaleString("en-IN")} students</strong>. Seat
+                packs still add on top of your limit.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-5 lg:grid-cols-3">
         {SUBSCRIPTION_PLANS.map((plan) => {
-          const current = plan.code === currentPlanCode;
+          // A custom plan overrides the tier, so no card is "Current" then —
+          // the custom card above is.
+          const current = !custom && plan.code === currentPlanCode;
           return (
             <Card
               key={plan.code}

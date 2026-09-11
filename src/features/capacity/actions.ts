@@ -12,7 +12,7 @@ import {
   getStudentUsage, getCapacityOffer, seatRequestMessage, centerRef,
   type StudentUsage, type CapacityOffer,
 } from "@/lib/plan-limits";
-import { SUPPORT } from "@/lib/constants";
+import { SUPPORT, customPlanName } from "@/lib/constants";
 
 /* ── Owner-facing ────────────────────────────────────────────────── */
 
@@ -204,6 +204,7 @@ export async function addSeats(params: {
       extraStudents: subscriptions.extraStudents,
       planCode: subscriptionPlans.code,
       maxStudents: subscriptionPlans.maxStudents,
+      customMaxStudents: subscriptions.customMaxStudents,
     })
     .from(subscriptions)
     .innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id))
@@ -216,7 +217,9 @@ export async function addSeats(params: {
     .set({ extraStudents: nextExtra, updatedAt: new Date() })
     .where(eq(subscriptions.id, sub.id));
 
-  const newCap = sub.maxStudents === null ? null : sub.maxStudents + nextExtra;
+  // Custom centers carry their own cap on the subscription row.
+  const planCap = sub.customMaxStudents ?? sub.maxStudents;
+  const newCap = planCap === null ? null : planCap + nextExtra;
   await db.insert(capacityEvents).values({
     instituteId,
     action: seats > 0 ? "seats_added" : "seats_removed",
@@ -311,6 +314,8 @@ export async function listCenterCapacity(): Promise<CenterCapacityRow[]> {
       name: institutes.name,
       planName: subscriptionPlans.name,
       planCap: subscriptionPlans.maxStudents,
+      customCap: subscriptions.customMaxStudents,
+      customPrice: subscriptions.customPriceMonthly,
       extra: subscriptions.extraStudents,
     })
     .from(institutes)
@@ -325,16 +330,21 @@ export async function listCenterCapacity(): Promise<CenterCapacityRow[]> {
     .groupBy(students.instituteId);
   const used = new Map(counts.map((c) => [c.id, Number(c.n)]));
 
-  return rows.map((r) => ({
-    instituteId: r.instituteId,
-    centerId: centerRef(r.instituteId),
-    name: r.name,
-    planName: r.planName,
-    planCap: r.planCap,
-    extra: r.extra,
-    cap: r.planCap === null ? null : r.planCap + r.extra,
-    used: used.get(r.instituteId) ?? 0,
-  }));
+  return rows.map((r) => {
+    // A custom plan carries its own cap and name on the subscription row.
+    const planCap = r.customCap ?? r.planCap;
+    const isCustom = r.customCap != null && r.customPrice != null;
+    return {
+      instituteId: r.instituteId,
+      centerId: centerRef(r.instituteId),
+      name: r.name,
+      planName: isCustom ? customPlanName(r.name, r.customPrice!, r.customCap!) : r.planName,
+      planCap,
+      extra: r.extra,
+      cap: planCap === null ? null : planCap + r.extra,
+      used: used.get(r.instituteId) ?? 0,
+    };
+  });
 }
 
 /** Count of requests still needing attention — for the admin dashboard badge. */

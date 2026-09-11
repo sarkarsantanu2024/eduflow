@@ -5,6 +5,7 @@ import { getActiveInstituteId, isImpersonating } from "@/lib/tenant";
 import { db } from "@/lib/db";
 import { institutes, subscriptions, subscriptionPlans } from "@/lib/db/schema";
 import { AppShell } from "@/components/layout/app-shell";
+import { customPlanName } from "@/lib/constants";
 import type { UserRole } from "@/types/database.types";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +31,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
         columns: { name: true, onboarded: true, isActive: true },
       }),
       db
-        .select({ planName: subscriptionPlans.name, planCode: subscriptionPlans.code })
+        .select({
+          planName: subscriptionPlans.name,
+          planCode: subscriptionPlans.code,
+          customPrice: subscriptions.customPriceMonthly,
+          customStudents: subscriptions.customMaxStudents,
+        })
         .from(subscriptions)
         .innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id))
         .where(eq(subscriptions.instituteId, activeId))
@@ -47,7 +53,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
     needsOnboarding = profile.role === "institute_admin" && institute?.onboarded === false;
     if (sub[0]) {
-      planLabel = `${sub[0].planName} plan`;
+      // A custom plan overrides the plan it sits on, so it is what the header
+      // names; modules still follow planCode.
+      const { planName, customPrice, customStudents } = sub[0];
+      planLabel = customPrice != null && customStudents != null
+        ? customPlanName(institute?.name ?? "", customPrice, customStudents)
+        : `${planName} plan`;
       planCode = sub[0].planCode;
     }
   }
