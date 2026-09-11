@@ -162,6 +162,26 @@ export const SUBSCRIPTION_PLANS = [
   },
 ] as const;
 
+/**
+ * The negotiated, per-center plan. Deliberately NOT part of SUBSCRIPTION_PLANS:
+ * it is never advertised or self-served. A super-admin sets one center's own
+ * monthly amount and student cap from the platform console, and those two
+ * values live on the subscription row (subscriptions.custom_price_monthly /
+ * custom_max_students).
+ *
+ * A custom plan ALWAYS OVERRIDES the selected subscription plan — its amount is
+ * what the center pays and its student count is the cap. With no custom plan
+ * set, the plan the admin picked applies exactly as before. The center keeps the
+ * modules of the plan it sits on either way.
+ *
+ * The plan has no name of its own: it is named after the center it was agreed
+ * for, so it reads the same everywhere it appears.
+ */
+export function customPlanName(centerName: string, price: number, students: number): string {
+  const n = (v: number) => v.toLocaleString("en-IN");
+  return `${centerName || "Custom"} - ₹${n(price)} - ${n(students)} students`;
+}
+
 /** Shown under every price. Decide once, print everywhere. */
 export const PRICE_NOTE = "Prices in INR, exclusive of 18% GST. Student capacity is prepaid: to go past your plan's limit, add a seat pack (+25, +50 or +100 students) or move up a plan — whichever suits you. Your existing students and data are completely safe either way; only new admissions wait for capacity.";
 

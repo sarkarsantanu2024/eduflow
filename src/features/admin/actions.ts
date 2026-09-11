@@ -12,6 +12,7 @@ import { requireSuperAdmin, getCurrentProfile } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
 import { ACTING_COOKIE, ACTING_COOKIE_OPTIONS } from "@/lib/tenant";
 import { DEMO_INSTITUTE_IDS } from "@/lib/demo-tenant";
+import { customPlanName } from "@/lib/constants";
 
 export type CustomerRow = {
   id: string;
@@ -21,8 +22,14 @@ export type CustomerRow = {
   isActive: boolean; // false = suspended/blocked
   ownerEmail: string | null;
   ownerId: string | null;
+  /** Plan name to show — a custom plan is named after the center. */
   plan: string;
+  planCode: string;
   planStatus: string;
+  /** Custom plan only: this center's own monthly amount. null = no custom plan. */
+  customPrice: number | null;
+  /** Custom plan only: this center's own student cap. null = no custom plan. */
+  customStudents: number | null;
   students: number;
   activeStudents: number;
   revenue: number; // rupees collected (successful payments)
@@ -46,7 +53,7 @@ export async function listCustomers(): Promise<CustomerRow[]> {
     db.select({ id: payments.instituteId, total: sql<number>`coalesce(sum(${payments.amount}), 0)` }).from(payments).where(and(inArray(payments.instituteId, ids), eq(payments.status, "success"))).groupBy(payments.instituteId),
     db.select({ id: fees.instituteId, total: sql<number>`coalesce(sum(${fees.amount} - ${fees.amountPaid}), 0)` }).from(fees).where(and(inArray(fees.instituteId, ids), inArray(fees.status, ["pending", "overdue", "partial"]))).groupBy(fees.instituteId),
     db.select({ id: users.instituteId, email: users.email, userId: users.id }).from(users).where(and(inArray(users.instituteId, ids), eq(users.role, "institute_admin"))),
-    db.select({ id: subscriptions.instituteId, plan: subscriptionPlans.name, status: subscriptions.status }).from(subscriptions).innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id)).where(inArray(subscriptions.instituteId, ids)),
+    db.select({ id: subscriptions.instituteId, plan: subscriptionPlans.name, code: subscriptionPlans.code, status: subscriptions.status, customPrice: subscriptions.customPriceMonthly, customStudents: subscriptions.customMaxStudents }).from(subscriptions).innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id)).where(inArray(subscriptions.instituteId, ids)),
   ]);
 
   const num = (rs: { id: string; n?: number; total?: number }[], id: string, key: "n" | "total") =>
@@ -63,8 +70,14 @@ export async function listCustomers(): Promise<CustomerRow[]> {
       isActive: inst.isActive,
       ownerEmail: owner?.email ?? null,
       ownerId: owner?.userId ?? null,
-      plan: sub?.plan ?? "—",
+      // A custom plan overrides the plan it sits on, name included.
+      plan: sub?.customPrice != null && sub?.customStudents != null
+        ? customPlanName(inst.name, sub.customPrice, sub.customStudents)
+        : (sub?.plan ?? "—"),
+      planCode: sub?.code ?? "",
       planStatus: sub?.status ?? "—",
+      customPrice: sub?.customPrice ?? null,
+      customStudents: sub?.customStudents ?? null,
       students: num(studentCounts, inst.id, "n"),
       activeStudents: num(activeCounts, inst.id, "n"),
       revenue: num(revenueRows, inst.id, "total"),
@@ -158,20 +171,27 @@ export async function getPlatformMetrics(): Promise<PlatformMetrics> {
       code: subscriptionPlans.code,
       name: subscriptionPlans.name,
       price: subscriptionPlans.priceMonthly,
+      customPrice: subscriptions.customPriceMonthly,
     }).from(subscriptions).innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id)).where(notDemo),
     db.select({ total: sql<number>`coalesce(sum(${payments.amount}), 0)` }).from(payments).where(and(eq(payments.status, "success"), notInArray(payments.instituteId, DEMO_INSTITUTE_IDS))),
     db.select({ total: sql<number>`coalesce(sum(${fees.amount} - ${fees.amountPaid}), 0)` }).from(fees).where(and(inArray(fees.status, ["pending", "overdue", "partial"]), notInArray(fees.instituteId, DEMO_INSTITUTE_IDS))),
   ]);
 
   const billable = subRows.filter((s) => s.status === "active" || s.status === "past_due");
-  const mrr = billable.reduce((a, s) => a + Number(s.price), 0);
+  // A custom center pays its own negotiated figure, not the plan's price.
+  const monthly = (s: { price: number; customPrice: number | null }) =>
+    Number(s.customPrice ?? s.price);
+  const mrr = billable.reduce((a, s) => a + monthly(s), 0);
 
+  // Custom centers each pay a different figure, so they roll up into one
+  // "Custom" line rather than one line per center.
   const byPlanMap = new Map<string, { code: string; name: string; price: number; count: number; mrr: number }>();
   for (const s of billable) {
-    const e = byPlanMap.get(s.code) ?? { code: s.code, name: s.name, price: Number(s.price), count: 0, mrr: 0 };
+    const key = s.customPrice == null ? s.code : "custom";
+    const e = byPlanMap.get(key) ?? { code: key, name: s.customPrice == null ? s.name : "Custom", price: Number(s.customPrice ?? s.price), count: 0, mrr: 0 };
     e.count += 1;
-    e.mrr += Number(s.price);
-    byPlanMap.set(s.code, e);
+    e.mrr += monthly(s);
+    byPlanMap.set(key, e);
   }
 
   return {
@@ -186,13 +206,13 @@ export async function getPlatformMetrics(): Promise<PlatformMetrics> {
   };
 }
 
-export type PlanOption = { id: string; code: string; name: string; price: number };
+export type PlanOption = { id: string; code: string; name: string; price: number; maxStudents: number | null };
 
 /** The plan catalogue for the plan-override dropdown (super-admin only). */
 export async function listPlans(): Promise<PlanOption[]> {
   await requireSuperAdmin();
   const rows = await db
-    .select({ id: subscriptionPlans.id, code: subscriptionPlans.code, name: subscriptionPlans.name, price: subscriptionPlans.priceMonthly })
+    .select({ id: subscriptionPlans.id, code: subscriptionPlans.code, name: subscriptionPlans.name, price: subscriptionPlans.priceMonthly, maxStudents: subscriptionPlans.maxStudents })
     .from(subscriptionPlans)
     .where(eq(subscriptionPlans.isActive, true))
     .orderBy(subscriptionPlans.sortOrder);
@@ -202,7 +222,15 @@ export async function listPlans(): Promise<PlanOption[]> {
 const SUB_STATUSES = ["trialing", "active", "past_due", "canceled", "expired"] as const;
 type SubStatus = (typeof SUB_STATUSES)[number];
 
-/** Override a center's plan and/or subscription status (super-admin only). */
+/**
+ * Override a center's plan and/or subscription status (super-admin only).
+ *
+ * A custom plan is optional and sits on TOP of the selected plan: give both an
+ * amount and a student count and they win over the plan's price and cap
+ * everywhere, under a plan named after the center. Leave both blank and the
+ * selected plan applies exactly as before — which is how any existing center
+ * that is never given a custom plan keeps behaving.
+ */
 export async function setCenterPlan(formData: FormData): Promise<{ error?: string; ok?: boolean }> {
   await requireSuperAdmin();
   const instituteId = String(formData.get("instituteId") ?? "");
@@ -211,8 +239,27 @@ export async function setCenterPlan(formData: FormData): Promise<{ error?: strin
   if (!instituteId || !planId) return { error: "Missing center or plan" };
   if (!SUB_STATUSES.includes(status)) return { error: "Invalid status" };
 
-  const [plan] = await db.select({ id: subscriptionPlans.id }).from(subscriptionPlans).where(eq(subscriptionPlans.id, planId)).limit(1);
+  const [plan] = await db
+    .select({ id: subscriptionPlans.id, code: subscriptionPlans.code, name: subscriptionPlans.name, maxStudents: subscriptionPlans.maxStudents })
+    .from(subscriptionPlans).where(eq(subscriptionPlans.id, planId)).limit(1);
   if (!plan) return { error: "Plan not found" };
+
+  // Custom plan: both fields, or neither. Half of one would leave a center with
+  // an amount and no cap (or the reverse), which no screen could explain.
+  const rawPrice = String(formData.get("customPrice") ?? "").trim();
+  const rawStudents = String(formData.get("customStudents") ?? "").trim();
+  let customPriceMonthly: number | null = null;
+  let customMaxStudents: number | null = null;
+  if (rawPrice !== "" || rawStudents !== "") {
+    customPriceMonthly = Number(rawPrice);
+    customMaxStudents = Number(rawStudents);
+    if (!Number.isInteger(customPriceMonthly) || customPriceMonthly < 0) {
+      return { error: "Enter the custom monthly amount in rupees (0 or more), or clear both custom fields" };
+    }
+    if (!Number.isInteger(customMaxStudents) || customMaxStudents < 1) {
+      return { error: "Enter the custom student limit (at least 1), or clear both custom fields" };
+    }
+  }
 
   const periodEnd = new Date();
   periodEnd.setDate(periodEnd.getDate() + (status === "trialing" ? 14 : 30));
@@ -221,27 +268,28 @@ export async function setCenterPlan(formData: FormData): Promise<{ error?: strin
     .from(subscriptions).where(eq(subscriptions.instituteId, instituteId)).limit(1);
   if (existing) {
     await db.update(subscriptions)
-      .set({ planId, status, currentPeriodStart: new Date(), currentPeriodEnd: periodEnd, updatedAt: new Date() })
+      .set({ planId, status, customPriceMonthly, customMaxStudents, currentPeriodStart: new Date(), currentPeriodEnd: periodEnd, updatedAt: new Date() })
       .where(eq(subscriptions.id, existing.id));
   } else {
-    await db.insert(subscriptions).values({ instituteId, planId, status, currentPeriodEnd: periodEnd });
+    await db.insert(subscriptions).values({ instituteId, planId, status, customPriceMonthly, customMaxStudents, currentPeriodEnd: periodEnd });
   }
 
   // Record it in the capacity history so "why do I have this limit?" always has
   // an answer — a plan change moves the cap just as much as buying seats does.
-  const [full] = await db
-    .select({ code: subscriptionPlans.code, name: subscriptionPlans.name, maxStudents: subscriptionPlans.maxStudents })
-    .from(subscriptionPlans).where(eq(subscriptionPlans.id, planId)).limit(1);
   const extra = existing?.extraStudents ?? 0;
+  const planCap = customMaxStudents ?? plan.maxStudents;
+  const [inst] = await db.select({ name: institutes.name }).from(institutes).where(eq(institutes.id, instituteId)).limit(1);
   await db.insert(capacityEvents).values({
     instituteId,
     action: existing ? "plan_changed" : "plan_set",
     delta: 0,
-    resultingCap: full?.maxStudents == null ? null : full.maxStudents + extra,
-    planCode: full?.code ?? "",
+    resultingCap: planCap == null ? null : planCap + extra,
+    planCode: plan.code,
     actor: "admin",
     actorName: "Super admin",
-    notes: `${full?.name ?? "Plan"} plan · ${status}`,
+    notes: customPriceMonthly === null || customMaxStudents === null
+      ? `${plan.name} plan · ${status}`
+      : `Custom plan · ${customPlanName(inst?.name ?? "", customPriceMonthly, customMaxStudents)} · on ${plan.name} · ${status}`,
   });
 
   revalidatePath("/admin");

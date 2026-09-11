@@ -182,6 +182,13 @@ export const subscriptions = pgTable("subscriptions", {
   // beyond (plan cap + these) until the slots have been paid for and a
   // super-admin has recorded them here. See src/lib/plan-limits.ts.
   extraStudents: integer("extra_students").notNull().default(0),
+  // ── Custom plan (per-center override) ──
+  // A negotiated price and cap for this one center. Set together by a
+  // super-admin, they ALWAYS override the selected plan's price and cap; NULL
+  // means "the plan decides", which is every ordinary center. Seat packs still
+  // add on top of customMaxStudents, and modules still follow the plan.
+  customPriceMonthly: integer("custom_price_monthly"), // rupees/month
+  customMaxStudents: integer("custom_max_students"),
   currentPeriodStart: timestamp("current_period_start", { withTimezone: true }).notNull().defaultNow(),
   currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
   trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),

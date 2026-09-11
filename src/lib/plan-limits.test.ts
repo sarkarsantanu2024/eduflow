@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { SUBSCRIPTION_PLANS, SEAT_PACKS } from "@/lib/constants";
+import { SUBSCRIPTION_PLANS, SEAT_PACKS, customPlanName } from "@/lib/constants";
 
 // plan-limits imports the Neon client at module load for its two async
 // lookups. The maths under test never touches it.
@@ -18,7 +18,7 @@ type Usage = Parameters<typeof getCapacityOffer>[0];
 const usage = (over: Partial<Usage> = {}): Usage => ({
   used: 95, planCap: 100, extra: 0, cap: 100, remaining: 5, ratio: 0.95,
   atCap: false, nearCap: true, planName: "Starter", planCode: "starter",
-  billingCycle: "monthly",
+  billingCycle: "monthly", isCustom: false, customPrice: null,
   ...over,
 });
 
@@ -91,6 +91,27 @@ describe("getCapacityOffer — sell a pack, or be honest and say upgrade", () =>
   it("does not push an upgrade at an unknown plan code", () => {
     const offer = getCapacityOffer(usage({ planCode: "mystery" }));
     expect(offer.recommendedPlan).toBeNull();
+  });
+
+  it("never steers a custom center onto a published plan — theirs was agreed for them", () => {
+    // 2,000 students at a negotiated price, sitting on Starter for its modules.
+    const offer = getCapacityOffer(usage({
+      isCustom: true, customPrice: 2500, planCode: "starter",
+      planCap: 2000, cap: 2000, used: 1990, remaining: 10,
+    }));
+    expect(offer.recommendedPlan).toBeNull();
+    expect(offer.reason).toBe("");
+    expect(offer.packs.every((p) => !p.upgradeIsBetter)).toBe(true);
+  });
+});
+
+describe("customPlanName — one name for a negotiated plan, everywhere it shows", () => {
+  it("names the plan after the center, its amount and its student count", () => {
+    expect(customPlanName("MMA Springfield", 2500, 2000)).toBe("MMA Springfield - ₹2,500 - 2,000 students");
+  });
+
+  it("still reads as a plan when the center has no name on file", () => {
+    expect(customPlanName("", 999, 150)).toBe("Custom - ₹999 - 150 students");
   });
 });
 

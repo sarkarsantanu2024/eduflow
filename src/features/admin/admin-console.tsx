@@ -13,7 +13,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, stickyAc
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { BUSINESS_TYPES } from "@/lib/constants";
+import { BUSINESS_TYPES, customPlanName } from "@/lib/constants";
 import { openCenter, resetOwnerPassword, setCenterActive, deleteCenter, setCenterPlan, type CustomerRow, type PlanOption } from "@/features/admin/actions";
 
 const rupees = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -64,6 +64,9 @@ export function AdminConsole({ customers, plans = [] }: { customers: CustomerRow
                   <TableCell>{typeLabel(c.type)}</TableCell>
                   <TableCell>
                     {c.plan} <span className="text-xs text-muted-foreground">({c.planStatus})</span>
+                    {c.customPrice !== null && (
+                      <Badge variant="outline" className="ml-2">Custom</Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">{c.activeStudents}/{c.students}</TableCell>
                   <TableCell className="text-right">{rupees(c.revenue)}</TableCell>
@@ -75,7 +78,7 @@ export function AdminConsole({ customers, plans = [] }: { customers: CustomerRow
                         <input type="hidden" name="instituteId" value={c.id} />
                         <Button size="sm" variant="outline" type="submit"><LogIn className="size-3.5" /> Open</Button>
                       </form>
-                      {plans.length > 0 && <PlanDialog instituteId={c.id} name={c.name} currentPlan={c.plan} currentStatus={c.planStatus} plans={plans} />}
+                      {plans.length > 0 && <PlanDialog center={c} plans={plans} />}
                       {c.ownerId && <ResetPasswordDialog ownerId={c.ownerId} email={c.ownerEmail ?? ""} />}
                       <form action={setCenterActive}>
                         <input type="hidden" name="instituteId" value={c.id} />
@@ -113,18 +116,18 @@ function Stat({ icon: Icon, label, value }: { icon: typeof Building2; label: str
   );
 }
 
-function PlanDialog({
-  instituteId, name, currentPlan, currentStatus, plans,
-}: {
-  instituteId: string; name: string; currentPlan: string; currentStatus: string; plans: PlanOption[];
-}) {
+function PlanDialog({ center, plans }: { center: CustomerRow; plans: PlanOption[] }) {
+  const { id: instituteId, name } = center;
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState(
     async (_prev: { error?: string; ok?: boolean } | undefined, formData: FormData) => setCenterPlan(formData),
     undefined,
   );
+  const currentId =
+    plans.find((p) => p.code === center.planCode)?.id ??
+    plans.find((p) => p.name === center.plan)?.id ??
+    plans[0]?.id;
   if (state?.ok && open) setOpen(false);
-  const currentId = plans.find((p) => p.name === currentPlan)?.id ?? plans[0]?.id;
 
   return (
     <>
@@ -141,13 +144,55 @@ function PlanDialog({
               <Label htmlFor={`plan-${instituteId}`}>Plan</Label>
               <select id={`plan-${instituteId}`} name="planId" defaultValue={currentId} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
                 {plans.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name} — ₹{p.price}/mo</option>
+                  <option key={p.id} value={p.id}>{p.name} — ₹{p.price}/mo{p.maxStudents !== null && ` · ${p.maxStudents} students`}</option>
                 ))}
               </select>
             </div>
+
+            {/* Custom plan — optional, and it wins over the plan above. */}
+            <div className="grid grid-cols-2 gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <div className="col-span-2">
+                <p className="text-sm font-bold">Custom plan (optional)</p>
+                <p className="text-xs text-muted-foreground">
+                  Set what this center pays and how many students it may hold — both override the plan
+                  above everywhere. Leave both blank to use the plan as-is. Seat packs still add on top.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor={`custom-price-${instituteId}`}>Amount (₹/month)</Label>
+                <Input
+                  id={`custom-price-${instituteId}`}
+                  name="customPrice"
+                  type="number"
+                  min={0}
+                  step={1}
+                  defaultValue={center.customPrice ?? ""}
+                  placeholder="e.g. 2500"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor={`custom-students-${instituteId}`}>Students</Label>
+                <Input
+                  id={`custom-students-${instituteId}`}
+                  name="customStudents"
+                  type="number"
+                  min={1}
+                  step={1}
+                  defaultValue={center.customStudents ?? ""}
+                  placeholder="e.g. 2000"
+                />
+              </div>
+              {center.customPrice !== null && center.customStudents !== null && (
+                <p className="col-span-2 text-xs text-muted-foreground">
+                  Now on <strong className="text-foreground">{customPlanName(center.name, center.customPrice, center.customStudents)}</strong>.
+                  Clear both fields to put this center back on its plan.
+                </p>
+              )}
+            </div>
+
             <div className="space-y-1.5">
               <Label htmlFor={`status-${instituteId}`}>Status</Label>
-              <select id={`status-${instituteId}`} name="status" defaultValue={["trialing", "active", "past_due", "canceled", "expired"].includes(currentStatus) ? currentStatus : "active"} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+              <select id={`status-${instituteId}`} name="status" defaultValue={["trialing", "active", "past_due", "canceled", "expired"].includes(center.planStatus) ? center.planStatus : "active"} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
                 <option value="trialing">Trialing</option>
                 <option value="active">Active</option>
                 <option value="past_due">Past due</option>

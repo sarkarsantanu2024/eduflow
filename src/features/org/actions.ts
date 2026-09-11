@@ -12,6 +12,7 @@ import {
 import { requireOrgAdmin } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
 import { getSector } from "@/lib/sectors";
+import { customPlanName } from "@/lib/constants";
 import { ACTING_COOKIE, ACTING_COOKIE_OPTIONS } from "@/lib/tenant";
 
 export type BranchRow = {
@@ -79,7 +80,7 @@ export async function getOrgOverview(): Promise<OrgOverview> {
     db.select({ id: students.instituteId, n: count() }).from(students).where(and(inArray(students.instituteId, ids), eq(students.status, "active"))).groupBy(students.instituteId),
     db.select({ id: payments.instituteId, total: sql<number>`coalesce(sum(${payments.amount}), 0)` }).from(payments).where(and(inArray(payments.instituteId, ids), eq(payments.status, "success"))).groupBy(payments.instituteId),
     db.select({ id: fees.instituteId, total: sql<number>`coalesce(sum(${fees.amount} - ${fees.amountPaid}), 0)` }).from(fees).where(and(inArray(fees.instituteId, ids), inArray(fees.status, ["pending", "overdue", "partial"]))).groupBy(fees.instituteId),
-    db.select({ id: subscriptions.instituteId, plan: subscriptionPlans.name, price: subscriptionPlans.priceMonthly, status: subscriptions.status }).from(subscriptions).innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id)).where(inArray(subscriptions.instituteId, ids)),
+    db.select({ id: subscriptions.instituteId, plan: subscriptionPlans.name, price: subscriptionPlans.priceMonthly, status: subscriptions.status, customPrice: subscriptions.customPriceMonthly, customStudents: subscriptions.customMaxStudents }).from(subscriptions).innerJoin(subscriptionPlans, eq(subscriptions.planId, subscriptionPlans.id)).where(inArray(subscriptions.instituteId, ids)),
   ]);
 
   const num = (rs: { id: string; n?: number; total?: number }[], id: string, key: "n" | "total") =>
@@ -93,9 +94,13 @@ export async function getOrgOverview(): Promise<OrgOverview> {
       type: b.type,
       isActive: b.isActive,
       onboarded: b.onboarded,
-      plan: sub?.plan ?? "—",
+      // A custom plan overrides the branch's plan — name and amount both, so
+      // the head-office rebate is worked out on what the branch really pays.
+      plan: sub?.customPrice != null && sub?.customStudents != null
+        ? customPlanName(b.name, sub.customPrice, sub.customStudents)
+        : (sub?.plan ?? "—"),
       planStatus: sub?.status ?? "—",
-      planPrice: Number(sub?.price ?? 0),
+      planPrice: Number(sub?.customPrice ?? sub?.price ?? 0),
       students: num(studentCounts, b.id, "n"),
       activeStudents: num(activeCounts, b.id, "n"),
       revenue: num(revenueRows, b.id, "total"),
