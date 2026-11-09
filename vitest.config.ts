@@ -2,12 +2,12 @@ import { defineConfig } from "vitest/config";
 import path from "node:path";
 
 /**
- * Unit tests for the calculations a centre's money depends on.
+ * Tests for the calculations a centre's money depends on.
  *
- * Deliberately node-only and dependency-free: every module under test is pure,
- * so the suite runs in about a second and can gate every deploy. Anything that
- * needs a database or a browser is out of scope here — that belongs in an
- * end-to-end pass against a staging centre.
+ * Node-only. Unit tests are pure and run in about a second. Integration tests
+ * (`*.integration.test.ts`) run the real SQL against an in-memory Postgres
+ * (PGlite, see src/test/pglite.ts) built from drizzle/*.sql — no network, no
+ * DATABASE_URL — so they can gate every deploy too.
  */
 export default defineConfig({
   test: {
