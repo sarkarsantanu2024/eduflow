@@ -11,6 +11,10 @@ const PUBLIC_PATHS = [
   // Lead capture from the public marketing site — write-only, no session.
   // See src/app/api/leads/route.ts.
   "/api/leads",
+  // Vercel Cron has no session. Without this the middleware answered every
+  // cron call with a redirect to /login, so daily billing and reminders never
+  // ran. The route authenticates itself with CRON_SECRET (fails closed).
+  "/api/cron",
 ];
 
 function isPublicPath(pathname: string): boolean {

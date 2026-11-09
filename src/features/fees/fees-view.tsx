@@ -148,7 +148,10 @@ export function FeesView() {
     billingRequested.current = true;
     ensureMonthlyBilling()
       .then((r) => { if (r.feesCreated || r.expensesCreated) reloadDb(); })
-      .catch(() => { /* cron will catch it tonight — never block the page */ });
+      // Never block the page (the cron retries daily), but never hide the
+      // failure either: a silent catch here is how a broken insert went
+      // unnoticed for months.
+      .catch((e) => { console.error("[fees] monthly billing failed", e); });
   }, [hydrated]);
 
   // One-time: fold the legacy royalty % into the generic recurring charges.

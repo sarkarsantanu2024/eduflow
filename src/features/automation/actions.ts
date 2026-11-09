@@ -135,13 +135,17 @@ export async function markFeePaidFromOutbox(
     // fee reading as collected with no payment row — money that shows as
     // received on the student's balance but is missing from the collection
     // report and the P&L.
-    await db.transaction(async (tx) => {
-      await tx.update(fees).set({ amountPaid: fee.amount, status: "paid" }).where(eq(fees.id, fee.id));
-      await tx.insert(payments).values({
+    //
+    // db.batch, not db.transaction: the neon-http driver throws on every
+    // transaction() call, so this button could never succeed. batch() sends
+    // both statements to Neon as one transaction.
+    await db.batch([
+      db.update(fees).set({ amountPaid: fee.amount, status: "paid" }).where(eq(fees.id, fee.id)),
+      db.insert(payments).values({
         instituteId, studentId: fee.studentId, studentName: fee.studentName,
         amount: remaining, method, status: "success", source: "fee", date: istToday().ymd,
-      });
-    });
+      }),
+    ]);
   }
   await db.delete(messageOutbox).where(eq(messageOutbox.id, row.id));
   return { ok: true };

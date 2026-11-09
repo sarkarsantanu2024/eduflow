@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { expenses, fees, institutes, students, teachers } from "@/lib/db/schema";
 import { effectiveFee, type RecurringCharge } from "@/lib/store/types";
@@ -114,7 +114,14 @@ export async function runMonthlyBilling(instituteId: string): Promise<BillingRes
     const inserted = await db
       .insert(fees)
       .values(feeRows)
-      .onConflictDoNothing({ target: [fees.instituteId, fees.studentId, fees.period] })
+      // The WHERE must repeat the partial index's predicate (drizzle/0011):
+      // without it Postgres cannot match the index and every insert fails with
+      // 42P10. Literal, not a bound parameter, so the match never depends on
+      // how the driver plans the statement.
+      .onConflictDoNothing({
+        target: [fees.instituteId, fees.studentId, fees.period],
+        where: sql`${fees.kind} = 'monthly' and ${fees.deletedAt} is null`,
+      })
       .returning({ id: fees.id });
     feesCreated = inserted.length;
   }
@@ -171,7 +178,11 @@ export async function runMonthlyBilling(instituteId: string): Promise<BillingRes
     const inserted = await db
       .insert(expenses)
       .values(expenseRows)
-      .onConflictDoNothing({ target: [expenses.instituteId, expenses.dedupeKey] })
+      // Same rule as above: repeat the predicate of expenses_auto_unique.
+      .onConflictDoNothing({
+        target: [expenses.instituteId, expenses.dedupeKey],
+        where: sql`${expenses.dedupeKey} is not null and ${expenses.deletedAt} is null`,
+      })
       .returning({ id: expenses.id });
     expensesCreated = inserted.length;
   }

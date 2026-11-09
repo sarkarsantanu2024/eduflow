@@ -19,9 +19,18 @@ import { runMonthlyBillingForAll } from "@/features/automation/billing";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+/** Shorter secrets (e.g. the .env.example placeholder) are treated as unset. */
+const MIN_SECRET_LENGTH = 32;
+
 export async function GET(req: Request) {
   const { CRON_SECRET } = getServerEnv();
-  if (CRON_SECRET && req.headers.get("authorization") !== `Bearer ${CRON_SECRET}`) {
+  // Fails closed: this route is public in the middleware (src/auth.config.ts),
+  // so without a real secret anyone could trigger billing for every centre.
+  if (!CRON_SECRET || CRON_SECRET.length < MIN_SECRET_LENGTH) {
+    console.error(`[cron/automation] CRON_SECRET missing or shorter than ${MIN_SECRET_LENGTH} characters; refusing to run`);
+    return NextResponse.json({ error: "cron not configured" }, { status: 503 });
+  }
+  if (req.headers.get("authorization") !== `Bearer ${CRON_SECRET}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   try {
