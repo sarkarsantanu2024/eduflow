@@ -583,6 +583,15 @@ export const activityLogs = pgTable("activity_logs", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({ byInstitute: index("activity_logs_institute_idx").on(t.instituteId) }));
 
+// ── Rate limits (GLOBAL) ─────────────────────────────────────────────
+// Failed sign-ins and sign-ups per key, in a fixed window. See
+// src/lib/rate-limit.ts and drizzle/0015_rate_limits.sql.
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ── Leads (GLOBAL, not tenant-scoped) ────────────────────────────────
 // Enquiries captured by the public marketing site's "Book your free demo"
 // form (POST /api/leads). Visible to the super-admin only — this is the sales

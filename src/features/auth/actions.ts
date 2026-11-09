@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { AuthError } from "next-auth";
@@ -13,9 +14,23 @@ import { getCurrentProfile } from "@/lib/auth";
 import { getSector } from "@/lib/sectors";
 import { FEATURES } from "@/lib/features";
 import { loginSchema, registerSchema, registerOrgSchema, forgotPasswordSchema } from "./schema";
+import { clientIp, hit, isLimited, LIMITS } from "@/lib/rate-limit";
 
 export type AuthState = { error?: string } | undefined;
 export type PasswordState = { error?: string; ok?: boolean } | undefined;
+
+/**
+ * Every sign-up creates a real tenant in the production database, so each
+ * attempt counts (not only failures). Returns the form error when limited.
+ */
+async function signupLimited(): Promise<AuthState> {
+  const key = `signup:ip:${clientIp(await headers())}`;
+  if (await isLimited(key, LIMITS.signupPerIp)) {
+    return { error: "Too many sign-ups from this network. Please try again in an hour." };
+  }
+  await hit(key, LIMITS.signupPerIp);
+  return undefined;
+}
 
 function slugify(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50);
@@ -29,7 +44,13 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
   try {
     await nextSignIn("credentials", { ...parsed.data, redirect: false });
   } catch (error) {
-    if (error instanceof AuthError) return { error: "Invalid username or password" };
+    if (error instanceof AuthError) {
+      return {
+        error: (error as AuthError & { code?: string }).code === "rate_limited"
+          ? "Too many failed attempts. Please wait 15 minutes and try again."
+          : "Invalid username or password",
+      };
+    }
     throw error;
   }
 
@@ -42,6 +63,8 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
  * and a trial Starter subscription, then signs the user in.
  */
 export async function signUp(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const limited = await signupLimited();
+  if (limited) return limited;
   const parsed = registerSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
   const { instituteName, type, fullName, username, email, phone, address, password } = parsed.data;
@@ -120,6 +143,8 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
  */
 export async function signUpOrganization(_prev: AuthState, formData: FormData): Promise<AuthState> {
   if (!FEATURES.headOffice) return { error: "Multi-center signup isn't available right now." };
+  const limited = await signupLimited();
+  if (limited) return limited;
 
   const parsed = registerOrgSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };

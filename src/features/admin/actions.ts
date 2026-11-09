@@ -13,6 +13,7 @@ import { hashPassword } from "@/lib/auth/password";
 import { ACTING_COOKIE, ACTING_COOKIE_OPTIONS } from "@/lib/tenant";
 import { DEMO_INSTITUTE_IDS } from "@/lib/demo-tenant";
 import { customPlanName } from "@/lib/constants";
+import { audit } from "@/lib/audit";
 
 export type CustomerRow = {
   id: string;
@@ -87,11 +88,12 @@ export async function listCustomers(): Promise<CustomerRow[]> {
   });
 }
 
-/** Enter a customer's center to manage their data (impersonation). */
+/** Enter a customer's center to manage their data (impersonation). Audited. */
 export async function openCenter(formData: FormData) {
-  await requireSuperAdmin();
+  const admin = await requireSuperAdmin();
   const instituteId = String(formData.get("instituteId") ?? "");
   if (!instituteId) return;
+  await audit({ actorId: admin.id, instituteId, action: "admin.open_center", entityType: "institute", entityId: instituteId });
   const store = await cookies();
   store.set(ACTING_COOKIE, instituteId, ACTING_COOKIE_OPTIONS);
   redirect("/dashboard");
@@ -102,6 +104,10 @@ export async function openCenter(formData: FormData) {
 export async function exitCenter() {
   const profile = await getCurrentProfile();
   const store = await cookies();
+  const acting = store.get(ACTING_COOKIE)?.value;
+  if (profile && acting) {
+    await audit({ actorId: profile.id, instituteId: acting, action: "admin.exit_center", entityType: "institute", entityId: acting });
+  }
   store.delete(ACTING_COOKIE);
   redirect(profile?.role === "org_admin" ? "/org" : "/admin");
 }
@@ -109,11 +115,12 @@ export async function exitCenter() {
 /** Suspend or re-activate a center (super-admin only). A suspended center's
  *  owner & staff are locked out until re-activated (e.g. for non-payment). */
 export async function setCenterActive(formData: FormData) {
-  await requireSuperAdmin();
+  const admin = await requireSuperAdmin();
   const instituteId = String(formData.get("instituteId") ?? "");
   const active = String(formData.get("active") ?? "") === "true";
   if (!instituteId) return;
   await db.update(institutes).set({ isActive: active }).where(eq(institutes.id, instituteId));
+  await audit({ actorId: admin.id, instituteId, action: active ? "admin.activate_center" : "admin.suspend_center", entityType: "institute", entityId: instituteId });
   revalidatePath("/admin");
 }
 
@@ -121,7 +128,7 @@ export async function setCenterActive(formData: FormData) {
  *  Every tenant-owned table cascades on institute_id, so removing the
  *  institute row wipes students, fees, payments, users, etc. Irreversible. */
 export async function deleteCenter(formData: FormData): Promise<{ error?: string }> {
-  await requireSuperAdmin();
+  const admin = await requireSuperAdmin();
   const instituteId = String(formData.get("instituteId") ?? "");
   const confirmName = String(formData.get("confirmName") ?? "").trim();
   if (!instituteId) return { error: "Missing center" };
@@ -131,18 +138,29 @@ export async function deleteCenter(formData: FormData): Promise<{ error?: string
   if (confirmName !== inst.name) return { error: "Type the center name exactly to confirm" };
 
   await db.delete(institutes).where(eq(institutes.id, instituteId));
+  // instituteId null: the entry must survive the cascade that just ran.
+  await audit({ actorId: admin.id, instituteId: null, action: "admin.delete_center", entityType: "institute", entityId: instituteId, metadata: { name: inst.name } });
   revalidatePath("/admin");
   return {};
 }
 
-/** Reset any center owner's password (super-admin only). */
+/**
+ * Reset a centre owner's (or staff member's) password (super-admin only).
+ * Never another platform admin: this screen is for helping customers, and a
+ * console session must not be able to take over a second super-admin account.
+ */
 export async function resetOwnerPassword(formData: FormData): Promise<{ error?: string; ok?: boolean }> {
-  await requireSuperAdmin();
+  const admin = await requireSuperAdmin();
   const userId = String(formData.get("userId") ?? "");
   const newPassword = String(formData.get("newPassword") ?? "");
   if (!userId || newPassword.length < 8) return { error: "Password must be at least 8 characters" };
 
+  const [target] = await db.select({ role: users.role, instituteId: users.instituteId }).from(users).where(eq(users.id, userId)).limit(1);
+  if (!target) return { error: "User not found" };
+  if (target.role === "super_admin") return { error: "Platform admin passwords cannot be reset from here" };
+
   await db.update(users).set({ passwordHash: await hashPassword(newPassword) }).where(eq(users.id, userId));
+  await audit({ actorId: admin.id, instituteId: target.instituteId, action: "admin.reset_password", entityType: "user", entityId: userId, metadata: { role: target.role } });
   revalidatePath("/admin");
   return { ok: true };
 }

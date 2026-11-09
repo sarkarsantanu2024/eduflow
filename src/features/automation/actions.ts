@@ -11,6 +11,20 @@ import { enqueue, istToday, normalizeSettings, queueForInstitute, templatesByTyp
 import { runMonthlyBilling, type BillingResult } from "./billing";
 
 /**
+ * The outbox and "mark paid" are the owner's (or head office's), never staff's.
+ * The Reminders screen is hidden from teachers, but a hidden screen is not a
+ * permission: without this a teacher could call these actions directly and
+ * record a fee as paid, bypassing the write allowlist in data/actions.ts.
+ */
+async function requireOwnerInstituteId(): Promise<string> {
+  const profile = await requireProfile();
+  if (profile.role === "teacher" || profile.role === "parent") {
+    throw new Error("Only the centre owner can do this");
+  }
+  return requireActiveInstituteId();
+}
+
+/**
  * Generate this month's fees and auto-expenses for the active center, now.
  *
  * The daily cron does this for every center, but a center that signed up this
@@ -88,7 +102,7 @@ export async function saveAutomationSettings(patch: Partial<AutomationSettings>)
 
 /** Stamp a queued message as sent (called when the owner taps the wa.me link). */
 export async function markOutboxSent(id: string): Promise<void> {
-  const instituteId = await requireActiveInstituteId();
+  const instituteId = await requireOwnerInstituteId();
   await db.update(messageOutbox)
     .set({ status: "sent", sentAt: new Date() })
     .where(and(eq(messageOutbox.id, id), eq(messageOutbox.instituteId, instituteId)));
@@ -96,14 +110,14 @@ export async function markOutboxSent(id: string): Promise<void> {
 
 /** Remove a queued message the owner doesn't want to send (hard delete — lean). */
 export async function dismissOutboxItem(id: string): Promise<void> {
-  const instituteId = await requireActiveInstituteId();
+  const instituteId = await requireOwnerInstituteId();
   await db.delete(messageOutbox)
     .where(and(eq(messageOutbox.id, id), eq(messageOutbox.instituteId, instituteId)));
 }
 
 /** Empty the whole queue. */
 export async function clearOutbox(): Promise<void> {
-  const instituteId = await requireActiveInstituteId();
+  const instituteId = await requireOwnerInstituteId();
   await db.delete(messageOutbox)
     .where(and(eq(messageOutbox.instituteId, instituteId), eq(messageOutbox.status, "queued")));
 }
@@ -118,7 +132,7 @@ export async function markFeePaidFromOutbox(
   outboxId: string,
   method: "cash" | "upi" = "cash",
 ): Promise<{ error?: string; ok?: boolean }> {
-  const instituteId = await requireActiveInstituteId();
+  const instituteId = await requireOwnerInstituteId();
   const row = await db.query.messageOutbox.findFirst({
     where: and(eq(messageOutbox.id, outboxId), eq(messageOutbox.instituteId, instituteId)),
   });
