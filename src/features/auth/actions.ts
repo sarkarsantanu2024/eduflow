@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -15,6 +16,17 @@ import { getSector } from "@/lib/sectors";
 import { FEATURES } from "@/lib/features";
 import { loginSchema, registerSchema, registerOrgSchema, forgotPasswordSchema } from "./schema";
 import { clientIp, hit, isLimited, LIMITS } from "@/lib/rate-limit";
+import type { BatchItem } from "drizzle-orm/batch";
+
+/**
+ * One statement list for db.batch. The neon-http driver has no
+ * db.transaction(), but batch() runs its statements in one transaction, so a
+ * sign-up either creates everything or nothing. Before this, a failure between
+ * the institute insert and the user insert left an orphan tenant with a trial
+ * subscription and no owner — and the person who signed up got an error with
+ * their username and email now "already taken" on retry.
+ */
+type Statements = [BatchItem<"pg">, ...BatchItem<"pg">[]];
 
 export type AuthState = { error?: string } | undefined;
 export type PasswordState = { error?: string; ok?: boolean } | undefined;
@@ -78,52 +90,70 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   if (existing) return { error: "An account with this email already exists" };
 
   const slug = `${slugify(instituteName)}-${Math.random().toString(36).slice(2, 6)}`;
-  const [institute] = await db
-    .insert(institutes)
-    .values({ name: instituteName, slug, type, ownerName: fullName, email: lowerEmail, phone, address: address || null })
-    .returning();
-  if (!institute) return { error: "Could not create institute" };
+  // The id is minted here, not by the database, so every dependent row can be
+  // written in the same batch as the institute itself.
+  const instituteId = randomUUID();
 
-  // Trial Starter subscription.
+  // Trial Starter subscription (a read; the write joins the batch below).
   const starter = await db.query.subscriptionPlans.findFirst({
     where: eq(subscriptionPlans.code, "starter"),
   });
-  if (starter) {
-    const periodEnd = new Date();
-    periodEnd.setDate(periodEnd.getDate() + 14);
-    await db.insert(subscriptions).values({
-      instituteId: institute.id,
-      planId: starter.id,
-      status: "trialing",
-      currentPeriodEnd: periodEnd,
-      trialEndsAt: periodEnd,
-    });
-  }
 
   const sector = getSector(type);
 
   // Seed the sector's default course / level set so the new centre's dropdowns
   // (e.g. the student form's Course/Level) are ready to use out of the box.
   const sectorCourses = sector.seedCourses.map((c) => ({
-    instituteId: institute.id, name: c.name, description: c.description,
+    instituteId, name: c.name, description: c.description,
   }));
-  if (sectorCourses.length) await db.insert(courses).values(sectorCourses);
 
   // Seed ready-to-use WhatsApp templates tuned to this sector.
   const sectorTemplates = sector.seedTemplates.map((t) => ({
-    instituteId: institute.id, name: t.name, type: t.type, channel: "whatsapp", body: t.body,
+    instituteId, name: t.name, type: t.type, channel: "whatsapp", body: t.body,
   }));
-  if (sectorTemplates.length) await db.insert(templates).values(sectorTemplates);
 
-  await db.insert(users).values({
-    username: lowerUsername,
-    email: lowerEmail,
-    phone,
-    passwordHash: await hashPassword(password),
-    fullName,
-    role: "institute_admin",
-    instituteId: institute.id,
-  });
+  const passwordHash = await hashPassword(password);
+
+  const statements: Statements = [
+    db.insert(institutes).values({
+      id: instituteId, name: instituteName, slug, type, ownerName: fullName, email: lowerEmail, phone, address: address || null,
+    }),
+  ];
+  if (starter) {
+    const periodEnd = new Date();
+    periodEnd.setDate(periodEnd.getDate() + 14);
+    statements.push(
+      db.insert(subscriptions).values({
+        instituteId,
+        planId: starter.id,
+        status: "trialing",
+        currentPeriodEnd: periodEnd,
+        trialEndsAt: periodEnd,
+      }),
+    );
+  }
+  if (sectorCourses.length) statements.push(db.insert(courses).values(sectorCourses));
+  if (sectorTemplates.length) statements.push(db.insert(templates).values(sectorTemplates));
+  statements.push(
+    db.insert(users).values({
+      username: lowerUsername,
+      email: lowerEmail,
+      phone,
+      passwordHash,
+      fullName,
+      role: "institute_admin",
+      instituteId,
+    }),
+  );
+
+  try {
+    await db.batch(statements);
+  } catch (err) {
+    // Most likely a unique clash that raced past the checks above. Nothing was
+    // written, so the person can simply try again.
+    console.error("[signUp] batch failed", err);
+    return { error: "Could not create your account. Please try again." };
+  }
 
   try {
     await nextSignIn("credentials", { username: lowerUsername, password, redirect: false });
@@ -161,23 +191,31 @@ export async function signUpOrganization(_prev: AuthState, formData: FormData): 
   }
 
   const slug = `${slugify(organizationName)}-${Math.random().toString(36).slice(2, 6)}`;
-  const [org] = await db
-    .insert(organizations)
-    .values({ name: organizationName, slug, ownerName: fullName, email: lowerEmail || null, phone: phone || null })
-    .returning({ id: organizations.id });
-  if (!org) return { error: "Could not create the organization" };
+  const organizationId = randomUUID();
+  const passwordHash = await hashPassword(password);
 
+  // Organization and its owner login in ONE transaction — see `Statements`.
   // Email is optional (username is the login) — synthesize a unique placeholder.
-  await db.insert(users).values({
-    organizationId: org.id,
-    instituteId: null,
-    role: "org_admin",
-    username: lowerUsername,
-    email: lowerEmail || `${lowerUsername}@noemail.eduflow.local`,
-    phone: phone || null,
-    fullName,
-    passwordHash: await hashPassword(password),
-  });
+  try {
+    await db.batch([
+      db.insert(organizations).values({
+        id: organizationId, name: organizationName, slug, ownerName: fullName, email: lowerEmail || null, phone: phone || null,
+      }),
+      db.insert(users).values({
+        organizationId,
+        instituteId: null,
+        role: "org_admin",
+        username: lowerUsername,
+        email: lowerEmail || `${lowerUsername}@noemail.eduflow.local`,
+        phone: phone || null,
+        fullName,
+        passwordHash,
+      }),
+    ]);
+  } catch (err) {
+    console.error("[signUpOrganization] batch failed", err);
+    return { error: "Could not create the organization. Please try again." };
+  }
 
   try {
     await nextSignIn("credentials", { username: lowerUsername, password, redirect: false });
