@@ -2,86 +2,92 @@
 
 **Complete Institute Management, Fee Collection & WhatsApp Reminder Platform.**
 
-A multi-tenant SaaS for abacus, coaching, tuition, dance, music, spoken-English
-and computer-training centers. Manage students, collect fees online, and send
-one-click WhatsApp reminders — built to scale to 10,000+ institutes.
+A multi-tenant SaaS for abacus, coaching, tuition, dance, music, spoken-English,
+yoga and computer-training centres, and for franchise head offices. Students,
+monthly fees with UPI QR, expenses and profit, attendance, tests, certificates
+and one-tap WhatsApp reminders.
+
+Live: <https://eduflow.nexvoratechnologies.co.in>
+
+> The `docs/` folder and the `supabase/` folder describe an earlier
+> Supabase-based design that was replaced by Neon + Drizzle + Auth.js. They are
+> kept for history; this README describes what actually runs.
 
 ## Tech stack
 
 | Layer | Choice |
 |-------|--------|
-| Framework | Next.js 15 (App Router, RSC, Server Actions) · React 19 · TypeScript (strict) |
-| UI | Tailwind CSS · shadcn/ui · lucide-react · Recharts |
-| Data (client) | TanStack Query |
-| Forms | React Hook Form + Zod |
-| Backend | Supabase (Postgres + Auth + Storage) with **Row Level Security** |
-| Payments | Razorpay (payment links + webhooks) |
-| Messaging | WhatsApp Cloud API · Email |
-| Hosting | Vercel + Supabase |
+| Framework | Next.js 15 (App Router, Server Actions) · React 19 · TypeScript (strict, `noUncheckedIndexedAccess`) |
+| UI | Tailwind CSS · shadcn/ui (Radix) · lucide-react · Recharts |
+| Client data | A small `useSyncExternalStore` store (`src/lib/store/local-db.ts`) loaded through one server action |
+| Database | Neon serverless Postgres · Drizzle ORM (`neon-http` driver) |
+| Auth | Auth.js v5, username + password (bcrypt), JWT sessions |
+| Files | Vercel Blob |
+| Messaging | WhatsApp deep links (`wa.me`) from the owner's own number, via an outbox. No WhatsApp API. |
+| Payments | Manual UPI (QR with the amount pre-filled). No payment gateway. |
+| Hosting | Vercel (one daily cron) |
+| Tests | Vitest: unit tests plus integration tests on an in-memory Postgres (PGlite) |
 
 ## Quick start
 
 ```bash
-# 1. Install
 npm install
-
-# 2. Configure env
-cp .env.example .env.local        # fill in Supabase + Razorpay + WhatsApp keys
-
-# 3. Database (local Supabase)
-npx supabase start
-npx supabase db reset             # runs migrations + seed.sql
-npm run db:types                  # regenerate src/types/database.types.ts
-
-# 4. Run
+cp .env.example .env.local        # DATABASE_URL, AUTH_SECRET, SUPERADMIN_* …
+npm run db:migrate                # applies drizzle/*.sql in order (see below)
+npm run db:seed                   # plans + the super-admin account
 npm run dev                       # http://localhost:3000
+npm test                          # unit + integration tests, no database needed
 ```
 
-Create a user via the **/register** page (creates a tenant + admin), or in
-Supabase Studio then bind it to the demo institute using the snippet at the
-bottom of `supabase/seed.sql`.
+**Use a Neon branch for local work.** `.env.local`'s `DATABASE_URL` is whatever
+database you point it at; never point it at production.
+
+A centre owner signs up at **/register** (creates the tenant, an owner account
+and a trial subscription). The super-admin console is **/admin**.
 
 ## Architecture at a glance
 
-- **Multi-tenant**, isolated by `institute_id`, enforced by Postgres RLS.
-- **Roles:** super_admin · institute_admin · teacher · parent.
-- **Mutations** are Server Actions (Zod-validated, tenant set server-side).
-- **Reads** are RLS-scoped Supabase queries (RSC + TanStack Query).
-- **Async:** Razorpay webhook confirms payments; Vercel Cron dispatches reminders.
+- **Multi-tenant by `institute_id`.** Tenant isolation is enforced in the
+  application layer: every read and write in `src/features/data/actions.ts` is
+  filtered by the caller's institute, the tenant id is stripped from client
+  patches, and head-office access is re-checked on every request
+  (`src/lib/tenant.ts`). There is no Postgres RLS.
+- **Roles:** `super_admin` (platform owner) · `org_admin` (franchise head
+  office) · `institute_admin` (centre owner) · `teacher` (limited staff login).
+  `parent` exists in the schema but has no app yet.
+- **Writes** are Server Actions. Teachers may write only attendance, tests,
+  performance and promotions (`TEACHER_WRITABLE`).
+- **Money** is integer rupees. Payments are applied to the oldest unpaid month
+  first (`src/lib/money.ts`).
+- **Daily cron** (`/api/cron/automation`, needs `CRON_SECRET`): generates the
+  month's fees and recurring expenses (idempotent via partial unique indexes),
+  then queues fee-due, overdue and birthday messages into each centre's outbox.
+- **Sign-in and sign-up are rate limited** in Postgres (`src/lib/rate-limit.ts`),
+  and platform-console actions are written to `activity_logs` (`src/lib/audit.ts`).
 
-Full docs in [`docs/`](./docs):
-[Architecture](./docs/01-architecture.md) ·
-[Database & ERD](./docs/02-database.md) ·
-[API & Actions](./docs/03-api.md) ·
-[Roadmap & Tasks](./docs/04-roadmap.md) ·
-[Deployment](./docs/05-deployment.md).
+## Database and migrations
+
+`drizzle/*.sql` is the source of truth, applied in filename order exactly once
+by `scripts/migrate.mjs` (recorded in `_migrations`). Every migration is
+additive and idempotent. On Vercel, `vercel-build` runs the tests, then the
+migrations (production deploys only), then the build.
+
+`src/lib/db/schema.ts` mirrors the SQL for Drizzle's types. If you change one,
+change the other; the integration tests build their database from the SQL, so
+drift between them fails the test run.
 
 ## Project layout
 
+```text
+src/app          routes: (auth), (dashboard), admin, org, api, verify
+src/features     one folder per module (fees, students, automation, admin, …)
+src/lib          db (schema, client), auth, tenant, money, rate-limit, audit
+src/components   layout and shadcn/ui primitives
+src/test         test helpers (in-memory Postgres)
+drizzle          SQL migrations
+scripts          migration runner, statement splitter, site CSS build
+public           marketing site (site.html), privacy and terms
 ```
-src/app          routes (auth group, dashboard group, api, auth callback)
-src/components    layout + shadcn ui primitives
-src/features      feature modules: auth, students, dashboard (schema/actions/queries/components)
-src/lib           env, utils, auth guards, activity log, supabase clients
-src/services      whatsapp, razorpay
-src/types         database types
-supabase          migrations, seed, config
-docs              architecture & ops docs
-```
-
-## The "reference feature" pattern
-
-`src/features/students` is the canonical example every other feature copies:
-
-| File | Responsibility |
-|------|----------------|
-| `schema.ts` | Zod schemas (shared by form + server action) |
-| `actions.ts` | `"use server"` mutations → `ActionResult<T>` |
-| `queries.ts` | `"use client"` TanStack Query hooks |
-| `server.ts` | server-only read helpers for RSC pages |
-| `components/` | table + form (RHF) |
-
-To add Courses/Batches/Fees: clone this folder, swap the table + fields.
 
 ## Scripts
 
@@ -89,10 +95,10 @@ To add Courses/Batches/Fees: clone this folder, swap the table + fields.
 |---------|------|
 | `npm run dev` | Dev server |
 | `npm run build` / `start` | Production build / serve |
+| `npm test` | Unit + integration tests (in-memory Postgres; no network) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run db:reset` | Reset local DB (migrations + seed) |
-| `npm run db:push` | Push migrations to linked project |
-| `npm run db:types` | Generate TS types from DB |
+| `npm run db:migrate` | Apply outstanding `drizzle/*.sql` to `.env.local`'s database |
+| `npm run db:seed` | Plans and the super-admin account |
 
 ## Subscription plans
 
@@ -161,6 +167,13 @@ per center on **/admin/capacity**.
 
 ## Status
 
-Phase-1 foundation: auth, multi-tenant DB + RLS, students CRUD, dashboard
-metrics, payment & reminder plumbing. See the roadmap for the remaining MVP
-checklist.
+In production with real centres. Built: everything described above.
+Not built: parent app, automatic WhatsApp sending through Meta's API, a payment
+gateway (seat packs and plans are paid by UPI and approved by hand), email.
+
+Known limits, being worked on:
+
+- Every screen loads the centre's whole dataset into the browser; fine at
+  today's sizes, not at thousands of students per centre.
+- Teachers' screens receive more of the centre's data than they display.
+- Preview deployments share the production database.
