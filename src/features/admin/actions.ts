@@ -88,12 +88,21 @@ export async function listCustomers(): Promise<CustomerRow[]> {
   });
 }
 
-/** Enter a customer's center to manage their data (impersonation). Audited. */
+/**
+ * Enter a customer's center to manage their data (impersonation). Audited,
+ * with the reason the admin gave (optional, but the trail is far more useful
+ * for "why was the platform owner inside this centre's books on the 14th?"
+ * when it is filled in). The cookie expires after ACTING_MAX_AGE_SECONDS.
+ */
 export async function openCenter(formData: FormData) {
   const admin = await requireSuperAdmin();
   const instituteId = String(formData.get("instituteId") ?? "");
   if (!instituteId) return;
-  await audit({ actorId: admin.id, instituteId, action: "admin.open_center", entityType: "institute", entityId: instituteId });
+  const reason = String(formData.get("reason") ?? "").trim().slice(0, 200) || null;
+  await audit({
+    actorId: admin.id, instituteId, action: "admin.open_center", entityType: "institute", entityId: instituteId,
+    metadata: { reason },
+  });
   const store = await cookies();
   store.set(ACTING_COOKIE, instituteId, ACTING_COOKIE_OPTIONS);
   redirect("/dashboard");

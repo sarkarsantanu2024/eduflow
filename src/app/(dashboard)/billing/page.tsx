@@ -14,6 +14,7 @@ import { FEATURES } from "@/lib/features";
 import { db } from "@/lib/db";
 import { institutes, subscriptions, subscriptionPlans } from "@/lib/db/schema";
 import { getActiveInstituteId } from "@/lib/tenant";
+import { requireProfile } from "@/lib/auth";
 import { SeatMeter } from "@/features/capacity/seat-meter";
 import { CapacityHistory } from "@/features/capacity/capacity-history";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,9 @@ export const metadata: Metadata = { title: "Billing & Plans" };
 export default async function BillingPage() {
   // Hidden unless the billing feature flag is on; block direct access too.
   if (!FEATURES.billing) redirect("/dashboard");
+  // The centre's subscription and invoices are the owner's business.
+  const profile = await requireProfile();
+  if (profile.role === "teacher") redirect("/students");
 
   // Show the center's real current plan (falls back to the demo default).
   const activeId = await getActiveInstituteId();

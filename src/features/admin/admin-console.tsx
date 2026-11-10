@@ -74,8 +74,16 @@ export function AdminConsole({ customers, plans = [] }: { customers: CustomerRow
                   <TableCell className="text-xs">{c.ownerEmail ?? "—"}</TableCell>
                   <TableCell className={`text-right ${stickyActionsCell}`}>
                     <div className="flex justify-end gap-1.5">
-                      <form action={openCenter}>
+                      <form action={openCenter} className="flex items-center gap-1">
                         <input type="hidden" name="instituteId" value={c.id} />
+                        {/* Optional, recorded in the audit trail with the open. */}
+                        <input
+                          name="reason"
+                          maxLength={200}
+                          placeholder="Why? (audited)"
+                          aria-label="Reason for opening this center"
+                          className="h-8 w-28 rounded-md border bg-background px-2 text-xs"
+                        />
                         <Button size="sm" variant="outline" type="submit"><LogIn className="size-3.5" /> Open</Button>
                       </form>
                       {plans.length > 0 && <PlanDialog center={c} plans={plans} />}

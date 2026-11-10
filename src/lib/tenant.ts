@@ -78,6 +78,14 @@ export async function isImpersonating(): Promise<boolean> {
   return Boolean(await getActiveInstituteId());
 }
 
+/**
+ * How long one "open center" lasts before the admin has to open it again.
+ * Impersonation is full read/write on a customer's live data; a session cookie
+ * that outlives the working day (or a laptop left signed in) should not keep
+ * that door open. Four hours covers a support session with room to spare.
+ */
+export const ACTING_MAX_AGE_SECONDS = 4 * 60 * 60;
+
 /** Cookie options for the acting-institute cookie. Set in one place so the
  *  admin and Head-Office entry points can't drift apart. */
 export const ACTING_COOKIE_OPTIONS = {
@@ -85,4 +93,5 @@ export const ACTING_COOKIE_OPTIONS = {
   sameSite: "lax",
   path: "/",
   secure: process.env.NODE_ENV === "production",
+  maxAge: ACTING_MAX_AGE_SECONDS,
 } as const;

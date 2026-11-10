@@ -9,7 +9,8 @@ import {
   materials, adMaterials, stationery, events, teachers,
 } from "@/lib/db/schema";
 import { getActiveInstituteId, requireActiveInstituteId } from "@/lib/tenant";
-import { requireProfile } from "@/lib/auth";
+import { getCurrentProfile, requireProfile } from "@/lib/auth";
+import { roleMayRead, scopeProfileForRole } from "@/features/data/scope";
 import { checkStudentCapacity, getStudentUsage, type StudentUsage } from "@/lib/plan-limits";
 import {
   EMPTY_DB, EMPTY_PROFILE, DEFAULT_CERT_LAYOUT, DEFAULT_ID_CARD_DESIGN,
@@ -141,14 +142,32 @@ function fromDb(collection: CollectionName, row: Record<string, unknown>): Recor
 
 /* ── Reads ───────────────────────────────────────────────────────── */
 
-/** Load every collection for the active institute (one call hydrates the UI). */
+/**
+ * Load every collection the CALLER MAY READ for the active institute (one call
+ * hydrates the UI).
+ *
+ * Read scoping is by role, decided here on the server — see scope.ts. A
+ * teacher login gets the teaching collections and a profile without money or
+ * tax identity; hidden collections come back as empty arrays so every screen
+ * keeps rendering (an owner-only page a teacher types the URL of shows an
+ * empty table rather than another tenant's… or this tenant's… books).
+ */
 export async function fetchDb(): Promise<Db> {
   const instituteId = await getActiveInstituteId();
   if (!instituteId) return EMPTY_DB;
 
+  // `getActiveInstituteId` already resolved the profile (React `cache`), so
+  // this is free. A missing profile cannot happen past that check, but the
+  // deny-by-default fallback is "parent": nothing.
+  const role = (await getCurrentProfile())?.role ?? "parent";
+
   const result: Record<string, unknown[]> = {};
   await Promise.all(
     (Object.keys(CONFIG) as CollectionName[]).map(async (name) => {
+      if (!roleMayRead(role, name)) {
+        result[name] = [];
+        return;
+      }
       try {
         const t = CONFIG[name].table;
         const where = SOFT_DELETE.has(name)
@@ -200,7 +219,10 @@ export async function fetchDb(): Promise<Db> {
     profile = EMPTY_PROFILE;
   }
 
-  return { ...(result as unknown as Omit<Db, "profile">), profile };
+  return {
+    ...(result as unknown as Omit<Db, "profile">),
+    profile: scopeProfileForRole(role, profile, EMPTY_PROFILE),
+  };
 }
 
 /**
@@ -244,11 +266,13 @@ async function loadProfile(instituteId: string): Promise<Profile> {
   };
 }
 
-/** The ACTIVE institute's profile. Takes no arguments by design — see loadProfile. */
+/** The ACTIVE institute's profile, scoped to the caller's role. Takes no
+ *  arguments by design — see loadProfile. */
 export async function fetchProfile(): Promise<Profile> {
   const instituteId = await getActiveInstituteId();
   if (!instituteId) return EMPTY_PROFILE;
-  return loadProfile(instituteId);
+  const role = (await getCurrentProfile())?.role ?? "parent";
+  return scopeProfileForRole(role, await loadProfile(instituteId), EMPTY_PROFILE);
 }
 
 /* ── Writes ──────────────────────────────────────────────────────── */
@@ -340,8 +364,8 @@ function trashLabel(collection: CollectionName, r: Record<string, unknown>): str
 /** Everything currently in Trash for the active institute. Items stay here until
  *  the owner restores or permanently deletes them — nothing is auto-removed. */
 export async function fetchTrash(): Promise<TrashItem[]> {
-  const instituteId = await getActiveInstituteId();
-  if (!instituteId) return [];
+  // Trash spans every collection, money included, so it is the owner's.
+  const instituteId = await requireOwner();
 
   const out: TrashItem[] = [];
   await Promise.all(
